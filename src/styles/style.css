@@ -1,0 +1,10 @@
+/* === BỔ SUNG: bảo đảm icon theo màu chữ hiện tại === */
+.icon-btn { color: var(--text); }        /* nút chuông/mặt trời/mặt trăng */
+.icon-btn svg { stroke: currentColor; }
+
+.avatar { color: var(--text); }          /* nút avatar tròn */
+.avatar svg { stroke: currentColor; }
+
+.nav__item { color: var(--muted); }
+.nav__item svg { stroke: currentColor; } /* icon menu trái theo màu item */
+.nav__item--active { color: var(--accent-text); }
