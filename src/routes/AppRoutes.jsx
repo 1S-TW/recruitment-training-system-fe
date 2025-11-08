@@ -3,6 +3,7 @@ import React from "react";
 import { Routes, Route } from "react-router-dom";
 import LoginPage from "../pages/LoginPage";
 import HomePage from "../pages/HomePage";
+import RecruitmentPlanPage from "../pages/RecruitmentPlanPage";
 import ProtectedRoute from "../components/ProtectedRoute";
 
 function AppRoutes() {
@@ -14,6 +15,15 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <HomePage />
+          </ProtectedRoute>
+        }
+      />
+      {/* Trang Kế hoạch tuyển dụng */}
+      <Route
+        path="/recruitment/plan"
+        element={
+          <ProtectedRoute>
+            <RecruitmentPlanPage />
           </ProtectedRoute>
         }
       />

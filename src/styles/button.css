@@ -1,0 +1,265 @@
+.btn-group {
+  display: flex;
+  gap: 6px;           /* Khoảng cách giữa các nút */
+  align-items: center;
+}
+
+.btn-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+  background-color: #f0f0f0; /* nền sáng mặc định */
+  color: currentColor;       /* icon sẽ dùng màu text hiện tại */
+}
+
+.btn-action:hover {
+  opacity: 0.8;
+}
+
+/* Các nút riêng biệt theo chức năng */
+.btn-view { color: #007bff; background-color: #e7f1ff; }
+.btn-edit { color: #ffc107; background-color: #fff7e6; }
+.btn-delete { color: #dc3545; background-color: #ffe7e7; }
+
+/* Theme dark */
+.theme-dark .btn-action {
+  background-color: #333;    /* nền tối */
+}
+
+.theme-dark .btn-view { color: #66b0ff; background-color: #1e2a3a; }
+.theme-dark .btn-edit { color: #ffd966; background-color: #3b2e1f; }
+.theme-dark .btn-delete { color: #ff6b6b; background-color: #3a1e1e; }
+/* --- Nhóm nút hành động --- */
+.btn-group {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+/* --- Nút chung --- */
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 6px;
+  transition: all 0.25s ease;
+  color: #1e3a8a;
+}
+
+/* --- Hover effect --- */
+.btn-action:hover {
+  transform: scale(1.12);
+}
+
+/* --- Icon view --- */
+.btn-view {
+  color: #2563eb;
+}
+.btn-view:hover {
+  color: #1d4ed8;
+  background-color: rgba(37, 99, 235, 0.1);
+}
+
+/* --- Icon edit --- */
+.btn-edit {
+  color: #fbbf24;
+}
+.btn-edit:hover {
+  color: #d97706;
+  background-color: rgba(251, 191, 36, 0.15);
+}
+
+/* --- Responsive alignment --- */
+td .btn-group {
+  justify-content: center;
+  gap: 12px;
+}
+
+.btn-action svg {
+  display: block;
+}
+/* --- Nhóm nút hành động --- */
+.btn-group {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+/* --- Nút chung --- */
+.btn-action {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 6px;
+  transition: all 0.25s ease;
+  color: #1e3a8a;
+}
+
+/* --- Hover effect --- */
+.btn-action:hover {
+  transform: scale(1.12);
+}
+
+/* --- Icon màu riêng --- */
+.btn-view {
+  color: #2563eb;
+}
+.btn-view:hover {
+  color: #1d4ed8;
+  background-color: rgba(37, 99, 235, 0.1);
+}
+
+.btn-edit {
+  color: #fbbf24;
+}
+.btn-edit:hover {
+  color: #d97706;
+  background-color: rgba(251, 191, 36, 0.15);
+}
+
+/* --- Tooltip animation (::after) --- */
+.btn-action::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 130%; /* cách icon 1 chút */
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: rgba(17, 24, 39, 0.9);
+  color: #f9fafb;
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+  letter-spacing: 0.2px;
+}
+
+/* --- Mũi tên nhỏ --- */
+.btn-action::before {
+  content: "";
+  position: absolute;
+  bottom: 120%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 5px;
+  border-style: solid;
+  border-color: rgba(17, 24, 39, 0.9) transparent transparent transparent;
+  opacity: 0;
+  transition: all 0.25s ease;
+}
+
+/* --- Hover show tooltip --- */
+.btn-action:hover::after,
+.btn-action:hover::before {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+/* --- Nhóm nút hành động --- */
+.btn-group {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+/* --- Nút chung --- */
+.btn-action {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 6px;
+  transition: all 0.25s ease;
+  color: #1e3a8a;
+}
+
+/* --- Hover effect --- */
+.btn-action:hover {
+  transform: scale(1.12);
+}
+
+/* --- Icon màu riêng --- */
+.btn-view {
+  color: #2563eb;
+}
+.btn-view:hover {
+  color: #1d4ed8;
+  background-color: rgba(37, 99, 235, 0.1);
+}
+
+.btn-edit {
+  color: #fbbf24;
+}
+.btn-edit:hover {
+  color: #d97706;
+  background-color: rgba(251, 191, 36, 0.15);
+}
+
+/* --- Tooltip animation (::after) --- */
+.btn-action::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 130%; /* cách icon 1 chút */
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: rgba(17, 24, 39, 0.9);
+  color: #f9fafb;
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+  letter-spacing: 0.2px;
+}
+
+/* --- Mũi tên nhỏ --- */
+.btn-action::before {
+  content: "";
+  position: absolute;
+  bottom: 120%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 5px;
+  border-style: solid;
+  border-color: rgba(17, 24, 39, 0.9) transparent transparent transparent;
+  opacity: 0;
+  transition: all 0.25s ease;
+}
+
+/* --- Hover show tooltip --- */
+.btn-action:hover::after,
+.btn-action:hover::before {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
