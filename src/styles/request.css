@@ -1,0 +1,66 @@
+.page-header-actions {
+  display: flex;
+  justify-content: flex-end; /* Đẩy nút sang phải */
+  margin-top: 8px;           /* Khoảng cách với tiêu đề */
+}
+
+.btn-refresh {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Icon nằm giữa */
+  width: 36px;             /* Chiều ngang vuông */
+  height: 36px;            /* Chiều cao vuông */
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;      /* Bo góc nhẹ */
+  cursor: pointer;
+  transition: 0.2s;
+  background-color: #f0f0f0; /* nền sáng mặc định */
+  color: currentColor;       /* icon sẽ dùng màu text hiện tại */
+}
+
+.btn-refresh:hover {
+  opacity: 0.8;
+}
+
+.theme-dark .btn-refresh {
+  background-color: #333;    /* nền tối */
+}
+ 
+.table-hr {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  text-align: center; /* ✅ căn giữa toàn bộ nội dung */
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* Tiêu đề bảng */
+.table-hr th {
+  font-weight: 600;
+  padding: 10px 12px;
+}
+
+/* Ô dữ liệu */
+.table-hr td {
+  padding: 10px 12px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Gạch chân giữa các hàng */
+.table-hr tbody tr:not(:last-child) {
+  border-bottom: 1px solid var(--border);
+}
+
+
+
+/* Bo góc trên cho header */
+.table-hr thead tr:first-child th:first-child {
+  border-top-left-radius: 6px;
+}
+.table-hr thead tr:first-child th:last-child {
+  border-top-right-radius: 6px;
+}

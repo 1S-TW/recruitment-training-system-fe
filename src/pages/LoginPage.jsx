@@ -22,7 +22,7 @@ function LoginPage() {
       const data = await login(email, password);
       if (data.token) {
         loginUser(data.token, email); // ✅ Cập nhật state + localStorage
-        navigate("/home");
+        navigate("/");
       }
     } catch (err) {
       setError(err.message);

@@ -1,0 +1,37 @@
+.btn-group {
+  display: flex;
+  gap: 6px;           /* Khoảng cách giữa các nút */
+  align-items: center;
+}
+
+.btn-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+  background-color: #f0f0f0; /* nền sáng mặc định */
+  color: currentColor;       /* icon sẽ dùng màu text hiện tại */
+}
+
+.btn-action:hover {
+  opacity: 0.8;
+}
+
+/* Các nút riêng biệt theo chức năng */
+.btn-view { color: #007bff; background-color: #e7f1ff; }
+.btn-edit { color: #ffc107; background-color: #fff7e6; }
+.btn-delete { color: #dc3545; background-color: #ffe7e7; }
+
+/* Theme dark */
+.theme-dark .btn-action {
+  background-color: #333;    /* nền tối */
+}
+
+.theme-dark .btn-view { color: #66b0ff; background-color: #1e2a3a; }
+.theme-dark .btn-edit { color: #ffd966; background-color: #3b2e1f; }
+.theme-dark .btn-delete { color: #ff6b6b; background-color: #3a1e1e; }
