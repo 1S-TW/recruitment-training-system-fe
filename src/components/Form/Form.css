@@ -1,32 +1,57 @@
+/* form.css */
+
+/* Nhóm input */
 .form-group {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 1.25rem;
   width: 100%;
+  margin-bottom: 18px;
+  box-sizing: border-box;
 }
 
-.form-group label {
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-  color: #333;
+/* Wrapper chứa input + icon */
+.input-wrapper {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.form-group input {
-  padding: 0.8rem 1rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 1rem;
-}
-
-.form-group input:focus {
+/* Input chính */
+.input-wrapper input {
+  width: 100%;
+  padding: 12px 38px 12px 15px; /* chừa chỗ cho icon, không dư */
+  border: 0.3px solid #6c98c7;
+  border-radius: 10px;
+  font-size: 15px;
   outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+  background: rgba(255, 255, 255, 0.15);
+  color: #509be5;
+  transition: 0.3s;
+  box-sizing: border-box; /* ✅ fix tràn */
 }
 
-/* Đây là "dòng báo đỏ" cho từng input */
+.input-wrapper input::placeholder {
+  color: #bbb;
+}
+
+.input-wrapper input:focus {
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 6px rgba(0, 150, 255, 0.6);
+}
+
+/* Icon hiện/ẩn mật khẩu */
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #6c98c7;
+  user-select: none;
+}
+
+/* Lỗi dưới input */
 .error-message {
-  color: #dc3545;
-  font-size: 0.875rem;
-  margin-top: 0.25rem;
+  color: #ff6b6b;
+  font-size: 13px;
+  margin-top: 6px;
+  display: block;
 }

@@ -58,14 +58,15 @@ const Register = () => {
     };
 
     return (
-        <div className="auth-page">
-            <form className="auth-form" onSubmit={handleSubmit}>
+        <div className="login-page">
+            <div className="login-wrapper">
+                <div className="login-card">
+                <form className="auth-form" onSubmit={handleSubmit}>
                 <h2>Đăng Ký</h2>
 
                 {apiError && <div className="api-error-box">{apiError}</div>}
 
                 <Input
-                    label="Họ và Tên"
                     type="text"
                     name="fullName"
                     value={formData.fullName}
@@ -75,7 +76,6 @@ const Register = () => {
                     required
                 />
                 <Input
-                    label="Email"
                     type="email"
                     name="email"
                     value={formData.email}
@@ -84,7 +84,6 @@ const Register = () => {
                     required
                 />
                 <Input
-                    label="Mật khẩu"
                     type="password"
                     name="password"
                     value={formData.password}
@@ -103,6 +102,8 @@ const Register = () => {
                 </div>
             </form>
         </div>
+    </div>
+</div>
     );
 };
 

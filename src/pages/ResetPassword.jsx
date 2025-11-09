@@ -84,8 +84,10 @@ const ResetPassword = () => {
     };
 
     return (
-        <div className="auth-page">
-            <form className="auth-form" onSubmit={handleSubmit}>
+        <div className="login-page">
+            <div className="login-wrapper">
+                <div className="login-card">
+                    <form className="auth-form" onSubmit={handleSubmit}>
                 <h2>Đặt Lại Mật Khẩu Mới</h2>
 
                 {apiError && <div className="api-error-box">{apiError}</div>}
@@ -94,7 +96,6 @@ const ResetPassword = () => {
                 {token ? (
                     <>
                         <Input
-                            label="Mật khẩu mới"
                             type="password"
                             name="newPassword"
                             value={formData.newPassword}
@@ -104,7 +105,6 @@ const ResetPassword = () => {
                             required
                         />
                         <Input
-                            label="Xác nhận mật khẩu mới"
                             type="password"
                             name="confirmPassword"
                             value={formData.confirmPassword}
@@ -123,6 +123,8 @@ const ResetPassword = () => {
 
             </form>
         </div>
+    </div>
+</div>
     );
 };
 

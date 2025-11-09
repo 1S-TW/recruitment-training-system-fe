@@ -32,15 +32,16 @@ const ForgotPassword = () => {
     };
 
     return (
-        <div className="auth-page">
-            <form className="auth-form" onSubmit={handleSubmit}>
+        <div className="login-page">
+            <div className="login-wrapper">
+                <div className="login-card">
+                    <form className="auth-form" onSubmit={handleSubmit}>
                 <h2>Quên Mật Khẩu</h2>
                 <p>Nhập email của bạn, chúng tôi sẽ gửi link khôi phục.</p>
 
                 {apiError && <div className="api-error-box">{apiError}</div>}
 
                 <Input
-                    label="Email"
                     type="email"
                     name="email"
                     value={email}
@@ -58,6 +59,8 @@ const ForgotPassword = () => {
                 </div>
             </form>
         </div>
+    </div>
+</div>
     );
 };
 
