@@ -1,3 +1,4 @@
+/* src/components/Form/Form.css */
 .form-group {
   display: flex;
   flex-direction: column;
@@ -9,6 +10,7 @@
   margin-bottom: 0.5rem;
   font-weight: 600;
   color: #333;
+  font-size: 0.9rem;
 }
 
 .form-group input {
@@ -16,17 +18,20 @@
   border: 1px solid #ccc;
   border-radius: 6px;
   font-size: 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+/* --- SỬA Ở ĐÂY --- */
+/* UX: Hiệu ứng khi click vào input, đổi sang màu thương hiệu */
 .form-group input:focus {
   outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+  border-color: #004a99; /* Đổi sang màu thương hiệu */
+  box-shadow: 0 0 0 3px rgba(0, 74, 153, 0.15); /* Đổi sang màu thương hiệu */
 }
 
 /* Đây là "dòng báo đỏ" cho từng input */
 .error-message {
   color: #dc3545;
   font-size: 0.875rem;
-  margin-top: 0.25rem;
+  margin-top: 0.3rem;
 }

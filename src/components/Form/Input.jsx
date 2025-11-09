@@ -1,5 +1,5 @@
 import React from 'react';
-import './Form.css'; // Sẽ tạo ở dưới
+import './Form.css';
 
 /**
  * Component Input tái sử dụng

@@ -1,0 +1,104 @@
+/* --- Cấu trúc Layout chính --- */
+.admin-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  /* Bằng chiều cao của Header (fixed-top) */
+  padding-top: 56px; 
+  background-color: #f8f9fa; /* Màu nền chung */
+}
+
+.admin-header {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.admin-logo {
+  color: #ffffff !important;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+.admin-main-content {
+  display: flex;
+  flex-grow: 1; /* Quan trọng: Đẩy footer xuống dưới */
+  height: calc(100vh - 56px); /* Cao 100% trừ đi header */
+}
+
+/* --- Sidebar --- */
+.admin-sidebar {
+  width: 260px;
+  background-color: #ffffff;
+  border-right: 1px solid #dee2e6;
+  /* Sidebar cố định khi cuộn */
+  position: sticky;
+  top: 56px; /* Dưới header */
+  height: 100%; /* Chiều cao 100% của .admin-main-content */
+  padding-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+  flex-shrink: 0; /* Không co lại */
+}
+
+.admin-sidebar .nav-link {
+  color: #333;
+  font-weight: 500;
+  padding: 0.75rem 1.5rem;
+  margin: 0.1rem 1rem;
+  border-radius: 6px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  display: flex;
+  align-items: center;
+}
+
+.admin-sidebar .nav-link:hover {
+  background-color: #f1f3f5;
+  color: #000;
+}
+
+/* Đây là style cho link ĐANG active (nhờ NavLink) */
+.admin-sidebar .nav-link.active {
+  background-color: #004a99; /* Màu thương hiệu */
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* --- Content (Nội dung chính) --- */
+.admin-page-content {
+  flex-grow: 1;
+  padding: 2rem;
+  overflow-y: auto; /* Cho phép cuộn nếu nội dung dài */
+  height: 100%;
+}
+
+/* --- Footer --- */
+.admin-footer {
+  background-color: #ffffff;
+  border-top: 1px solid #dee2e6;
+  padding: 1rem 0;
+  text-align: center;
+  color: #6c757d;
+  font-size: 0.9rem;
+  flex-shrink: 0; /* Không co lại */
+  
+  /* Footer nằm cố định bên phải sidebar */
+  position: fixed;
+  bottom: 0;
+  left: 260px; /* Bằng chiều rộng sidebar */
+  width: calc(100% - 260px); /* Bằng 100% trừ đi sidebar */
+  z-index: 100;
+}
+
+/* --- Dropdown user trên Header --- */
+#basic-nav-dropdown {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+#basic-nav-dropdown:hover {
+  color: #ffffff !important;
+}
+
+/* Đảm bảo nội dung không bị footer che */
+.admin-page-content {
+  padding-bottom: 70px; /* Lớn hơn chiều cao footer */
+}

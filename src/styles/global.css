@@ -1,0 +1,107 @@
+/* src/styles/global.css */
+
+/* --- Reset & Thiết lập cơ bản --- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: #f4f7f6;
+  color: #333;
+  line-height: 1.6;
+}
+
+/* --- Bố cục trang xác thực --- */
+.auth-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+/* --- Form (Box trắng) --- */
+.auth-form {
+  background-color: #ffffff;
+  padding: 2.5rem 3rem;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.07);
+  width: 100%;
+  max-width: 450px; /* Độ rộng tối đa của form */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.auth-form h2 {
+  margin-bottom: 1.5rem;
+  color: #004a99; /* Màu thương hiệu (từ header email) */
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.auth-form p {
+  margin-bottom: 1.5rem;
+  color: #555;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+/* --- Nút bấm chính --- */
+.auth-button {
+  width: 100%;
+  padding: 0.85rem;
+  border: none;
+  border-radius: 6px;
+  background-color: #004a99; /* Màu thương hiệu */
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-button:hover {
+  background-color: #003a75; /* Đậm hơn khi hover */
+  box-shadow: 0 4px 12px rgba(0, 74, 153, 0.2);
+}
+
+.auth-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* --- Các link (Quên MK, Đăng ký) --- */
+.auth-links {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.auth-links a {
+  color: #007bff;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.auth-links a:hover {
+  text-decoration: underline;
+}
+
+/* --- Hộp báo lỗi API chung (dòng báo đỏ) --- */
+.api-error-box {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  padding: 0.75rem 1.25rem;
+  border-radius: 6px;
+  width: 100%;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-size: 0.9rem;
+}

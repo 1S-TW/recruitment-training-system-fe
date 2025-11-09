@@ -25,6 +25,7 @@ export const NotificationProvider = ({ children }) => {
 };
 
 // 3. Tạo Custom Hook (để dễ sử dụng)
+// eslint-disable-next-line react-refresh/only-export-components
 export const useNotification = () => {
     return useContext(NotificationContext);
 };
