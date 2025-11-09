@@ -58,14 +58,15 @@ const RecruitmentPlanPage = () => {
 
   return (
     <Layout>
-      <div className="recruitment-page">
-        {/* Header */}
-        <div className="page-header">
-          <div className="breadcrumb">
+      <div className="breadcrumb">
             <span className="breadcrumb-item">Tuyển dụng</span>
             <span className="breadcrumb-separator">&gt;</span>
             <span className="breadcrumb-current">Kế hoạch tuyển dụng</span>
           </div>
+      <div className="recruitment-page">
+        {/* Header */}
+        <div className="page-header">
+          
 
           <h2 className="page-title">Kế hoạch tuyển dụng</h2>
         </div>
