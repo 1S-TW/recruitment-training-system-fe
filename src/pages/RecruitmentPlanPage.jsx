@@ -7,8 +7,11 @@ const RecruitmentPlanPage = () => {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [isAnimating, setIsAnimating] = useState(false);
 
-  const fetchPlans = () => {
+  useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
       setError("⚠️ Bạn chưa đăng nhập hoặc token đã hết hạn");
@@ -16,63 +19,100 @@ const RecruitmentPlanPage = () => {
       return;
     }
 
-    setLoading(true);
     axios
       .get("http://localhost:8080/api/recruitment-plans", {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
-        console.log("✅ API Response:", res.data);
         setPlans(res.data);
         setError(null);
       })
       .catch((err) => {
-        console.error("❌ API error:", err.response || err.message);
-        if (err.response?.status === 401 || err.response?.status === 403) {
-          setError("🚫 Không có quyền truy cập hoặc token không hợp lệ");
-        } else {
-          setError("❌ Không thể tải danh sách kế hoạch tuyển dụng");
-        }
+        console.error(err);
+        setError("❌ Không thể tải danh sách kế hoạch tuyển dụng");
       })
       .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    fetchPlans();
   }, []);
 
-  const getStatusClass = (status) => {
-    switch (status?.toLowerCase()) {
-      case "pending":
-        return "status-pending";
-      case "in_progress":
-        return "status-progress";
-      case "completed":
-        return "status-completed";
-      case "canceled":
-        return "status-canceled";
-      default:
-        return "";
+  const totalPages = Math.ceil(plans.length / itemsPerPage) || 1;
+  const indexOfLast = currentPage * itemsPerPage;
+  const indexOfFirst = indexOfLast - itemsPerPage;
+  const currentPlans = plans.slice(indexOfFirst, indexOfLast);
+
+  const handleChangeItemsPerPage = (e) => {
+    setItemsPerPage(Number(e.target.value));
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page) => {
+    if (page < 1 || page > totalPages) return;
+    setIsAnimating(true);
+    setTimeout(() => {
+      setCurrentPage(page);
+      setIsAnimating(false);
+    }, 180);
+  };
+
+  // === Pagination logic with ellipsis ===
+  const getVisiblePages = () => {
+    const totalNumbers = 7;
+    const totalBlocks = totalNumbers + 2; // include first & last
+    if (totalPages <= totalBlocks) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
+
+    const startPage = Math.max(2, currentPage - 2);
+    const endPage = Math.min(totalPages - 1, currentPage + 2);
+    let pages = [];
+
+    if (currentPage > 4) pages.push(1, "prevDots");
+    else pages.push(...Array.from({ length: Math.min(4, totalPages - 1) }, (_, i) => i + 1));
+
+    for (let i = startPage; i <= endPage; i++) {
+      if (i > 1 && i < totalPages) pages.push(i);
+    }
+
+    if (currentPage < totalPages - 3) pages.push("nextDots", totalPages);
+    else if (!pages.includes(totalPages)) pages.push(totalPages);
+
+    return [...new Set(pages)];
   };
 
   return (
     <Layout>
-      <div className="breadcrumb">
-            <span className="breadcrumb-item">Tuyển dụng</span>
-            <span className="breadcrumb-separator">&gt;</span>
-            <span className="breadcrumb-current">Kế hoạch tuyển dụng</span>
-          </div>
-      <div className="recruitment-page">
-        {/* Header */}
-        <div className="page-header">
-          
-
-          <h2 className="page-title">Kế hoạch tuyển dụng</h2>
+      {/* === Breadcrumb === */}
+      <div className="breadcrumb-container fade-slide">
+        <div className="breadcrumb-left">
+          <span className="breadcrumb-icon">💼</span>
+          <span className="breadcrumb-item">Tuyển dụng</span>
+          <span className="breadcrumb-separator">&gt;</span>
+          <span className="breadcrumb-current">Kế hoạch tuyển dụng</span>
         </div>
 
-        {/* Table */}
-        <div className="table-container">
+        <div className="breadcrumb-right">
+          <div className="mini-pagination">
+            <label className="mini-pagination-label">Hiển thị:</label>
+            <select
+              value={itemsPerPage}
+              onChange={handleChangeItemsPerPage}
+              className="mini-pagination-select"
+            >
+              <option value={10}>10</option>
+              <option value={15}>15</option>
+              <option value={20}>20</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* === Title === */}
+      <div className="recruitment-page fade-slide">
+        <div className="title-row">
+          <h2 className="page-title-small">Kế hoạch tuyển dụng</h2>
+        </div>
+
+        {/* === Table === */}
+        <div className={`table-container ${isAnimating ? "fade-out" : "fade-in"}`}>
           {loading ? (
             <p className="loading-text">Đang tải dữ liệu...</p>
           ) : error ? (
@@ -86,81 +126,57 @@ const RecruitmentPlanPage = () => {
                   <th>Ngày tạo</th>
                   <th>Trạng thái</th>
                   <th>Người gửi</th>
-                  <th className="text-center">Hành động</th>
+                  <th className="actions-head text-center">Hành động</th>
                 </tr>
               </thead>
               <tbody>
-                {plans.length === 0 ? (
+                {currentPlans.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="text-center">
                       Không có dữ liệu
                     </td>
                   </tr>
                 ) : (
-                  plans.map((plan, index) => (
+                  currentPlans.map((plan, index) => (
                     <tr key={plan.recruitmentPlanId || index}>
-                      <td>{index + 1}</td>
+                      <td>{indexOfFirst + index + 1}</td>
                       <td>{plan.planName}</td>
-                      <td>{new Date(plan.createdAt).toLocaleDateString()}</td>
                       <td>
-                        <span className={`status-badge ${getStatusClass(plan.status)}`}>
-                          {plan.status}
-                        </span>
+                        {plan.createdAt
+                          ? new Date(plan.createdAt).toLocaleDateString()
+                          : "—"}
+                      </td>
+                      <td>
+                        <span className="status-badge">{plan.status}</span>
                       </td>
                       <td>
                         {plan.request?.createdBy?.fullName ||
                           plan.request?.createdBy?.username ||
                           "Không rõ"}
                       </td>
-                      <td className="text-center">
+                      <td className="actions-cell text-center">
                         <div className="btn-group">
                           <div className="btn-action-wrapper">
                             <button
                               className="btn-action btn-view"
-                              onClick={() => console.log("Xem", plan.recruitmentPlanId)}
+                              onClick={() =>
+                                console.log("Xem", plan.recruitmentPlanId)
+                              }
                             >
-                              <svg
-                                className="icon"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                                ></path>
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                ></path>
-                              </svg>
+                              👁
                             </button>
                             <span className="action-tooltip">Xem chi tiết</span>
                           </div>
-
                           <div className="btn-action-wrapper">
                             <button
                               className="btn-action btn-edit"
-                              onClick={() => console.log("Chỉnh sửa", plan.recruitmentPlanId)}
+                              onClick={() =>
+                                console.log("Chỉnh sửa", plan.recruitmentPlanId)
+                              }
                             >
-                              <svg
-                                className="icon"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                                ></path>
-                              </svg>
+                              ✏️
                             </button>
-                            <span className="action-tooltip">Chỉnh sửa kế hoạch</span>
+                            <span className="action-tooltip">Chỉnh sửa</span>
                           </div>
                         </div>
                       </td>
@@ -170,6 +186,45 @@ const RecruitmentPlanPage = () => {
               </tbody>
             </table>
           )}
+        </div>
+
+        {/* === Pagination (Jira-style, with ... and jump first/last) === */}
+        <div className="pagination-controls clean-pagination">
+          <button
+            className="nav-btn"
+            onClick={() => handlePageChange(1)}
+            disabled={currentPage === 1}
+          >
+            &lt;
+          </button>
+
+          <div className="page-numbers">
+            {getVisiblePages().map((num, i) =>
+              num === "prevDots" ? (
+                <span key={`prev-${i}`} className="dots">...</span>
+              ) : num === "nextDots" ? (
+                <span key={`next-${i}`} className="dots">...</span>
+              ) : (
+                <button
+                  key={num}
+                  onClick={() => handlePageChange(num)}
+                  className={`btn-page-number ${
+                    currentPage === num ? "active-page" : ""
+                  }`}
+                >
+                  {num}
+                </button>
+              )
+            )}
+          </div>
+
+          <button
+            className="nav-btn"
+            onClick={() => handlePageChange(totalPages)}
+            disabled={currentPage === totalPages}
+          >
+            &gt;
+          </button>
         </div>
       </div>
     </Layout>
