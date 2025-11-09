@@ -1,44 +1,54 @@
+// src/components/CreateRequestModal.jsx
 import { useState, useEffect } from "react";
-import { Plus, Send, X } from "lucide-react"; // ĐÃ XÓA ChevronDown
+import { Plus, Send, X } from "lucide-react";
 import TechRow from "./TechRow";
-import useCreateRequest from "../hooks/useCreateRequest";
+import useCreateRequest from "../hooks/useCreateRequest.jsx";
+import useUpdateRequest from "../hooks/useUpdateRequest.jsx";
 import axios from "axios";
 
-export default function CreateRequestModal({ isOpen, onClose, onSuccess }) {
+export default function CreateRequestModal({ isOpen, onClose, onSuccess, initialData }) {
+  const isEdit = !!initialData;
   const [title, setTitle] = useState("");
   const [expectedDate, setExpectedDate] = useState("");
   const [note, setNote] = useState("");
   const [techs, setTechs] = useState([{ technologyId: "", soLuong: 1 }]);
   const [technologies, setTechnologies] = useState([]);
   const [dateError, setDateError] = useState("");
-  const { create, loading } = useCreateRequest();
 
-  // Tính toán ngày mặc định và giới hạn
+  const { create, loading: createLoading } = useCreateRequest();
+  const { update, loading: updateLoading } = useUpdateRequest();
+  const loading = createLoading || updateLoading;
+
   const today = new Date();
   const minDate = new Date(today);
   minDate.setMonth(today.getMonth() + 2);
   const minDateStr = minDate.toISOString().split("T")[0];
 
-  // Auto set default date = +2 tháng
+  // TẢI DỮ LIỆU KHI MỞ MODAL
   useEffect(() => {
-    if (isOpen && !expectedDate) {
+    if (isOpen && isEdit && initialData) {
+      setTitle(initialData.requestTitle || "");
+      setExpectedDate(initialData.expectedDeliveryDate || "");
+      setNote(initialData.note || "");
+      setTechs(
+        initialData.techQuantities?.length > 0
+          ? initialData.techQuantities.map(t => ({
+              technologyId: t.technologyId.toString(),
+              soLuong: t.soLuong
+            }))
+          : [{ technologyId: "", soLuong: 1 }]
+      );
+    } else if (isOpen && !isEdit) {
+      setTitle("");
+      setNote("");
       const defaultDate = new Date(today);
       defaultDate.setMonth(today.getMonth() + 2);
       setExpectedDate(defaultDate.toISOString().split("T")[0]);
+      setTechs([{ technologyId: "", soLuong: 1 }]);
     }
-  }, [isOpen, expectedDate]);
+  }, [isOpen, isEdit, initialData]);
 
-  // Validate date khi thay đổi
-  const handleDateChange = (value) => {
-    setExpectedDate(value);
-    const selected = new Date(value);
-    if (selected < minDate) {
-      setDateError("Vui lòng chọn ngày bàn giao tối thiểu sau 2 tháng kể từ hôm nay.");
-    } else {
-      setDateError("");
-    }
-  };
-
+  // TẢI DANH SÁCH CÔNG NGHỆ
   useEffect(() => {
     if (isOpen) {
       const token = localStorage.getItem("token");
@@ -51,39 +61,57 @@ export default function CreateRequestModal({ isOpen, onClose, onSuccess }) {
     }
   }, [isOpen]);
 
-  const addTech = () => setTechs([...techs, { technologyId: "", soLuong: 1 }]);
+  const handleDateChange = (value) => {
+    setExpectedDate(value);
+    const selected = new Date(value);
+    if (selected < minDate) {
+      setDateError("Vui lòng chọn ngày bàn giao tối thiểu sau 2 tháng kể từ hôm nay.");
+    } else {
+      setDateError("");
+    }
+  };
 
+  const addTech = () => setTechs([...techs, { technologyId: "", soLuong: 1 }]);
   const updateTech = (i, field, value) => {
     const updated = [...techs];
     updated[i][field] = field === "soLuong" ? Math.max(1, value) : value;
     setTechs(updated);
   };
-
   const removeTech = (i) => {
     if (techs.length <= 1) return;
     setTechs(techs.filter((_, idx) => idx !== i));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (dateError || !title || techs.some(t => !t.technologyId)) return;
 
     const data = {
       requestTitle: title,
+      expectedDeliveryDate: expectedDate,
+      note: note || null,
       techQuantities: techs
         .filter(t => t.technologyId)
         .map(t => ({
           technologyId: parseInt(t.technologyId),
           soLuong: t.soLuong
-        })),
-      expectedDeliveryDate: expectedDate,
-      note: note || null
+        }))
     };
 
-    const res = await create(data);
-    if (res.success) {
-      onSuccess();
-      onClose();
+    if (isEdit) {
+      update(initialData.requestId, data).then(res => {
+        if (res && res.success) {
+          onSuccess();
+          onClose();
+        }
+      });
+    } else {
+      create(data).then(res => {
+        if (res && res.success) {
+          onSuccess();
+          onClose();
+        }
+      });
     }
   };
 
@@ -93,24 +121,16 @@ export default function CreateRequestModal({ isOpen, onClose, onSuccess }) {
     <>
       <div className="modal-backdrop" onClick={onClose} />
       <div className="modal create-modal" role="dialog" aria-modal="true">
-        {/* HEADER – ĐÃ XÓA ICON MŨI TÊN */}
         <div className="modal-header-custom">
           <div className="header-title-group">
-            <h3>Tạo nhu cầu nhân sự</h3>
-            {/* ĐÃ XÓA: <ChevronDown size={18} className="chevron-icon" /> */}
+            <h3>{isEdit ? "Chỉnh sửa nhu cầu" : "Tạo nhu cầu nhân sự"}</h3>
           </div>
-          <button
-            onClick={onClose}
-            className="btn-close-large"
-            aria-label="Đóng modal"
-          >
+          <button onClick={onClose} className="btn-close-large" aria-label="Đóng modal">
             <X size={22} />
           </button>
         </div>
-
         <form onSubmit={handleSubmit} className="modal-form">
           <div className="form-grid">
-            {/* TIÊU ĐỀ */}
             <div className="form-group full-width">
               <label htmlFor="title">Tên nhu cầu <span className="required">*</span></label>
               <input
@@ -125,13 +145,11 @@ export default function CreateRequestModal({ isOpen, onClose, onSuccess }) {
               <small className="help-text">{title.length}/60</small>
             </div>
 
-            {/* CÔNG NGHỆ */}
             <div className="form-group full-width tech-section">
               <div className="section-header">
                 <label>Công nghệ <span className="required">*</span></label>
                 <small className="section-desc">Chọn công nghệ và số lượng cần tuyển</small>
               </div>
-
               <div className="tech-list-custom">
                 {techs.map((tech, i) => (
                   <TechRow
@@ -145,13 +163,11 @@ export default function CreateRequestModal({ isOpen, onClose, onSuccess }) {
                   />
                 ))}
               </div>
-
               <button type="button" onClick={addTech} className="btn-add-tech-custom">
                 <Plus size={18} /> Thêm công nghệ
               </button>
             </div>
 
-            {/* NGÀY BÀN GIAO */}
             <div className="form-group">
               <label htmlFor="deadline">Thời hạn bàn giao <span className="required">*</span></label>
               <div className="input-wrapper-date">
@@ -168,7 +184,6 @@ export default function CreateRequestModal({ isOpen, onClose, onSuccess }) {
               {dateError && <small className="error-text">{dateError}</small>}
             </div>
 
-            {/* GHI CHÚ */}
             <div className="form-group full-width">
               <label htmlFor="note">Ghi chú (tùy chọn)</label>
               <textarea
@@ -182,7 +197,6 @@ export default function CreateRequestModal({ isOpen, onClose, onSuccess }) {
             </div>
           </div>
 
-          {/* FOOTER */}
           <div className="modal-footer">
             <button type="button" onClick={onClose} className="btn btn-cancel">Hủy</button>
             <button
@@ -192,11 +206,9 @@ export default function CreateRequestModal({ isOpen, onClose, onSuccess }) {
               aria-busy={loading}
             >
               {loading ? (
-                <>
-                  <div className="spinner"></div> Đang gửi...
-                </>
+                <>Đang xử lý...</>
               ) : (
-                <>Gửi <Send size={18} /></>
+                <>{isEdit ? "Cập nhật" : "Gửi"} <Send size={18} /></>
               )}
             </button>
           </div>
