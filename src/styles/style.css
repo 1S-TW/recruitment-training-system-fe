@@ -44,3 +44,33 @@ body {
   color: red;
   text-align: center;
 }
+/* --- DARK MODE Variables (dựa trên ảnh mới) --- */
+
+/* Các màu sắc cơ bản được sử dụng trong giao diện */
+.dark-mode {
+    /* Backgrounds */
+    --color-bg-primary: #192131;        /* Nền trang chính (Xanh Đậm Navy) */
+    --color-bg-secondary: #273040;      /* Nền cho vùng chứa/thẻ/bảng (Đậm hơn chút) */
+    --color-bg-sidebar: #101620;        /* Nền Sidebar (Rất Đậm) */
+    
+    /* Text */
+    --color-text-primary: #f0f0f0;      /* Chữ chính (Trắng nhạt) */
+    --color-text-secondary: #a9b7c8;    /* Chữ phụ/mờ/breadcrumb (Xám xanh) */
+
+    /* Table */
+    --color-table-header-bg: #273040;   /* Nền Header bảng */
+    --color-table-row-bg: #192131;      /* Nền Hàng (Giống nền trang để tạo sự liền mạch) */
+    --color-table-border: #333d4e;      /* Viền/Đường kẻ bảng */
+    --color-table-row-hover: #333d4e;   /* Hover (Nền đổi màu viền để dễ nhìn) */
+
+    /* Buttons/Actions */
+    --color-action-icon: #a9b7c8;       /* Màu icon Hành động */
+    --color-action-hover-bg: #404b60;   /* Nền hover icon */
+}
+
+/* Đảm bảo body áp dụng nền chính */
+body {
+    background-color: var(--color-bg-primary); 
+    color: var(--color-text-primary);
+    /* ... transition ... */
+}

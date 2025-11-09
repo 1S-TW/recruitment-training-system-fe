@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Layout from "../components/Layout";
-import ActionButtons from "../components/ActionButton";
 import "../styles/plan.css";
 
 const RecruitmentPlanPage = () => {
@@ -42,24 +41,37 @@ const RecruitmentPlanPage = () => {
     fetchPlans();
   }, []);
 
+  const getStatusClass = (status) => {
+    switch (status?.toLowerCase()) {
+      case "pending":
+        return "status-pending";
+      case "in_progress":
+        return "status-progress";
+      case "completed":
+        return "status-completed";
+      case "canceled":
+        return "status-canceled";
+      default:
+        return "";
+    }
+  };
+
   return (
     <Layout>
-      <div className="page recruitment-page fade-in">
-        {/* --- Header Section --- */}
-        <div className="page-header left-align">
-          {/* 🧭 Breadcrumb */}
-          <div className="breadcrumb large">
-            <span className="breadcrumb-text">Tuyển dụng</span>
-            <span className="breadcrumb-separator">›</span>
+      <div className="recruitment-page">
+        {/* Header */}
+        <div className="page-header">
+          <div className="breadcrumb">
+            <span className="breadcrumb-item">Tuyển dụng</span>
+            <span className="breadcrumb-separator">&gt;</span>
             <span className="breadcrumb-current">Kế hoạch tuyển dụng</span>
           </div>
 
-          {/* 🏷 Main Title */}
-          <h2 className="page-title-clean">Kế hoạch tuyển dụng</h2>
+          <h2 className="page-title">Kế hoạch tuyển dụng</h2>
         </div>
 
-        {/* --- Table Section --- */}
-        <div className="table-container slide-up">
+        {/* Table */}
+        <div className="table-container">
           {loading ? (
             <p className="loading-text">Đang tải dữ liệu...</p>
           ) : error ? (
@@ -73,7 +85,7 @@ const RecruitmentPlanPage = () => {
                   <th>Ngày tạo</th>
                   <th>Trạng thái</th>
                   <th>Người gửi</th>
-                  <th>Hành động</th>
+                  <th className="text-center">Hành động</th>
                 </tr>
               </thead>
               <tbody>
@@ -84,38 +96,72 @@ const RecruitmentPlanPage = () => {
                     </td>
                   </tr>
                 ) : (
-                  plans.map((p, index) => (
-                    <tr key={p.recruitmentPlanId}>
+                  plans.map((plan, index) => (
+                    <tr key={plan.recruitmentPlanId || index}>
                       <td>{index + 1}</td>
-                      <td className="plan-name">{p.planName}</td>
-                      <td>{new Date(p.createdAt).toLocaleString()}</td>
+                      <td>{plan.planName}</td>
+                      <td>{new Date(plan.createdAt).toLocaleDateString()}</td>
                       <td>
-                        <span
-                          className={`status-badge status-${p.status?.toLowerCase()}`}
-                        >
-                          {p.status
-                            ? p.status.charAt(0).toUpperCase() +
-                              p.status.slice(1).toLowerCase()
-                            : "Không rõ"}
+                        <span className={`status-badge ${getStatusClass(plan.status)}`}>
+                          {plan.status}
                         </span>
                       </td>
                       <td>
-                        {p.request?.createdBy?.fullName ||
-                          p.request?.createdBy?.username ||
+                        {plan.request?.createdBy?.fullName ||
+                          plan.request?.createdBy?.username ||
                           "Không rõ"}
                       </td>
-                      <td>
-                        <ActionButtons
-                          onView={() =>
-                            console.log("View", p.recruitmentPlanId)
-                          }
-                          onEdit={() =>
-                            console.log("Edit", p.recruitmentPlanId)
-                          }
-                          onDelete={() =>
-                            console.log("Delete", p.recruitmentPlanId)
-                          }
-                        />
+                      <td className="text-center">
+                        <div className="btn-group">
+                          <div className="btn-action-wrapper">
+                            <button
+                              className="btn-action btn-view"
+                              onClick={() => console.log("Xem", plan.recruitmentPlanId)}
+                            >
+                              <svg
+                                className="icon"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                ></path>
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                ></path>
+                              </svg>
+                            </button>
+                            <span className="action-tooltip">Xem chi tiết</span>
+                          </div>
+
+                          <div className="btn-action-wrapper">
+                            <button
+                              className="btn-action btn-edit"
+                              onClick={() => console.log("Chỉnh sửa", plan.recruitmentPlanId)}
+                            >
+                              <svg
+                                className="icon"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                                ></path>
+                              </svg>
+                            </button>
+                            <span className="action-tooltip">Chỉnh sửa kế hoạch</span>
+                          </div>
+                        </div>
                       </td>
                     </tr>
                   ))
