@@ -1,45 +1,110 @@
-.login-container {
+/* login.css */
+/* Toàn bộ trang login */
+.login-page {
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+  background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+  color: #3e3e3e7a;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Bọc form */
+.login-page .login-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+/* Card chính */
+.login-page .login-card {
   width: 400px;
-  margin: 120px auto;
-  padding: 30px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.login-container h2 {
+  background: rgb(255, 255, 255);
+  backdrop-filter: blur(14px);
+  border-radius: 16px;
+  padding: 40px 35px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   text-align: center;
-  margin-bottom: 25px;
-  color: #333;
+  animation: fadeIn 0.8s ease-in-out;
 }
 
-.form-group {
-  margin-bottom: 15px;
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-label {
-  display: block;
-  margin-bottom: 6px;
-  font-weight: bold;
+/* Tiêu đề */
+.login-page .login-card h2 {
+  margin-bottom: 20px;
+  font-size: 24px;
+  color: #085093c2; 
 }
 
-input {
+/* Input */
+.login-page .form-group {
+  margin-bottom: 18px;
+}
+
+.login-page .form-group input {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  padding: 12px 15px;
+  border: 0.3px solid #6c98c7;
+  border-radius: 10px;
+  font-size: 15px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: #509be5;
+  transition: 0.3s;
 }
 
-button {
+.login-page .form-group input::placeholder {
+  color: #bbb;
+}
+
+.login-page .form-group input:focus {
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 6px rgba(0, 150, 255, 0.6);
+}
+
+/* Nút đăng nhập */
+.login-page button[type="submit"] {
   width: 100%;
-  padding: 10px;
-  background-color: #1e90ff;
-  color: white;
+  padding: 12px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #00b4d8, #0077b6);
+  color: white;
+  font-weight: 600;
   cursor: pointer;
+  transition: all 0.3s;
 }
 
-button:hover {
-  background-color: #0077cc;
+.login-page button[type="submit"]:hover {
+  transform: scale(1.03);
+  background: linear-gradient(135deg, #0096c7, #023e8a);
+}
+
+
+/* Footer */
+.login-page .login-footer {
+  margin-top: 20px;
+  font-size: 14px;
+}
+
+.login-page .login-footer a {
+  color: #74c0fc;
+  text-decoration: none;
+}
+
+.login-page .login-footer a:hover {
+  text-decoration: underline;
+}
+
+.login-page .error-text {
+  color: #ff6b6b;
+  margin-bottom: 10px;
+  font-size: 14px;
 }

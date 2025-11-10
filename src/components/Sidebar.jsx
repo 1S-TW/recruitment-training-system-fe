@@ -1,10 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
-import {
-  LayoutDashboard,
-  BookOpen,
-  Users,
-} from "lucide-react";
-import { useState } from "react";
+import { LayoutDashboard, BookOpen, Users } from "lucide-react";
+import { useState, useEffect } from "react";
 
 const menu = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
@@ -25,6 +21,16 @@ export default function Sidebar() {
   const location = useLocation();
   const [openSubmenu, setOpenSubmenu] = useState(null);
 
+  // Khi thay đổi URL, tự động mở submenu nếu đang ở trong path con
+  useEffect(() => {
+    const activeMenu = menu.find(
+      (item) => item.submenu && location.pathname.startsWith(item.path)
+    );
+    if (activeMenu) {
+      setOpenSubmenu(activeMenu.label);
+    }
+  }, [location.pathname]);
+
   const toggleSubmenu = (label) => {
     setOpenSubmenu(openSubmenu === label ? null : label);
   };
@@ -44,13 +50,13 @@ export default function Sidebar() {
       <nav className="nav">
         {menu.map((item, i) => {
           const Icon = item.icon;
-          const isActive = location.pathname === item.path ||
-                           (item.submenu && location.pathname.startsWith(item.path));
-          const isSubmenuOpen = item.submenu && (openSubmenu === item.label || location.pathname.startsWith(item.path));
+          const isActive =
+            location.pathname === item.path ||
+            (item.submenu && location.pathname.startsWith(item.path));
+          const isSubmenuOpen = item.submenu && openSubmenu === item.label;
 
           return (
             <div key={i}>
-              {/* Nếu có submenu → click mở/đóng, nếu không → Link điều hướng */}
               {item.submenu ? (
                 <div
                   className={`nav__item ${isActive ? "nav__item--active" : ""}`}
@@ -71,7 +77,6 @@ export default function Sidebar() {
                 </Link>
               )}
 
-              {/* Hiển thị submenu nếu đang mở */}
               {item.submenu && isSubmenuOpen && (
                 <div className="nav__submenu">
                   {item.submenu.map((sub, j) => {

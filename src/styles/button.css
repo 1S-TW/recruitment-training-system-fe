@@ -18,20 +18,47 @@
   color: currentColor;       /* icon sẽ dùng màu text hiện tại */
 }
 
-.btn-action:hover {
-  opacity: 0.8;
+.btn-view:hover {
+  background-color: #d0e5ff; /* xanh nhạt hơn */
 }
+
+.btn-edit:hover {
+  background-color: #ffecb3; /* vàng nhạt hơn */
+}
+
+.btn-delete:hover {
+  background-color: #ffcccc; /* đỏ nhạt hơn */
+}
+
 
 /* Các nút riêng biệt theo chức năng */
 .btn-view { color: #007bff; background-color: #e7f1ff; }
 .btn-edit { color: #ffc107; background-color: #fff7e6; }
 .btn-delete { color: #dc3545; background-color: #ffe7e7; }
 
-/* Theme dark */
+/* Dark mode đẹp hơn */
 .theme-dark .btn-action {
-  background-color: #333;    /* nền tối */
+  background-color: #222;
+  border: 1px solid #444; /* nhẹ nhàng phân tách */
 }
 
-.theme-dark .btn-view { color: #66b0ff; background-color: #1e2a3a; }
-.theme-dark .btn-edit { color: #ffd966; background-color: #3b2e1f; }
-.theme-dark .btn-delete { color: #ff6b6b; background-color: #3a1e1e; }
+.theme-dark .btn-view {
+  color: #5ab0ff;
+  background-color: #102a44;
+}
+
+.theme-dark .btn-edit {
+  color: #ffd84d;
+  background-color: #3d2c00;
+}
+
+.theme-dark .btn-delete {
+  color: #ff7070;
+  background-color: #4a1010;
+}
+
+/* Hover sáng nhẹ */
+.theme-dark .btn-view:hover { background-color: #183a5c; }
+.theme-dark .btn-edit:hover { background-color: #604000; }
+.theme-dark .btn-delete:hover { background-color: #601818; }
+
