@@ -86,6 +86,7 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
                     <p><strong>Tên nhu cầu:</strong> {request.requestTitle}</p>
                     <p><strong>Người gửi:</strong> {request.createdByName}</p>
                     <p><strong>Ngày tạo:</strong> {new Date(request.createdAt).toLocaleString()}</p>
+                    <p><strong>Ngày bàn giao dự kiến:</strong> {new Date(request.expectedDeliveryDate).toLocaleDateString()}</p>
                     <p><strong>Tổng số lượng ứng viên:</strong> {request.quantityCandidate}</p>
 
                     {/* ✅ Hiển thị bảng chi tiết công nghệ và số lượng */}
