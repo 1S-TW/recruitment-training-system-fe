@@ -676,3 +676,74 @@ input.error {
 .btn-edit.disabled {
   cursor: not-allowed;
 }
+
+/* === ĐẢM BẢO 2 NÚT NẰM NGANG + CURSOR CẤM === */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-edit.disabled {
+  cursor: not-allowed;
+}
+
+/* === PHÂN TRANG === */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 12px 0;
+  font-size: 0.875rem;
+  color: var(--text);
+}
+
+.pagination-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background-color: #fff;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: #9ca3af;
+}
+
+.pagination-info {
+  font-weight: 500;
+  min-width: 100px;
+  text-align: center;
+}
+
+/* Dark mode */
+.theme-dark .pagination-btn {
+  background-color: #1f2937;
+  border-color: #374151;
+  color: #d1d5db;
+}
+
+.theme-dark .pagination-btn:hover:not(:disabled) {
+  background-color: #374151;
+  border-color: #4b5563;
+}
+
+.theme-dark .pagination-btn:disabled {
+  color: #6b7280;
+}
