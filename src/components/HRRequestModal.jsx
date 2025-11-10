@@ -5,7 +5,6 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
     const [loading, setLoading] = useState(false);
     const [note, setNote] = useState("");
 
-    // Gán note từ request khi modal mở
     useEffect(() => {
         if (isOpen && request) {
             setNote(request.note || "");
@@ -14,7 +13,6 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
 
     if (!isOpen || !request) return null;
 
-    // Hàm call API approve
     const handleApprove = async () => {
         setLoading(true);
         try {
@@ -45,7 +43,6 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
         }
     };
 
-    // Hàm call API reject
     const handleReject = async () => {
         setLoading(true);
         try {
@@ -83,8 +80,22 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
                 <div className="modal-body">
                     <p><strong>Tên nhu cầu:</strong> {request.requestTitle}</p>
                     <p><strong>Người gửi:</strong> {request.createdBy}</p>
-                    <p><strong>Trạng thái:</strong> {request.status}</p>
                     <p><strong>Ngày tạo:</strong> {new Date(request.createdAt).toLocaleString()}</p>
+
+                    <table className="info-table">
+                        <thead>
+                        <tr>
+                            <th>Tổng số lượng ứng viên</th>
+                            <th>Công nghệ yêu cầu</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td>{request.quantityCandidate}</td>
+                            <td>{Array.isArray(request.technologies) ? request.technologies.join(", ") : request.technologies}</td>
+                        </tr>
+                        </tbody>
+                    </table>
 
                     <textarea
                         placeholder="Nhập ghi chú (tùy chọn)..."
@@ -94,32 +105,16 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
                 </div>
 
                 <div className="modal-actions">
-                    <button
-                        className="btn-approve"
-                        onClick={handleApprove}
-                        disabled={loading}
-                    >
+                    <button className="btn-approve" onClick={handleApprove} disabled={loading}>
                         ✅ Phê duyệt
                     </button>
-                    <button
-                        className="btn-reject"
-                        onClick={handleReject}
-                        disabled={loading}
-                    >
+                    <button className="btn-reject" onClick={handleReject} disabled={loading}>
                         ❌ Từ chối
                     </button>
-                    <button
-                        className="btn-close"
-                        onClick={onClose}
-                        disabled={loading}
-                    >
+                    <button className="btn-close" onClick={onClose} disabled={loading}>
                         Đóng
                     </button>
-                    <button
-                        className="btn-back"
-                        onClick={onClose}
-                        disabled={loading}
-                    >
+                    <button className="btn-back" onClick={onClose} disabled={loading}>
                         🔙 Quay lại
                     </button>
                 </div>
