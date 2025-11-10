@@ -70,7 +70,18 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
     return (
         <div className="modal-overlay">
             <div className="modal-content">
-                <h3>Chi tiết yêu cầu nhân sự</h3>
+                {/* Header với nút X */}
+                <div className="modal-header">
+                    <h3>Chi tiết yêu cầu nhân sự</h3>
+                    <button
+                        className="btn-close-top"
+                        onClick={onClose}
+                        aria-label="Đóng modal"
+                    >
+                        ✖
+                    </button>
+                </div>
+
                 <div className="modal-body">
                     <p><strong>Tên nhu cầu:</strong> {request.requestTitle}</p>
                     <p><strong>Người gửi:</strong> {request.createdByName}</p>

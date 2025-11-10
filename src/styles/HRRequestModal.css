@@ -87,19 +87,35 @@
     background-color: #f1f1f1;
 }
 
-.btn-back {
-    background-color: #000;
-    color: #fff;
-    padding: 8px 16px;
-    border: none;
-    border-radius: 4px;
-    margin-right: 8px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
+
+
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
 }
 
-.btn-back:hover {
-    background-color: #333;
+
+.btn-close-top {
+    width: 28px;           /* Chiều rộng */
+    height: 28px;          /* Chiều cao */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f5f5f5; /* Màu nền nhẹ */
+    border: 1px solid #ccc;    /* Viền mỏng */
+    border-radius: 4px;        /* Bo góc nhẹ */
+    font-size: 16px;           /* Kích thước chữ X */
+    cursor: pointer;
+    color: #333;
+    padding: 0;                /* Không padding */
+}
+
+.btn-close-top:hover {
+    background-color: #e0e0e0; /* Hiệu ứng hover */
+    color: #ff0000;            /* Đổi màu chữ khi hover */
 }
 
 
@@ -113,7 +129,7 @@
 .info-table td {
     border: 1px solid #ccc;
     padding: 8px;
-    text-align: left;
+    text-align: center;
 }
 
 .info-table th {
