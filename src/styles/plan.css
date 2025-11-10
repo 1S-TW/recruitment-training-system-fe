@@ -1,0 +1,328 @@
+/* --- Custom properties --- */
+:root {
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9fafb;
+}
+
+/* --- TOÀN BỘ TRANG KẾ HOẠCH TUYỂN DỤNG --- */
+.recruitment-page {
+    padding: 28px 36px;
+    font-family: "Inter", "Segoe UI", sans-serif;
+    color: var(--text-primary);
+    background-color: #ffffff;
+    min-height: 100vh;
+}
+
+/* --- BREADCRUMB + DROPDOWN --- */
+.breadcrumb-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f9fafb;
+    padding: 12px 36px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.breadcrumb-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.95rem;
+    color: #4b5563;
+    font-weight: 500;
+}
+
+.breadcrumb-icon {
+    font-size: 1.1rem;
+    margin-right: 4px;
+}
+
+.breadcrumb-current {
+    color: #111827;
+    font-weight: 600;
+}
+
+.breadcrumb-separator {
+    color: #9ca3af;
+}
+
+/* --- DROPDOWN nhỏ (Hiển thị mỗi trang) --- */
+.mini-pagination {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 4px 8px;
+    gap: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.25s ease;
+}
+
+.mini-pagination:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
+    transform: translateY(-1px);
+}
+
+.mini-pagination-label {
+    font-size: 0.85rem;
+    color: #4b5563;
+}
+
+.mini-pagination-select {
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 0.9rem;
+    color: #111827;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.mini-pagination-select:hover {
+    color: #0284c7;
+    transform: scale(1.05);
+}
+
+/* --- TIÊU ĐỀ --- */
+.title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 12px 36px 16px 36px;
+}
+
+.page-title-small {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+    letter-spacing: -0.4px;
+}
+
+/* --- BẢNG --- */
+.table-container {
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
+    padding: 0;
+    overflow-x: auto;
+}
+
+.styled-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+    min-width: 900px;
+}
+
+.styled-table thead {
+    background-color: #f7f7f7;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+}
+
+.styled-table th,
+.styled-table td {
+    padding: 12px 18px;
+    text-align: left;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+    font-weight: 480;
+    color: var(--text-primary);
+}
+
+.styled-table th {
+    border-bottom: 1px solid #dddddd;
+    font-weight: 700;
+}
+
+.styled-table tr:hover {
+    background-color: #f7f7f7;
+    transition: background 0.3s ease;
+}
+
+/* --- ACTION BUTTONS + TOOLTIP --- */
+.btn-group {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    color: #0284c7;
+}
+
+.btn-edit {
+    color: #eab308;
+}
+
+.btn-action:hover {
+    background: #f1f5f9;
+    transform: scale(1.08);
+}
+
+/* --- Tooltip kiểu Jira --- */
+.btn-action-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.action-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translate(-50%, -4px);
+    background-color: white;
+    border: 1px solid #e5e7eb;
+    color: #4b5563;
+    padding: 4px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    font-size: 0.8rem;
+    opacity: 0;
+    z-index: 10;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
+    font-weight: 500;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.btn-action-wrapper:hover .action-tooltip {
+    opacity: 1;
+    transform: translate(-50%, -10px);
+    pointer-events: none;
+}
+
+/* --- STATUS --- */
+.status-badge {
+    font-weight: 500;
+    color: var(--text-primary);
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 2px 8px;
+}
+
+.actions-head,
+.actions-cell {
+    text-align: center !important;
+}
+
+/* --- PAGINATION CHUẨN JIRA (ngang hàng, có …, fade mượt) --- */
+.clean-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin: 26px 0 16px;
+}
+
+.page-numbers {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+/* Nút mũi tên < > */
+.nav-btn {
+    border: none;
+    background: #f9fafb;
+    color: #374151;
+    font-size: 15px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    height: 32px;
+    width: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.nav-btn:hover:not(:disabled) {
+    background-color: #e5e7eb;
+    transform: translateY(-1px);
+}
+
+.nav-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Nút số trang */
+.btn-page-number {
+    background-color: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #374151;
+    transition: all 0.25s ease;
+    height: 36px;
+    min-width: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-page-number:hover:not(.active-page) {
+    background-color: #f9fafb;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+}
+
+.btn-page-number.active-page {
+    background-color: #0284c7;
+    color: #fff;
+    border-color: #0284c7;
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
+    transform: scale(1.05);
+}
+
+/* Dấu ... */
+.dots {
+    color: #6b7280;
+    font-weight: 600;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+    padding: 0 4px;
+}
+
+/* --- Hiệu ứng fade chuyển trang --- */
+.fade-in {
+    animation: fadeIn 0.3s ease forwards;
+}
+.fade-out {
+    animation: fadeOut 0.3s ease forwards;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeOut {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-6px); }
+}
