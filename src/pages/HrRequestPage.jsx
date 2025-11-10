@@ -1,9 +1,13 @@
-import React, { useState } from "react";
+// src/pages/HrRequestPage.jsx
+import React, { useState, useEffect } from "react";
 import useHrRequests from "../hooks/useHrRequests";
 import Layout from "../components/Layout";
 import ActionButtons from "../components/ActionButtons";
 import Pagination from "../components/Pagination";
 import "../styles/request.css";
+
+// Nếu bạn đã có CreateRequestModal, import để mở form sửa/tạo
+import CreateRequestModal from "../components/CreateRequestModal.jsx";
 
 export default function HRRequestPage() {
   const { requests, loading, error } = useHrRequests();
@@ -16,10 +20,14 @@ export default function HRRequestPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
 
+  // --- THÊM: modal create/edit (tận dụng form add để sửa)
+  const [showModal, setShowModal] = useState(false);
+  const [editData, setEditData] = useState(null);
+
   // --- Filter dữ liệu theo tên, trạng thái, ngày ---
   const filteredRequests = requests.filter((req) => {
     const matchesName = req.requestTitle
-      .toLowerCase()
+      ?.toLowerCase()
       .includes(searchName.toLowerCase());
     const matchesStatus = statusFilter ? req.status === statusFilter : true;
     const matchesDate = dateFilter
@@ -45,6 +53,39 @@ export default function HRRequestPage() {
       setCurrentPage(page);
       setIsAnimating(false);
     }, 180);
+  };
+
+  // === THÊM: hàm mở modal tạo/sửa ===
+  const openCreate = () => {
+    setEditData(null);
+    setShowModal(true);
+  };
+
+  const openEdit = (req) => {
+    // map tối thiểu trường cần cho form
+    setEditData({
+      requestId: req.requestId,
+      requestTitle: req.requestTitle || "",
+      expectedDeliveryDate: req.expectedDeliveryDate || "",
+      note: req.note || "",
+      techQuantities: req.techQuantities || [],
+      status: req.status,
+    });
+    setShowModal(true);
+  };
+
+  // === THÊM: helper show tooltip tạm thời khi không phải NEW ===
+  const flashEditTooltip = (btnWrapperEl) => {
+    const tip = btnWrapperEl?.querySelector(".action-tooltip");
+    if (!tip) return;
+    const original = tip.textContent;
+    tip.textContent = "Chỉ trạng thái NEW mới được sửa";
+    tip.style.opacity = "1";
+    tip.style.transform = "translateX(-50%) scale(1)";
+    setTimeout(() => {
+      tip.textContent = original;
+      tip.removeAttribute("style");
+    }, 1200);
   };
 
   return (
@@ -100,6 +141,7 @@ export default function HRRequestPage() {
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="">Trạng thái</option>
+                <option value="NEW">NEW</option>
                 <option value="PENDING">Đang chờ</option>
                 <option value="IN_PROGRESS">Đang xử lý</option>
                 <option value="COMPLETED">Hoàn thành</option>
@@ -107,10 +149,10 @@ export default function HRRequestPage() {
               </select>
             </div>
 
-            {/* Nút thêm nhu cầu */}
+            {/* Nút thêm nhu cầu (GIỮ NGUYÊN) */}
             <button
               className="add-plan-btn clean"
-              onClick={() => console.log("Thêm nhu cầu tuyển dụng")}
+              onClick={openCreate}
             >
               ＋ Thêm nhu cầu tuyển dụng
             </button>
@@ -140,27 +182,46 @@ export default function HRRequestPage() {
                 </tr>
               </thead>
               <tbody>
-                {currentRequests.map((req, index) => (
-                  <tr key={req.requestId || index}>
-                    <td>{indexOfFirst + index + 1}</td>
-                    <td>{req.requestTitle}</td>
-                    <td>
-                      {req.createdAt
-                        ? new Date(req.createdAt).toLocaleDateString()
-                        : "—"}
-                    </td>
-                    <td>
-                      <span className="status-badge">{req.status}</span>
-                    </td>
-                    <td>{req.createdBy || "Không rõ"}</td>
-                    <td className="actions-cell text-center">
-                      <ActionButtons
-                        onView={() => console.log("Xem", req.requestId)}
-                        onEdit={() => console.log("Chỉnh sửa", req.requestId)}
-                      />
-                    </td>
-                  </tr>
-                ))}
+                {currentRequests.map((req, index) => {
+                  const canEdit = req.status === "NEW";
+                  const rowAttrs = {
+                    "data-status": req.status || "",
+                    "data-editable": canEdit ? "true" : "false",
+                  };
+
+                  return (
+                    <tr key={req.requestId || index} {...rowAttrs}>
+                      <td>{indexOfFirst + index + 1}</td>
+                      <td>{req.requestTitle}</td>
+                      <td>
+                        {req.createdAt
+                          ? new Date(req.createdAt).toLocaleDateString()
+                          : "—"}
+                      </td>
+                      <td>
+                        <span className="status-badge">{req.status}</span>
+                      </td>
+                      <td>{req.createdBy || "Không rõ"}</td>
+                      <td className="actions-cell text-center">
+                        <ActionButtons
+                          onView={() => console.log("Xem", req.requestId)}
+                          onEdit={(e) => {
+                            // “Gác cổng”: nếu không phải NEW thì chặn + show tooltip
+                            if (!canEdit) {
+                              e?.preventDefault?.();
+                              // .btn-action-wrapper là parent gần nhất của nút
+                              const wrapper = e?.currentTarget?.closest?.(".btn-action-wrapper") 
+                                || e?.target?.closest?.(".btn-action-wrapper");
+                              flashEditTooltip(wrapper);
+                              return;
+                            }
+                            openEdit(req);
+                          }}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
@@ -173,6 +234,17 @@ export default function HRRequestPage() {
           onPageChange={handlePageChange}
         />
       </div>
+
+      {/* Modal create/edit (tận dụng form add) */}
+      <CreateRequestModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onSuccess={() => {
+          setCurrentPage(1);
+          setShowModal(false);
+        }}
+        initialData={editData} // null => tạo mới; có object => sửa
+      />
     </Layout>
   );
 }
