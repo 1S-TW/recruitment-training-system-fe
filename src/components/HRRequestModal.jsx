@@ -116,10 +116,10 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
 
                 <div className="modal-actions">
                     <button className="btn-approve" onClick={handleApprove} disabled={loading}>
-                        ✅ Phê duyệt
+                        Phê duyệt và Khởi tạo
                     </button>
                     <button className="btn-reject" onClick={handleReject} disabled={loading}>
-                        ❌ Từ chối
+                        Từ chối
                     </button>
                     <button className="btn-close" onClick={onClose} disabled={loading}>
                         Đóng
