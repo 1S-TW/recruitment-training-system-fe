@@ -107,16 +107,6 @@ export default function HRRequestPage() {
               </select>
             </div>
 
-            {/* Ngày tạo */}
-            <div className="filter-item">
-              <input
-                type="date"
-                className="filter-date"
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-              />
-            </div>
-
             {/* Nút thêm nhu cầu */}
             <button
               className="add-plan-btn clean"
