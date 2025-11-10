@@ -17,11 +17,13 @@ export const getAllUsers = async () => {
  */
 export const assignRole = async (userId, roleName) => {
 
-
+  // --- BẮT ĐẦU SỬA ---
+  // Nếu roleName là chuỗi rỗng "" (từ dropdown),
+  // chúng ta gán nó là `null` để backend hiểu là "xóa role".
   const roleToSend = roleName || null;
 
   const response = await api.put(`/admin/users/${userId}/role`, { roleName: roleToSend });
-
+  // --- KẾT THÚC SỬA ---
 
   return response.data; // Trả về "Cập nhật role thành công."
 };
