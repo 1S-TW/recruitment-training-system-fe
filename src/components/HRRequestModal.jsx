@@ -1,9 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "../styles/HRRequestModal.css";
 
 export default function HRRequestModal({ isOpen, onClose, request, onActionSuccess }) {
     const [loading, setLoading] = useState(false);
     const [note, setNote] = useState("");
+
+    // Gán note từ request khi modal mở
+    useEffect(() => {
+        if (isOpen && request) {
+            setNote(request.note || "");
+        }
+    }, [isOpen, request]);
 
     if (!isOpen || !request) return null;
 
@@ -107,6 +114,13 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
                         disabled={loading}
                     >
                         Đóng
+                    </button>
+                    <button
+                        className="btn-back"
+                        onClick={onClose}
+                        disabled={loading}
+                    >
+                        🔙 Quay lại
                     </button>
                 </div>
             </div>
