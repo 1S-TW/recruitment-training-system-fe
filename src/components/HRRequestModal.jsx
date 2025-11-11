@@ -192,6 +192,14 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
 
                 <div className="modal-actions">
                     <button
+                        className="btn-reject"
+                        onClick={handleReject}
+                        disabled={loading || isApproved} // ⛔ không cho reject khi đã APPROVED
+                        title={isApproved ? "Yêu cầu đã được phê duyệt — không thể từ chối." : undefined}
+                    >
+                        Từ chối
+                    </button>
+                    <button
                         className="btn-approve"
                         onClick={handleApprove}
                         disabled={loading || isCanceled} // ⛔ không cho approve khi đã CANCELED
@@ -200,14 +208,7 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
                         Phê duyệt và Khởi tạo
                     </button>
 
-                    <button
-                        className="btn-reject"
-                        onClick={handleReject}
-                        disabled={loading || isApproved} // ⛔ không cho reject khi đã APPROVED
-                        title={isApproved ? "Yêu cầu đã được phê duyệt — không thể từ chối." : undefined}
-                    >
-                        Từ chối
-                    </button>
+
 
                     <button className="btn-close" onClick={onClose} disabled={loading}>
                         Đóng
