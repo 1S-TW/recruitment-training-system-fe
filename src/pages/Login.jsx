@@ -31,6 +31,7 @@ const Login = () => {
 
       showNotification("Đăng nhập thành công!", "success");
       navigate("/");
+      console.log("✅ Đăng nhập thành công, chuyển hướng về /");
     } catch (err) {
       const errorMsg =
         err.response?.data?.message || "Sai email hoặc mật khẩu. Vui lòng thử lại.";

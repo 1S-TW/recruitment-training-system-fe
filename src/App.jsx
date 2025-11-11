@@ -2,11 +2,14 @@ import React from 'react';
 import { NotificationProvider } from './contexts/NotificationContext';
 import Notification from './components/Notification/Notification';
 import AppRoutes from './routes/AppRoutes';
-import './styles/global.css'; // Import CSS toàn cục
+import { AuthProvider } from './contexts/AuthContext';
+import './styles/style.css'; // Import CSS toàn cục
 
 function App() {
   return (
-    // 1. Bọc toàn bộ App trong NotificationProvider
+
+    <AuthProvider>
+    {/* 1. Bọc toàn bộ App trong NotificationProvider*/}
     <NotificationProvider>
 
       {/* 2. Đặt component Notification ở đây để nó hiển thị trên mọi trang */}
@@ -16,6 +19,7 @@ function App() {
       <AppRoutes />
 
     </NotificationProvider>
+    </AuthProvider>
   );
 }
 

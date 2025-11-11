@@ -3,6 +3,9 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
 import ForgotPassword from '../pages/ForgotPassword';
+import HomePage from '../pages/HomePage';
+import HRRequestPage from '../pages/HRRequestPage';
+import ProtectedRoute from '../components/ProtectedRoute';
 
 // --- THÊM IMPORT ---
 import VerifyEmail from '../pages/VerifyEmail';
@@ -12,7 +15,15 @@ import ResetPassword from '../pages/ResetPassword';
 const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      {/* Trang chính */}
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <HomePage />
+          </ProtectedRoute>
+        }
+      />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -34,7 +45,7 @@ const AppRoutes = () => {
 
 
       {/* Nếu người dùng nhập sai URL */}
-      <Route path="*" element={<LoginPage />} />
+      <Route path="*" element={<Login />} />
     </Routes>
   );
 };
