@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import useHrRequests from "../hooks/useHrRequests";
 import Layout from "../components/Layout";
-import ActionButtons from "../components/ActionButtons";
+import ActionButtons from "../components/ActionButton.jsx";
 import CreateRequestModal from "../components/CreateRequestModal";
 import HRRequestModal from "../components/HRRequestModal";
 import { RefreshCw } from "lucide-react";
