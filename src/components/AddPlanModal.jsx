@@ -93,19 +93,25 @@ export default function AddPlanModal({ open, onClose, form, onChange, onSubmit, 
                             <label>Công nghệ & số lượng </label>
                             <table className="info-table">
                                 <thead>
-                                <tr><th>Công nghệ</th><th>Số lượng</th></tr>
+                                <tr>
+                                    <th>Công nghệ</th>
+                                    <th>Nhân sự đầu ra</th>
+                                    <th>Nhân sự đầu vào</th>
+                                </tr>
                                 </thead>
                                 <tbody>
                                 {techSummary.map((t, i) => (
                                     <tr key={i}>
                                         <td>{t.technologyName}</td>
                                         <td>{t.soLuong}</td>
+                                        <td>{t.soLuong * 2}</td>
                                     </tr>
                                 ))}
                                 </tbody>
                             </table>
                         </div>
                     ) : null}
+
                 </div>
 
                 <div className="modal-actions">
