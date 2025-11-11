@@ -55,7 +55,7 @@ export default function HRRequestPage() {
           <span className="breadcrumb-icon">💼</span>
           <span className="breadcrumb-item">Tuyển dụng</span>
           <span className="breadcrumb-separator">&gt;</span>
-          <span className="breadcrumb-current">Nhu cầu tuyển dụng</span>
+          <span className="breadcrumb-current">Nhu cầu nhân sự</span>
         </div>
 
         <div className="breadcrumb-right">
@@ -77,7 +77,7 @@ export default function HRRequestPage() {
       {/* === CONTENT === */}
       <div className="recruitment-page fade-slide">
         <div className="title-row">
-          <h2 className="page-title-small">Nhu cầu tuyển dụng</h2>
+          <h2 className="page-title-small">Nhu cầu nhân sự </h2>
 
           <div className="filter-bar">
             {/* Search theo tên */}
@@ -112,46 +112,45 @@ export default function HRRequestPage() {
               className="add-plan-btn clean"
               onClick={() => console.log("Thêm nhu cầu tuyển dụng")}
             >
-              ＋ Thêm nhu cầu tuyển dụng
+              ＋ Thêm nhu cầu nhân sự
             </button>
           </div>
         </div>
 
-        {/* === Table === */}
-        <div
-          className={`table-container table-fade ${
-            isAnimating ? "fade-out" : "fade-in"
-          }`}
-        >
-          {loading ? (
-            <p className="loading-text">Đang tải dữ liệu...</p>
-          ) : filteredRequests.length === 0 ? (
-            <p className="text-center">Không có dữ liệu</p>
-          ) : (
-            <table className="styled-table">
-              <thead>
+        <div className={`table-container table-fade ${isAnimating ? "fade-out" : "fade-in"}`}>
+          {loading && <p className="loading-text">Đang tải dữ liệu...</p>}
+
+          <table className="styled-table">
+            <thead>
+              <tr>
+                <th>STT</th>
+                <th>Tên nhu cầu</th>
+                <th>Ngày tạo</th>
+                <th>Trạng thái</th>
+                <th>Người gửi</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
                 <tr>
-                  <th>STT</th>
-                  <th>Tên nhu cầu</th>
-                  <th>Ngày tạo</th>
-                  <th>Trạng thái</th>
-                  <th>Người gửi</th>
-                  <th>Hành động</th>
+                  <td colSpan={6} className="text-center">
+                    Đang tải dữ liệu...
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {currentRequests.map((req, index) => (
+              ) : filteredRequests.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-center">
+                    Không có dữ liệu
+                  </td>
+                </tr>
+              ) : (
+                currentRequests.map((req, index) => (
                   <tr key={req.requestId || index}>
                     <td>{indexOfFirst + index + 1}</td>
                     <td>{req.requestTitle}</td>
-                    <td>
-                      {req.createdAt
-                        ? new Date(req.createdAt).toLocaleDateString()
-                        : "—"}
-                    </td>
-                    <td>
-                      <span className="status-badge">{req.status}</span>
-                    </td>
+                    <td>{req.createdAt ? new Date(req.createdAt).toLocaleDateString() : "—"}</td>
+                    <td><span className="status-badge">{req.status}</span></td>
                     <td>{req.createdBy || "Không rõ"}</td>
                     <td className="actions-cell text-center">
                       <ActionButtons
@@ -160,10 +159,10 @@ export default function HRRequestPage() {
                       />
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
 
         {/* === Pagination === */}
