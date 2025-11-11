@@ -11,7 +11,7 @@ const ActionButtons = ({ onView, onEdit }) => {
           onClick={onView}
           data-tooltip="Xem chi tiết"
         >
-          <Eye size={18} />
+          <Eye size={40} />
         </button>
         <span className="action-tooltip">Xem chi tiết</span>
       </div>
@@ -22,7 +22,7 @@ const ActionButtons = ({ onView, onEdit }) => {
           onClick={onEdit}
           data-tooltip="Chỉnh sửa"
         >
-          <Edit2 size={18} />
+          <Edit2 size={40} />
         </button>
         <span className="action-tooltip">Chỉnh sửa</span>
       </div>
