@@ -22,39 +22,54 @@ function LoginPage() {
       const data = await login(email, password);
       if (data.token) {
         loginUser(data.token, email); // ✅ Cập nhật state + localStorage
-        navigate("/home");
+        navigate("/");
       }
     } catch (err) {
-      setError(err.message);
+      setError("Sai email hoặc mật khẩu. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
   };
 
+
   return (
-    <div className="login-page">
-      <h2>Đăng nhập</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email"
-          required
-        />
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Mật khẩu"
-          required
-        />
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        <button type="submit" disabled={loading}>
-          {loading ? "Đang đăng nhập..." : "Đăng nhập"}
-        </button>
-      </form>
+  <div className="login-page">
+    <div className="login-wrapper">
+      <div className="login-card">
+        <h2>Đăng nhập hệ thống</h2>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <input
+              type="text"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Mật khẩu"
+              required
+            />
+          </div>
+          {error && <p className="error-text">{error}</p>}
+          <button type="submit" disabled={loading}>
+            {loading ? "Đang đăng nhập..." : "Đăng nhập"}
+          </button>
+
+          <div className="login-footer">
+            <a href="#">Quên mật khẩu?</a>
+            <span> | </span>
+            <a href="#">Đăng ký tài khoản</a>
+          </div>
+        </form>
+      </div>
     </div>
+  </div>
   );
 }
 
