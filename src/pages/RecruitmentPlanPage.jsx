@@ -4,7 +4,7 @@ import { useLocation } from "react-router-dom";
 import axios from "axios";
 import Layout from "../components/Layout";
 import Pagination from "../components/Pagination";
-import ActionButtons from "../components/ActionButtons.jsx"; // ✅ SỬA: đúng tên file
+import ActionButtons from "../components/ActionButtons.jsx";
 import AddPlanModal from "../components/AddPlanModal";
 import DatePicker from "../components/DatePicker";
 import "../styles/plan.css";
@@ -20,10 +20,12 @@ const RecruitmentPlanPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // Modal & form
   const [openAddModal, setOpenAddModal] = useState(false);
   const [techSummary, setTechSummary] = useState([]);
   const [requestTitle, setRequestTitle] = useState("");
+  const [modalMode, setModalMode] = useState("select"); // 'locked' | 'select'
+  const [requestOptions, setRequestOptions] = useState([]);
+
   const [form, setForm] = useState({
     requestId: undefined,
     planName: "",
@@ -35,13 +37,11 @@ const RecruitmentPlanPage = () => {
 
   const location = useLocation();
   const token = localStorage.getItem("token");
-
   const axiosAuth = axios.create({
     baseURL: "http://localhost:8080",
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  // Load danh sách kế hoạch
   const loadPlans = async () => {
     try {
       setLoading(true);
@@ -66,51 +66,44 @@ const RecruitmentPlanPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Nếu có requestId trên URL => mở modal tạo kế hoạch với defaults
+  // mở modal từ phê duyệt (lock)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const requestId = params.get("requestId");
+    if (!requestId) return;
 
-    if (requestId) {
-      (async () => {
-        try {
-          const res = await axiosAuth.get(`/api/hr-request/${requestId}/plan-defaults`);
-          const d = res.data;
-          setForm({
-            requestId: d.requestId,
-            planName: d.suggestedPlanName ? `Plan for ${d.suggestedPlanName}` : "",
-            status: d.status || "DRAFT",
-            recruitmentDeadline: d.recruitmentDeadline || "",
-            deliveryDeadline: d.deliveryDeadline || "",
-            note: d.note || "",
-          });
-          setRequestTitle(d.suggestedPlanName || "");
-          setTechSummary(d.techQuantities || []);
-          setOpenAddModal(true);
-        } catch {
-          // fallback vẫn mở modal nhưng trống
-          setForm((f) => ({ ...f, requestId }));
-          setRequestTitle("");
-          setTechSummary([]);
-          setOpenAddModal(true);
-        }
-      })();
-    }
+    (async () => {
+      try {
+        const res = await axiosAuth.get(`/api/hr-request/${requestId}/plan-defaults`);
+        const d = res.data;
+        setForm({
+          requestId: d.requestId,
+          planName: "",
+          status: d.status || "DRAFT",
+          recruitmentDeadline: d.recruitmentDeadline || "",
+          deliveryDeadline: d.deliveryDeadline || "",
+          note: d.note || "",
+        });
+        setRequestTitle(d.suggestedPlanName || d.requestTitle || "");
+        setTechSummary(d.techQuantities || []);
+        setModalMode("locked");
+        setOpenAddModal(true);
+      } catch {
+        setModalMode("locked");
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
 
-  // Lọc dữ liệu theo tên, trạng thái, tháng/năm
+  // lọc bảng
   useEffect(() => {
     let filtered = [...plans];
-
     if (searchName.trim()) {
       filtered = filtered.filter((p) =>
         (p.planName || "").toLowerCase().includes(searchName.toLowerCase())
       );
     }
-    if (statusFilter) {
-      filtered = filtered.filter((p) => p.status === statusFilter);
-    }
+    if (statusFilter) filtered = filtered.filter((p) => p.status === statusFilter);
     if (selectedDate) {
       const m = selectedDate.getMonth();
       const y = selectedDate.getFullYear();
@@ -123,7 +116,6 @@ const RecruitmentPlanPage = () => {
     setCurrentPage(1);
   }, [searchName, statusFilter, selectedDate, plans]);
 
-  // Phân trang
   const totalPages = Math.ceil(filteredPlans.length / itemsPerPage) || 1;
   const indexOfLast = currentPage * itemsPerPage;
   const indexOfFirst = indexOfLast - itemsPerPage;
@@ -133,16 +125,13 @@ const RecruitmentPlanPage = () => {
     setItemsPerPage(Number(e.target.value));
     setCurrentPage(1);
   };
-
-  const handlePageChange = (page) => {
-    if (page < 1 || page > totalPages) return;
-    setCurrentPage(page);
+  const handlePageChange = (p) => {
+    if (p < 1 || p > totalPages) return;
+    setCurrentPage(p);
   };
 
-  // Mở modal thêm rỗng
-  const openEmptyAddModal = () => {
-    setTechSummary([]);
-    setRequestTitle("");
+  // mở modal chọn nhu cầu NEW
+  const openEmptyAddModal = async () => {
     setForm({
       requestId: undefined,
       planName: "",
@@ -151,14 +140,58 @@ const RecruitmentPlanPage = () => {
       deliveryDeadline: "",
       note: "",
     });
+    setTechSummary([]);
+    setRequestTitle("");
+    setModalMode("select");
+
+    try {
+      const res = await axiosAuth.get("/api/hr-request");
+      const opts = (res.data || [])
+        .filter((r) => String(r.status || "").toUpperCase() === "NEW")
+        .map((r) => ({ id: r.requestId, title: r.requestTitle }))
+        .sort((a, b) => a.title.localeCompare(b.title));
+      setRequestOptions(opts);
+    } catch {
+      setRequestOptions([]);
+    }
     setOpenAddModal(true);
   };
 
-  // Submit tạo kế hoạch
+  const handlePickRequest = async (id) => {
+    if (!id) {
+      setForm((f) => ({ ...f, requestId: undefined, recruitmentDeadline: "", deliveryDeadline: "" }));
+      setTechSummary([]);
+      setRequestTitle("");
+      return;
+    }
+    try {
+      const res = await axiosAuth.get(`/api/hr-request/${id}/plan-defaults`);
+      const d = res.data;
+      setForm({
+        requestId: d.requestId,
+        planName: "",
+        status: d.status || "DRAFT",
+        recruitmentDeadline: d.recruitmentDeadline || "",
+        deliveryDeadline: d.deliveryDeadline || "",
+        note: d.note || "",
+      });
+      setRequestTitle(d.suggestedPlanName || d.requestTitle || "");
+      setTechSummary(d.techQuantities || []);
+    } catch {
+      setForm((f) => ({ ...f, requestId: undefined, recruitmentDeadline: "", deliveryDeadline: "" }));
+      setTechSummary([]);
+      setRequestTitle("");
+    }
+  };
+
   const submitPlan = async () => {
     try {
+      if (!form.requestId) {
+        alert("⚠️ Vui lòng chọn nhu cầu (NEW) trước khi tạo kế hoạch.");
+        return;
+      }
       if (!form.planName || !form.recruitmentDeadline || !form.deliveryDeadline) {
-        alert("⚠️ Vui lòng điền đầy đủ thông tin");
+        alert("⚠️ Vui lòng nhập tên kế hoạch.");
         return;
       }
       await axiosAuth.post("/api/recruitment-plans", form);
@@ -173,7 +206,6 @@ const RecruitmentPlanPage = () => {
 
   return (
     <Layout>
-      {/* ==== Breadcrumb + lựa chọn số bản ghi ==== */}
       <div className="breadcrumb-container fade-slide">
         <div className="breadcrumb-left">
           <span className="breadcrumb-icon">💼</span>
@@ -181,7 +213,6 @@ const RecruitmentPlanPage = () => {
           <span className="breadcrumb-separator">&gt;</span>
           <span className="breadcrumb-current">Kế hoạch tuyển dụng</span>
         </div>
-
         <div className="breadcrumb-right">
           <div className="mini-pagination">
             <label className="mini-pagination-label">Hiển thị:</label>
@@ -198,13 +229,11 @@ const RecruitmentPlanPage = () => {
         </div>
       </div>
 
-      {/* ==== Thanh bộ lọc ==== */}
       <div className="recruitment-page fade-slide">
         <div className="title-row">
           <h2 className="page-title-small">Kế hoạch tuyển dụng</h2>
 
           <div className="filter-bar">
-            {/* 🔍 Tìm theo tên */}
             <div className="filter-item search-wrapper">
               <div className="search-input-container">
                 <input
@@ -224,7 +253,6 @@ const RecruitmentPlanPage = () => {
               </div>
             </div>
 
-            {/* ⚙️ Trạng thái */}
             <div className="filter-item">
               <select
                 className="filter-select smooth-dropdown"
@@ -240,12 +268,10 @@ const RecruitmentPlanPage = () => {
               </select>
             </div>
 
-            {/* 📅 Chọn tháng/năm */}
             <div className="filter-item">
-              <DatePicker selectedDate={selectedDate} onDateChange={(date) => setSelectedDate(date)} />
+              <DatePicker selectedDate={selectedDate} onDateChange={(d) => setSelectedDate(d)} />
             </div>
 
-            {/* ➕ Nút thêm kế hoạch */}
             <div className="filter-item add-btn-wrapper">
               <button className="add-plan-btn modern-add" onClick={openEmptyAddModal}>
                 ＋ Thêm kế hoạch tuyển dụng
@@ -254,7 +280,6 @@ const RecruitmentPlanPage = () => {
           </div>
         </div>
 
-        {/* 🧹 Xóa bộ lọc */}
         <div className="filter-item">
           <button
             className="clear-all-btn smooth-dropdown"
@@ -268,7 +293,6 @@ const RecruitmentPlanPage = () => {
           </button>
         </div>
 
-        {/* ==== Bảng danh sách ==== */}
         <div className="table-container">
           {loading ? (
             <p className="loading-text">Đang tải dữ liệu...</p>
@@ -289,21 +313,15 @@ const RecruitmentPlanPage = () => {
               <tbody>
                 {currentPlans.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="text-center">
-                      Không có dữ liệu
-                    </td>
+                    <td colSpan="6" className="text-center">Không có dữ liệu</td>
                   </tr>
                 ) : (
                   currentPlans.map((plan, index) => (
                     <tr key={plan.recruitmentPlanId || index}>
                       <td>{indexOfFirst + index + 1}</td>
                       <td>{plan.planName}</td>
-                      <td>
-                        {plan.createdAt ? new Date(plan.createdAt).toLocaleDateString() : "—"}
-                      </td>
-                      <td>
-                        <span className="status-badge">{plan.status}</span>
-                      </td>
+                      <td>{plan.createdAt ? new Date(plan.createdAt).toLocaleDateString() : "—"}</td>
+                      <td><span className="status-badge">{plan.status}</span></td>
                       <td>
                         {plan.request?.createdBy?.fullName ||
                           plan.request?.createdBy?.username ||
@@ -323,11 +341,9 @@ const RecruitmentPlanPage = () => {
           )}
         </div>
 
-        {/* Phân trang */}
         <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
       </div>
 
-      {/* ==== Modal thêm kế hoạch ==== */}
       <AddPlanModal
         open={openAddModal}
         onClose={() => setOpenAddModal(false)}
@@ -336,6 +352,9 @@ const RecruitmentPlanPage = () => {
         onSubmit={submitPlan}
         techSummary={techSummary}
         requestTitle={requestTitle}
+        mode={modalMode}
+        requestOptions={requestOptions}
+        onPickRequest={handlePickRequest}
       />
     </Layout>
   );

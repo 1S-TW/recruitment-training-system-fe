@@ -594,3 +594,35 @@
 .clear-icon {
     vertical-align: middle;
 }
+
+
+        .tech-table-wrapper { overflow-x: auto; }
+        .tech-fixed {
+          width: 100%;
+          table-layout: fixed;      /* quan trọng để 3 cột giữ kích thước */
+          border-collapse: separate;
+          border-spacing: 0;
+        }
+        .tech-fixed thead th {
+          text-align: center;
+          vertical-align: middle;
+          white-space: normal;
+          line-height: 1.2;
+          font-weight: 700;
+        }
+        .tech-fixed th, .tech-fixed td {
+          padding: 12px 14px;
+        }
+        .tech-fixed td.left { text-align: left; }
+        .tech-fixed td.center { text-align: center; }
+
+        .tech-table-wrapper { overflow-x: auto; }
+        .tech-fixed {
+          width: 100%;
+          table-layout: fixed;
+          border-collapse: separate;
+          border-spacing: 0;
+        }
+        .tech-fixed th, .tech-fixed td { padding: 12px 14px; }
+        .tech-fixed thead th { text-align: center; vertical-align: middle; line-height: 1.2; font-weight: 700; }
+        .tech-fixed td.center, .tech-fixed th.center { text-align: center; }
