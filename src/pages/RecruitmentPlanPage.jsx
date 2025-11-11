@@ -2,10 +2,9 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Layout from "../components/Layout";
 import Pagination from "../components/Pagination";
-import ActionButtons from "../components/ActionButtons";
+import ActionButtons from "../components/ActionButton";
 import "../styles/plan.css";
-import Calendar from "react-calendar";
-import "react-calendar/dist/Calendar.css";
+import DatePicker from "../components/DatePicker";
 
 const RecruitmentPlanPage = () => {
   const [selectedDate, setSelectedDate] = useState(null);
@@ -18,14 +17,13 @@ const RecruitmentPlanPage = () => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-
   // === Fetch data ===
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
       setError("⚠️ Bạn chưa đăng nhập hoặc token đã hết hạn");
       setLoading(false);
-      return;
+      return;z
     }
 
     axios
@@ -57,13 +55,20 @@ useEffect(() => {
     filtered = filtered.filter((p) => p.status === statusFilter);
   }
 
-  // 🗓️ Lọc theo ngày chọn từ lịch
-  if (selectedDate) {
-    const formatted = selectedDate.toISOString().split("T")[0];
-    filtered = filtered.filter(
-      (p) => p.createdAt && p.createdAt.startsWith(formatted)
+ if (selectedDate) {
+  const selectedMonth = selectedDate.getMonth();
+  const selectedYear = selectedDate.getFullYear();
+
+  filtered = filtered.filter((p) => {
+    const created = new Date(p.createdAt);
+    return (
+      created.getMonth() === selectedMonth &&
+      created.getFullYear() === selectedYear
     );
-  }
+  });
+}
+
+
 
   setFilteredPlans(filtered);
   setCurrentPage(1);
@@ -180,58 +185,10 @@ const handlePageChange = (page) => {
 
             {/* 📅 Chọn ngày từ lịch */}
 <div className="filter-item">
-  <button
-    className="filter-date calendar-btn"
-    onClick={() => setShowCalendar(!showCalendar)}
-  >
-    {selectedDate
-      ? `Ngày: ${selectedDate.toLocaleDateString()}`
-      : "📅 Chọn ngày"}
-  </button>
-
-  {showCalendar && (
-    <div className="calendar-popup">
-      <div className="calendar-header">
-        <button
-          onClick={() =>
-            setSelectedDate(
-              new Date(
-                (selectedDate?.getFullYear() || new Date().getFullYear()) - 1,
-                selectedDate?.getMonth() || new Date().getMonth()
-              )
-            )
-          }
-          className="year-btn"
-        >
-          ‹
-        </button>
-        <span className="year-label">
-          {selectedDate?.getFullYear() || new Date().getFullYear()}
-        </span>
-        <button
-          onClick={() =>
-            setSelectedDate(
-              new Date(
-                (selectedDate?.getFullYear() || new Date().getFullYear()) + 1,
-                selectedDate?.getMonth() || new Date().getMonth()
-              )
-            )
-          }
-          className="year-btn"
-        >
-          ›
-        </button>
-      </div>
-
-      <Calendar
-        onChange={(date) => {
-          setSelectedDate(date);
-          setShowCalendar(false);
-        }}
-        value={selectedDate}
-      />
-    </div>
-  )}
+  <DatePicker
+    selectedDate={selectedDate}
+    onDateChange={(date) => setSelectedDate(date)}
+  />
 </div>
             {/* ➕ Nút thêm kế hoạch */}
             <div className="filter-item add-btn-wrapper">
@@ -245,6 +202,33 @@ const handlePageChange = (page) => {
           </div>
         </div>
         {/* === Bảng === */}
+        {/* 🧹 Nút xóa tất cả bộ lọc */}
+<div className="filter-item">
+  <button
+    className="clear-all-btn smooth-dropdown"
+    onClick={() => {
+      setSearchName("");
+      setStatusFilter("");
+      setSelectedDate(null);
+    }}
+  >
+    Xóa tất cả bộ lọc
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="clear-icon"
+    >
+      <path d="M3 6h18M9 6v12a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V6" />
+      <path d="M10 11v6M14 11v6" />
+    </svg>
+  </button>
+</div>
        <div
  className="table-container">
           {loading ? (

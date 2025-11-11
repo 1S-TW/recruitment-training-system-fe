@@ -70,7 +70,7 @@
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
-  transition: all 0.25s ease-in-out;
+  transition: all 0.25s ease;
   background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='12' viewBox='0 0 24 24' width='12' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
   background-repeat: no-repeat;
   background-position: right 8px center;
@@ -81,7 +81,17 @@
 
 /* Khi focus hoặc hover */
 .mini-pagination-select:hover,
-.mini-pagination-select:focus {
+.filter-select:hover,
+.datepicker-input:hover {
+  background-color: #fefefe; /* gần trắng */
+  border-color: #cbd5e1;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.08);
+}
+/* === Focus: giữ hiệu ứng nhẹ nhàng khi chọn === */
+.mini-pagination-select:focus,
+.filter-select:focus,
+.datepicker-input:focus {
+  background-color: #ffffff;
   border-color: #0284c7;
   box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
   outline: none;
@@ -138,14 +148,14 @@
 .filter-input,
 .filter-select,
 .filter-date {
-  padding: 6px 10px;
+  padding: 10px 15px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 0.9rem;
+  font-size: 1rem;
   transition: all 0.25s ease-in-out;
   background: #fff;
   color: #111827;
-  height: 34px;
+  height: 37px;
 }
 
 .filter-input {
@@ -208,14 +218,15 @@
 /* === ADD BUTTON === */
 .add-btn-wrapper {
   margin-left: auto;
+margin-bottom: 20px; /* đẩy nút lên trên */
 }
 .modern-add {
   background: #16a34a;
   color: #fff;
   border: none;
   border-radius: 6px;
-  padding: 8px 16px;
-  font-size: 0.9rem;
+  padding: 10px 20px;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.25s ease;
@@ -340,6 +351,11 @@
   align-items: center;
   justify-content: center;
 }
+.btn-action svg {
+  width: 20px !important;
+  height: 20px !important;
+  flex-shrink: 0;
+}
 
 
 .btn-view {
@@ -449,107 +465,12 @@
   from { opacity: 0; transform: translateX(12px); }
   to { opacity: 1; transform: translateX(0); }
 }
-/* === HIỆU ỨNG CHUYỂN TRANG MƯỢT === */
-.pagination-transition {
-  opacity: 0;
-  transform: translateY(10px);
-  transition: all 0.35s ease-in-out;
-}
-
-.pagination-transition.active {
-  opacity: 1;
-  transform: translateY(0);
-}
-/* === HIỆU ỨNG MƯỢT CHO BẢNG (khi đổi trang / đổi hiển thị) === */
-.table-container {
-  transition: all 0.55s ease-in-out;
-  transform-origin: center top;
-}
-
-.table-container.fade-in {
-  opacity: 1;
-  transform: scale(1);
-  filter: blur(0);
-}
-
-.table-container.fade-out {
-  opacity: 0;
-  transform: scale(0.98);
-  filter: blur(1px);
-}
-/* === HIỆU ỨNG HIỆN TỪNG DÒNG TRONG BẢNG === */
-.styled-table tbody tr {
-  opacity: 0;
-  transform: translateY(6px);
-  animation: fadeRowUp 0.35s ease forwards;
-}
-
-@keyframes fadeRowUp {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Tạo hiệu ứng xuất hiện lần lượt (stagger) */
-.styled-table tbody tr:nth-child(1) { animation-delay: 0.05s; }
-.styled-table tbody tr:nth-child(2) { animation-delay: 0.1s; }
-.styled-table tbody tr:nth-child(3) { animation-delay: 0.15s; }
-.styled-table tbody tr:nth-child(4) { animation-delay: 0.2s; }
-.styled-table tbody tr:nth-child(5) { animation-delay: 0.25s; }
-.styled-table tbody tr:nth-child(6) { animation-delay: 0.3s; }
-.styled-table tbody tr:nth-child(7) { animation-delay: 0.35s; }
-.styled-table tbody tr:nth-child(8) { animation-delay: 0.4s; }
-.styled-table tbody tr:nth-child(9) { animation-delay: 0.45s; }
-.styled-table tbody tr:nth-child(10) { animation-delay: 0.5s; }
-.styled-table tbody tr:nth-child(11) { animation-delay: 0.55s; }
-.styled-table tbody tr:nth-child(12) { animation-delay: 0.6s; }
-.styled-table tbody tr:nth-child(13) { animation-delay: 0.65s; }
-.styled-table tbody tr:nth-child(14) { animation-delay: 0.7s; }
-.styled-table tbody tr:nth-child(15) { animation-delay: 0.75s; }
-.styled-table tbody tr:nth-child(16) { animation-delay: 0.8s; }
-.styled-table tbody tr:nth-child(17) { animation-delay: 0.85s; }
-.styled-table tbody tr:nth-child(18) { animation-delay: 0.9s; }
-.styled-table tbody tr:nth-child(19) { animation-delay: 0.95s; }
-.styled-table tbody tr:nth-child(20) { animation-delay: 1s; }
-/* === GỢI Ý TÌM KIẾM (DATALIST) === */
-input::-webkit-calendar-picker-indicator {
-  display: none !important;
-}
-
-datalist {
-  background-color: #ffffff;
-  color: #111827;
-  border-radius: 8px;
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
-  font-family: "Inter", sans-serif;
-  font-size: 0.9rem;
-  animation: fadeDropdown 0.25s ease-in-out;
-}
-
-@keyframes fadeDropdown {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Ẩn vùng cuộn xấu */
-datalist::-webkit-scrollbar {
-  width: 6px;
-}
-datalist::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 4px;
-}
 /* === SELECT TRẠNG THÁI (giống HIỂN THỊ, có hiệu ứng mượt) === */
 .filter-select {
   border: 1px solid #d1d5db;
   border-radius: 10px;
-  padding: 6px 14px;
-  font-size: 0.9rem;
+  padding: 8px 15px;
+  font-size: 1rem;
   font-weight: 500;
   color: #0f172a;
   background: #ffffff;
@@ -604,66 +525,72 @@ datalist::-webkit-scrollbar-thumb {
   opacity: 1 !important;
   transform: none !important;
 }
-/* === MINI CALENDAR POPUP === */
-.calendar-wrapper {
+/* === DATEPICKER INPUT === */
+.datepicker-wrapper {
   position: relative;
+  display: inline-block;
 }
 
+.datepicker-input {
+  padding: 8px 15px; 
+  font-size: 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.25s ease;
+}
+
+.datepicker-input:hover {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+}
+
+.calendar-icon {
+  color: #0284c7;
+}
+
+/* === CALENDAR POPUP === */
 .calendar-popup {
   position: absolute;
-  top: 40px;
+  top: 110%;
   left: 0;
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  padding: 16px;
   z-index: 100;
-  animation: fadeCalendar 0.25s ease;
+  width: 280px;
+  animation: fadeInCalendar 0.3s ease-in-out;
 }
-
-@keyframes fadeCalendar {
-  from { opacity: 0; transform: translateY(-5px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Nút chọn lịch */
-.calendar-btn {
-  background: #fff;
+.clear-all-btn {
+  padding: 8px 12px;
+  font-size: 0.95rem;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  padding: 6px 10px;
+  background-color: #ffffff;
+  color: #0f172a;
   cursor: pointer;
-  color: #111827;
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-.calendar-btn:hover {
+.clear-all-btn:hover {
+  background-color: #f9fafb;
   border-color: #0284c7;
-  background-color: #e0f2fe;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.1);
 }
 
-/* Thu nhỏ lịch */
-.react-calendar {
-  width: 230px !important;
-  max-width: 100%;
-  border: none !important;
-  font-size: 0.85rem;
-  background: #fff;
-  border-radius: 8px;
-}
-
-.react-calendar__tile {
-  border-radius: 6px;
-  transition: background-color 0.2s ease;
-}
-
-.react-calendar__tile:hover {
-  background-color: #e0f2fe;
-}
-
-.react-calendar__tile--active {
-  background-color: #0284c7 !important;
-  color: white !important;
+.clear-icon {
+  vertical-align: middle;
 }
