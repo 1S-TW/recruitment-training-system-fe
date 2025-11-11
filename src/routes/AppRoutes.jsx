@@ -5,7 +5,8 @@ import Register from '../pages/Register';
 import ForgotPassword from '../pages/ForgotPassword';
 import HomePage from '../pages/HomePage';
 import HRRequestPage from '../pages/HRRequestPage';
-import ProtectedRoute from '../components/ProtectedRoute';
+import RecruitmentPlanPage from "../pages/RecruitmentPlanPage";
+import ProtectedRoute from "../components/ProtectedRoute";
 
 // --- THÊM IMPORT ---
 import VerifyEmail from '../pages/VerifyEmail';
@@ -42,7 +43,15 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-
+      {/* Trang Kế hoạch tuyển dụng */}
+      <Route
+        path="/recruitment/plan"
+        element={
+          <ProtectedRoute>
+            <RecruitmentPlanPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Nếu người dùng nhập sai URL */}
       <Route path="*" element={<Login />} />

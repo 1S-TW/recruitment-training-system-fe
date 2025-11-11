@@ -84,7 +84,7 @@ export default function Sidebar() {
                     return (
                       <Link
                         key={j}
-                        to={sub.path}
+to={sub.path}
                         className={`nav__item nav__item--sub ${subActive ? "nav__item--active" : ""}`}
                       >
                         <span className="nav__label">{sub.label}</span>

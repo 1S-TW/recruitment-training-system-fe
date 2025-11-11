@@ -1,5 +1,5 @@
 import React from "react";
-import "../styles/request.css"; // dùng lại style sẵn có
+import "../styles/plan.css"; // dùng lại style sẵn có
 
 const Pagination = ({
   currentPage,

@@ -3,6 +3,7 @@ import useHrRequests from "../hooks/useHrRequests";
 import Layout from "../components/Layout";
 import ActionButtons from "../components/ActionButtons";
 import Pagination from "../components/Pagination";
+import { UserCheck } from "lucide-react";
 import "../styles/request.css";
 
 export default function HRRequestPage() {
@@ -52,20 +53,22 @@ export default function HRRequestPage() {
       {/* === Breadcrumb === */}
       <div className="breadcrumb-container fade-slide">
         <div className="breadcrumb-left">
-          <span className="breadcrumb-icon">💼</span>
+          <div className="breadcrumb-icon-wrapper">
+            <UserCheck size={18} strokeWidth={2} />
+          </div>
           <span className="breadcrumb-item">Tuyển dụng</span>
-          <span className="breadcrumb-separator">&gt;</span>
+          <span className="breadcrumb-separator">›</span>
           <span className="breadcrumb-current">Nhu cầu nhân sự</span>
         </div>
 
         <div className="breadcrumb-right">
           <div className="mini-pagination">
             <label className="mini-pagination-label">Hiển thị:</label>
-            <select
-              value={itemsPerPage}
-              onChange={handleChangeItemsPerPage}
-              className="mini-pagination-select"
-            >
+              <select
+                value={itemsPerPage}
+                onChange={handleChangeItemsPerPage}
+                className="mini-pagination-select smooth-dropdown"
+              >
               <option value={10}>10</option>
               <option value={15}>15</option>
               <option value={20}>20</option>
@@ -79,23 +82,40 @@ export default function HRRequestPage() {
         <div className="title-row">
           <h2 className="page-title-small">Nhu cầu nhân sự </h2>
 
+          {/* === Thanh lọc === */}
           <div className="filter-bar">
-            {/* Search theo tên */}
-            <div className="filter-item">
-              <input
-                type="text"
-                className="filter-input"
-                placeholder="Tìm theo tên..."
-                value={searchName}
-                onChange={(e) => setSearchName(e.target.value)}
-              />
-              <span className="filter-icon">🔍</span>
+            {/* 🔍 Tìm theo tên có icon & gợi ý */}
+            <div className="filter-item search-wrapper">
+              <div className="search-input-container">
+                <input
+                  type="text"
+                  className="filter-input search-input"
+                  placeholder="Tìm theo tên..."
+                  value={searchName}
+                  onChange={(e) => setSearchName(e.target.value)}
+                  list="recent-names"
+                />
+               <span className="filter-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="7" cy="7" r="5" />
+                  <line x1="11" y1="11" x2="15" y2="15" />
+                </svg>
+              </span>
+
+                <datalist id="recent-names">
+                  {(JSON.parse(localStorage.getItem("recentNames") || "[]")).map(
+                    (name, i) => (
+                      <option key={i} value={name} />
+                    )
+                  )}
+                </datalist>
+              </div>
             </div>
 
-            {/* Trạng thái */}
+            {/* ⚙️ Trạng thái */}
             <div className="filter-item">
               <select
-                className="filter-select"
+                className="filter-select smooth-dropdown"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
@@ -107,13 +127,47 @@ export default function HRRequestPage() {
               </select>
             </div>
 
-            {/* Nút thêm nhu cầu */}
-            <button
-              className="add-plan-btn clean"
-              onClick={() => console.log("Thêm nhu cầu tuyển dụng")}
+            <div className="filter-item clear-filters-wrapper">
+              <button
+                className="clear-filters-btn modern-reset"
+                onClick={(e) => {
+                  const btn = e.currentTarget.querySelector(".icon-refresh");
+                  btn.classList.add("spin-click");
+                  setTimeout(() => btn.classList.remove("spin-click"), 600);
+
+                  setSearchName("");
+                  setStatusFilter("");
+                  setSelectedDate(null); // hoặc setDateFilter("") nếu bạn chưa dùng selectedDate
+                }}
+              >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              className="icon-refresh"
             >
-              ＋ Thêm nhu cầu nhân sự
-            </button>
+              <path
+                d="M21 12a9 9 0 1 1-3-6.7M21 8v4h-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+                <span>Xóa tất cả bộ lọc</span>
+              </button>
+            </div>
+
+
+            {/* ➕ Nút thêm kế hoạch */}
+            <div className="filter-item add-btn-wrapper">
+              <button
+                className="add-plan-btn modern-add"
+                onClick={() => console.log("Thêm nhu cầu nhân sự")}
+              >
+                ＋ Thêm nhu cầu nhân sự
+              </button>
+            </div>
           </div>
         </div>
 

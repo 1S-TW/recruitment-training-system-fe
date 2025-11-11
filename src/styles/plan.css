@@ -1,5 +1,5 @@
-/* --- PAGE BASE --- */
-.request-page {
+/* === PAGE BASE === */
+.recruitment-page {
   padding: 24px 32px;
   font-family: "Inter", "Segoe UI", sans-serif;
   color: #111827;
@@ -7,7 +7,7 @@
   min-height: 100vh;
 }
 
-/* --- BREADCRUMB --- */
+/* === BREADCRUMB === */
 .breadcrumb-container {
   display: flex;
   justify-content: space-between;
@@ -507,6 +507,24 @@ margin-bottom: 20px; /* đẩy nút lên trên */
   box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
 }
 
+.calendar-icon {
+  color: #0284c7;
+}
+
+/* === CALENDAR POPUP === */
+.calendar-popup {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  padding: 16px;
+  z-index: 100;
+  width: 280px;
+  animation: fadeInCalendar 0.3s ease-in-out;
+}
 /* === CLEAR FILTER BUTTON (PROFESSIONAL RELOAD STYLE) === */
 .clear-filters-wrapper {
   display: flex;
