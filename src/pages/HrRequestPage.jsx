@@ -216,7 +216,7 @@ export default function HRRequestPage() {
                       <td>
                         <span className="status-badge">{req.status}</span>
                       </td>
-                      <td>{req.createdBy || "Không rõ"}</td>
+                      <td>{req.createdByName || "Không rõ"}</td>
                       <td className="actions-cell text-center">
                         <ActionButtons
                           onView={() => console.log("Xem", req.requestId)}
