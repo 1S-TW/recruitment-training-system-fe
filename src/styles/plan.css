@@ -408,3 +408,201 @@
   from { opacity: 0; transform: translateX(12px); }
   to { opacity: 1; transform: translateX(0); }
 }
+
+/* --- MODAL STYLES --- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(17, 24, 39, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 40;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  z-index: 50;
+  width: 90%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: zoomIn 0.25s ease-out;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.modal-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #4b5563;
+  transition: all 0.2s ease;
+}
+.modal-close-btn:hover {
+  background: #e5e7eb;
+  color: #111827;
+  transform: rotate(90deg);
+}
+
+.modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  color: #374151;
+}
+
+/* --- Modal Detail List --- */
+.detail-list {
+  display: grid;
+  gap: 12px;
+  font-size: 0.95rem;
+}
+.detail-item {
+  display: flex;
+  justify-content: space-between; /* Đẩy Label sang trái, Value sang phải */
+  line-height: 1.5;
+  border-bottom: 1px dashed #f0f0f0; /* Thêm gạch ngang mờ (tùy chọn) */
+  padding-bottom: 5px;
+}
+.detail-item:last-child {
+  border-bottom: none;
+}
+.detail-label {
+  font-weight: 600;
+  color: #334155;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+.detail-value {
+  font-weight: 500;
+  color: #1e293b;
+  text-align: right; /* ✅ Đây là key, ép giá trị căn sang phải */
+  flex-grow: 1; /* Cho phép giá trị lấp đầy khoảng trống còn lại */
+}
+
+.detail-value.status-confirmed {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+/* --- Tech List Table --- */
+.tech-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+  font-size: 0.9rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.tech-table th,
+.tech-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+}
+.tech-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+}
+.tech-table td {
+  background: #fff;
+  color: #1e293b;
+}
+.tech-table tr:last-child td {
+  border-bottom: none;
+}
+.text-center { text-align: center !important; }
+
+/* --- Modal Footer/Actions --- */
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+}
+
+.modal-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.modal-btn:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+.modal-btn.btn-approve {
+  background-color: #2563eb;
+  color: white;
+}
+.modal-btn.btn-reject {
+  background-color: #dc2626;
+  color: white;
+}
+.modal-btn.btn-secondary {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+/* --- Reject Form --- */
+.reject-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.reject-textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+.reject-textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+/* Keyframes (nếu chưa có) */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes zoomIn {
+  from { opacity: 0.5; transform: translate(-50%, -50%) scale(0.9); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}

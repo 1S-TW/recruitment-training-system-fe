@@ -1,23 +1,40 @@
+// src/pages/RecruitmentPlanPage.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Layout from "../components/Layout";
 import Pagination from "../components/Pagination";
-import ActionButtons from "../components/ActionButtons"; // ✅ thêm import
+import ActionButtons from "../components/ActionButton"; // ✅ Import đã có
+import Modal from "../components/Modal"; // ✅ Thêm import Modal
 import "../styles/plan.css";
 
+// Hàm helper định dạng ngày
+const formatDate = (dateString) => {
+  if (!dateString) return "—";
+  return new Date(dateString).toLocaleDateString("vi-VN");
+};
+
 const RecruitmentPlanPage = () => {
-  const [plans, setPlans] = useState([]);
-  const [filteredPlans, setFilteredPlans] = useState([]);
+
   const [searchName, setSearchName] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
+  const [plans, setPlans] = useState([]);
+  const [filteredPlans, setFilteredPlans] = useState([]);
+  // ... (các state khác giữ nguyên) ...
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [isAnimating, setIsAnimating] = useState(false);
 
+  // --- 💎 MODAL STATE ---
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [modalStep, setModalStep] = useState(0); // 0: closed, 1: view, 2: approved, 3: reject
+  const [rejectReason, setRejectReason] = useState("");
+  // --- (Hết) MODAL STATE ---
+
   useEffect(() => {
+    // ... (Phần fetch data giữ nguyên) ...
     const token = localStorage.getItem("token");
     if (!token) {
       setError("⚠️ Bạn chưa đăng nhập hoặc token đã hết hạn");
@@ -30,16 +47,23 @@ const RecruitmentPlanPage = () => {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
+        // Log dữ liệu để kiểm tra cấu trúc
+        console.log("Data fetched:", res.data);
+        
         setPlans(res.data);
         setFilteredPlans(res.data);
         setError(null);
       })
-      .catch(() => setError("❌ Không thể tải danh sách kế hoạch tuyển dụng"))
+      .catch((err) => {
+        console.error("Fetch error:", err);
+        setError("❌ Không thể tải danh sách kế hoạch tuyển dụng");
+      })
       .finally(() => setLoading(false));
   }, []);
 
   // --- FILTER LOGIC ---
   useEffect(() => {
+    // ... (Phần filter logic giữ nguyên) ...
     let filtered = [...plans];
     if (searchName.trim()) {
       filtered = filtered.filter((p) =>
@@ -58,6 +82,7 @@ const RecruitmentPlanPage = () => {
     setCurrentPage(1);
   }, [searchName, statusFilter, dateFilter, plans]);
 
+  // ... (các hàm handleChangeItemsPerPage, handlePageChange giữ nguyên) ...
   const totalPages = Math.ceil(filteredPlans.length / itemsPerPage) || 1;
   const indexOfLast = currentPage * itemsPerPage;
   const indexOfFirst = indexOfLast - itemsPerPage;
@@ -76,6 +101,100 @@ const RecruitmentPlanPage = () => {
       setIsAnimating(false);
     }, 180);
   };
+
+  // --- 💎 MODAL HANDLERS ---
+  const handleViewDetails = (plan) => {
+    setSelectedPlan(plan);
+    setModalStep(1); // Mở modal xem chi tiết (bước 1)
+  };
+
+  const handleApprove = () => {
+    setModalStep(2); // Chuyển sang modal đã duyệt (bước 2)
+  };
+
+  const handleStartReject = () => {
+    setModalStep(3); // Chuyển sang modal từ chối (bước 3)
+    setRejectReason(""); // Reset lý do
+  };
+
+  const handleSubmitRejection = () => {
+    // TODO: Gọi API từ chối với selectedPlan.id và rejectReason
+    console.log("Đã từ chối kế hoạch:", selectedPlan.recruitmentPlanId);
+    console.log("Lý do:", rejectReason);
+    handleCloseModal();
+  };
+
+  const handleCloseModal = () => {
+    setModalStep(0);
+    setSelectedPlan(null);
+  };
+  // --- (Hết) MODAL HANDLERS ---
+
+  // --- 💎 RENDER COMPONENTS CHO MODAL ---
+  // Component nội dung chi tiết (dùng cho cả bước 1 và 2)
+  const renderPlanDetails = (plan, showStatus = false) => {
+    if (!plan) return null;
+
+    const request = plan.request; // request lồng trong plan
+    if (!request) {
+      console.error("Plan không có 'request' object:", plan);
+      return <p className="error-text">Lỗi: Kế hoạch này thiếu thông tin 'request'.</p>
+    }
+
+    return (
+      <div className="detail-list">
+        <div className="detail-item">
+          <span className="detail-label">Tên nhu cầu:</span>
+          <span className="detail-value">{request.requestTitle}</span>
+        </div>
+        <div className="detail-item">
+          <span className="detail-label">Tên kế hoạch:</span>
+          <span className="detail-value">{plan.planName}</span>
+        </div>
+        
+        {/* Bảng công nghệ */}
+        <table className="tech-table">
+          <thead>
+            <tr>
+              <th>Công nghệ</th>
+              <th className="text-center">Đầu ra (SL)</th>
+              <th className="text-center">Đầu vào (SL)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {request.quantityCandidates && request.quantityCandidates.length > 0 ? (
+              request.quantityCandidates.map((qc) => (
+                <tr key={qc.technology.id}>
+                  <td>{qc.technology.name}</td>
+                  <td className="text-center">{qc.soLuong}</td>
+                  <td className="text-center">{qc.soLuong * 2}</td>
+                </tr>
+              ))
+            ) : (
+              <tr><td colSpan="3" className="text-center">Không có thông tin công nghệ.</td></tr>
+            )}
+          </tbody>
+        </table>
+
+        <div className="detail-item">
+          <span className="detail-label">Thời hạn tuyển dụng:</span>
+          <span className="detail-value">{formatDate(plan.createdAt)}</span>
+        </div>
+        <div className="detail-item">
+          <span className="detail-label">Thời hạn bàn giao:</span>
+          <span className="detail-value">{formatDate(plan.deliveryDeadline)}</span>
+        </div>
+
+        {showStatus && (
+          <div className="detail-item">
+            <span className="detail-label">Trạng thái:</span>
+            <span className="detail-value status-confirmed">ĐÃ XÁC NHẬN</span>
+          </div>
+        )}
+      </div>
+    );
+  };
+  // --- (Hết) RENDER COMPONENTS ---
 
   return (
     <Layout>
@@ -159,62 +278,57 @@ const RecruitmentPlanPage = () => {
 
         {/* === Table === */}
         <div className={`table-container table-fade ${isAnimating ? "fade-out" : "fade-in"}`}>
-        {loading ? (
-          <p className="loading-text">Đang tải dữ liệu...</p>
-        ) : error ? (
-          <p className="error-text">{error}</p>
-        ) : (
-          <table className="styled-table">
-            <thead>
-              <tr>
-                <th>STT</th>
-                <th>Tên kế hoạch</th>
-                <th>Ngày tạo</th>
-                <th>Trạng thái</th>
-                <th>Người gửi</th>
-                <th>Hành động</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentPlans.length === 0 ? (
+          {loading ? (
+            <p className="loading-text">Đang tải dữ liệu...</p>
+          ) : error ? (
+            <p className="error-text">{error}</p>
+          ) : (
+            <table className="styled-table">
+              <thead>
                 <tr>
-                  <td colSpan="6" className="text-center">
-                    Không có dữ liệu
-                  </td>
+                  <th>STT</th>
+                  <th>Tên kế hoạch</th>
+                  <th>Ngày tạo</th>
+                  <th>Trạng thái</th>
+                  <th>Người gửi</th>
+                  <th>Hành động</th>
                 </tr>
-              ) : (
-                currentPlans.map((plan, index) => (
-                  <tr key={plan.recruitmentPlanId || index}>
-                    <td>{indexOfFirst + index + 1}</td>
-                    <td>{plan.planName}</td>
-                    <td>
-                      {plan.createdAt
-                        ? new Date(plan.createdAt).toLocaleDateString()
-                        : "—"}
-                    </td>
-                    <td>
-                      <span className="status-badge">{plan.status}</span>
-                    </td>
-                    <td>
-                      {plan.request?.createdBy?.fullName ||
-                        plan.request?.createdBy?.username ||
-                        "Không rõ"}
-                    </td>
-                    <td className="actions-cell text-center">
-                      {/* ✅ dùng component tái sử dụng */}
-                      <ActionButtons
-                        onView={() => console.log("Xem", plan.recruitmentPlanId)}
-                        onEdit={() => console.log("Chỉnh sửa", plan.recruitmentPlanId)}
-                      />
+              </thead>
+              <tbody>
+                {currentPlans.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="text-center">
+                      Không có dữ liệu
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        )}
-      </div>
-
+                ) : (
+                  currentPlans.map((plan, index) => (
+                    <tr key={plan.recruitmentPlanId || index}>
+                      <td>{indexOfFirst + index + 1}</td>
+                      <td>{plan.planName}</td>
+                      <td>{formatDate(plan.createdAt)}</td> {/* Dùng hàm formatDate */}
+                      <td>
+                        <span className="status-badge">{plan.status}</span>
+                      </td>
+                      <td>
+                        {plan.request?.createdBy?.fullName ||
+                          plan.request?.createdBy?.username ||
+                          "Không rõ"}
+                      </td>
+                      <td className="actions-cell text-center">
+                        {/* ✅ CẬP NHẬT CHỨC NĂNG CHO NÚT XEM */}
+                        <ActionButtons
+                          onView={() => handleViewDetails(plan)}
+                          onEdit={() => console.log("Chỉnh sửa", plan.recruitmentPlanId)}
+                        />
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
 
         {/* === Pagination === */}
         <Pagination
@@ -223,6 +337,87 @@ const RecruitmentPlanPage = () => {
           onPageChange={handlePageChange}
         />
       </div>
+
+      {/* --- 💎 RENDER MODALS --- */}
+      
+      {/* 1. Modal Xem chi tiết (Chờ duyệt) */}
+      {modalStep === 1 && selectedPlan && (
+        <Modal 
+          title="Chi tiết Kế hoạch tuyển dụng" 
+          onClose={handleCloseModal}
+          width={600}
+        >
+          {renderPlanDetails(selectedPlan, false)}
+          <div className="modal-footer">
+            <button 
+              className="modal-btn btn-reject" 
+              onClick={handleStartReject}
+            >
+              Từ chối
+            </button>
+            <button 
+              className="modal-btn btn-approve"
+              onClick={handleApprove}
+            >
+              Phê duyệt
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* 2. Modal Đã duyệt */}
+      {modalStep === 2 && selectedPlan && (
+        <Modal 
+          title="Kế hoạch Đã xác nhận" 
+          onClose={handleCloseModal}
+          width={600}
+        >
+          {renderPlanDetails(selectedPlan, true)}
+          <div className="modal-footer">
+            <button className="modal-btn btn-secondary" onClick={() => console.log("Xem kết quả đào tạo")}>
+              Xem kết quả đào tạo
+            </button>
+            <button className="modal-btn btn-approve" onClick={() => console.log("Xem kết quả tuyển dụng")}>
+              Xem kết quả tuyển dụng
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* 3. Modal Từ chối */}
+      {modalStep === 3 && selectedPlan && (
+        <Modal 
+          title="Lý do Từ chối Kế hoạch" 
+          onClose={handleCloseModal}
+          width={500}
+        >
+          <div className="reject-form">
+            <label htmlFor="rejectReason">
+              Vui lòng nhập lý do từ chối kế hoạch: "{selectedPlan.planName}"
+            </label>
+            <textarea
+              id="rejectReason"
+              className="reject-textarea"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Nhập lý do..."
+            />
+          </div>
+          <div className="modal-footer">
+            <button className="modal-btn btn-secondary" onClick={handleCloseModal}>
+              Hủy
+            </button>
+            <button 
+              className="modal-btn btn-reject" 
+              onClick={handleSubmitRejection}
+              disabled={!rejectReason.trim()}
+            >
+              Xác nhận từ chối
+            </button>
+          </div>
+        </Modal>
+      )}
+      {/* --- (Hết) RENDER MODALS --- */}
     </Layout>
   );
 };
