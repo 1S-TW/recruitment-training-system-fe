@@ -117,17 +117,55 @@ const RecruitmentPlanPage = () => {
     setRejectReason(""); // Reset lý do
   };
 
-  const handleSubmitRejection = () => {
-    // TODO: Gọi API từ chối với selectedPlan.id và rejectReason
-    console.log("Đã từ chối kế hoạch:", selectedPlan.recruitmentPlanId);
-    console.log("Lý do:", rejectReason);
-    handleCloseModal();
-  };
-
-  const handleCloseModal = () => {
+  // src/pages/RecruitmentPlanPage.jsx (Thay thế hàm handleSubmitRejection)
+const handleCloseModal = () => {
     setModalStep(0);
     setSelectedPlan(null);
-  };
+};
+
+const handleSubmitRejection = async () => { 
+    const planId = selectedPlan.recruitmentPlanId;
+    const token = localStorage.getItem("token");
+
+    if (!planId || !rejectReason.trim()) {
+        alert("Lý do từ chối không được để trống.");
+        return;
+    }
+
+    try {
+        const response = await axios.post(
+            `http://localhost:8080/api/recruitment-plans/${planId}/reject`, 
+            { rejectionReason: rejectReason }, 
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        
+        alert(response.data.message);
+        
+        // ✅ CẬP NHẬT TRẠNG THÁI CỤC BỘ (LƯU VÀO TRƯỜNG 'note')
+        const updatedPlanData = { status: 'CANCELED', note: rejectReason }; 
+
+        setPlans(prevPlans => prevPlans.map(p => 
+            p.recruitmentPlanId === planId 
+                ? { ...p, ...updatedPlanData }
+                : p
+        ));
+        setFilteredPlans(prevFilteredPlans => prevFilteredPlans.map(p => 
+            p.recruitmentPlanId === planId 
+                ? { ...p, ...updatedPlanData }
+                : p
+        ));
+        setSelectedPlan(prevPlan => ({ 
+            ...prevPlan, 
+            ...updatedPlanData 
+        }));
+        
+        handleCloseModal();
+
+    } catch (error) {
+        console.error("Lỗi khi từ chối:", error);
+        alert(error.response?.data?.error || "Lỗi không xác định khi từ chối.");
+    }
+};
   // --- (Hết) MODAL HANDLERS ---
 
   // --- 💎 RENDER COMPONENTS CHO MODAL ---
@@ -338,44 +376,48 @@ const RecruitmentPlanPage = () => {
 
       {/* --- 💎 RENDER MODALS --- */}
       
-      {/* 1. Modal Xem chi tiết (Chờ duyệt) */}
-      {modalStep === 1 && selectedPlan && (
-        <Modal 
-          title="Chi tiết Kế hoạch tuyển dụng" 
-          onClose={handleCloseModal}
-          width={600}
-        >
-          {renderPlanDetails(selectedPlan, false)}
-          {selectedPlan.status === "PENDING" ? (
-    <div className="modal-footer">
-        {/* HIỂN THỊ CÁC NÚT HÀNH ĐỘNG KHI STATUS LÀ PENDING */}
-        <button 
-            className="modal-btn btn-reject" 
-            onClick={handleStartReject}
-        >
-            Từ chối
-        </button>
-        <button 
-            className="modal-btn btn-approve"
-            onClick={handleApprove}
-        >
-            Phê duyệt
-        </button>
-    </div>
-) : (
-    <div className="modal-footer justify-content-center">
-        {/* HIỂN THỊ THÔNG BÁO VÀ NÚT ĐÓNG CHO CÁC STATUS KHÁC */}
-        <p style={{ margin: 0, color: '#6b7280', fontWeight: 600 }}>
-            Kế hoạch đang ở trạng thái "{selectedPlan.status}". Chỉ có thể xem.
-        </p>
-        <button className="modal-btn btn-secondary" onClick={handleCloseModal}>
-            Đóng
-        </button>
-    </div>
-)}
-        </Modal>
-      )}
+      // src/pages/RecruitmentPlanPage.jsx (Thay thế toàn bộ khối Modal 1)
 
+{/* 1. Modal Xem chi tiết (Chờ duyệt) */}
+{modalStep === 1 && selectedPlan && (
+    <Modal 
+      title="Chi tiết Kế hoạch tuyển dụng" 
+      onClose={handleCloseModal}
+      width={600}
+    >
+      {renderPlanDetails(selectedPlan, false)}
+
+      {/* TERNARY EXPRESSION BAO GỒM 3 TRẠNG THÁI */}
+      {selectedPlan.status === "PENDING" ? (
+          // PENDING: HIỂN THỊ NÚT PHÊ DUYỆT/TỪ CHỐI
+          <div className="modal-footer">
+              <button className="modal-btn btn-reject" onClick={handleStartReject}>Từ chối</button>
+              <button className="modal-btn btn-approve" onClick={handleApprove}>Phê duyệt</button>
+          </div>
+      ) : selectedPlan.status === "CANCELED" || selectedPlan.status === "REJECTED" ? ( 
+          // CANCELED/REJECTED: HIỂN THỊ LÝ DO BỊ HỦY/TỪ CHỐI
+          <div className="modal-footer-canceled">
+              <p className="rejection-title">LÝ DO KẾ HOẠCH BỊ {selectedPlan.status === 'CANCELED' ? 'HỦY' : 'TỪ CHỐI'}:</p>
+              <p className="rejection-reason-text">
+                  {selectedPlan.note || "Không có lý do cụ thể được ghi lại."}
+              </p>
+              <button className="modal-btn btn-secondary" onClick={handleCloseModal}>
+                  Đóng
+              </button>
+          </div>
+      ) : (
+          // TRẠNG THÁC KHÁC: CHỈ XEM
+          <div className="modal-footer justify-content-center">
+              <p style={{ margin: 0, color: '#6b7280', fontWeight: 600 }}>
+                  Kế hoạch đang ở trạng thái "{selectedPlan.status}". Chỉ có thể xem.
+              </p>
+              <button className="modal-btn btn-secondary" onClick={handleCloseModal}>
+                  Đóng
+              </button>
+          </div>
+      )}
+    </Modal>
+)}
       {/* 2. Modal Đã duyệt */}
       {modalStep === 2 && selectedPlan && (
         <Modal 

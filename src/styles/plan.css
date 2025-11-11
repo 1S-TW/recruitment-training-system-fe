@@ -606,3 +606,91 @@
   from { opacity: 0.5; transform: translate(-50%, -50%) scale(0.9); }
   to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
+
+/* --- REVISED: Modal Detail List (Cân bằng & Hài hòa) --- */
+/* Danh sách chi tiết (Tên nhu cầu, Thời hạn bàn giao) */
+.detail-list {
+    display: flex; /* Giữ nguyên flex cho tổng thể */
+    flex-direction: column;
+    padding: 15px 0;
+    margin-bottom: 10px;
+}
+
+.detail-item {
+    display: grid;
+    /* Chia 2 cột: Label 180px, Value còn lại */
+    grid-template-columns: 180px 1fr; 
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0; /* ✅ Dùng đường solid mờ để tách */
+    font-size: 0.95rem;
+}
+.detail-item:last-of-type {
+    border-bottom: none;
+}
+
+.detail-label {
+    font-weight: 500; 
+    color: #4b5563; /* Màu chữ tiêu đề mềm mại hơn */
+}
+
+.detail-value {
+    font-weight: 600;
+    color: #111827;
+    text-align: right; /* Căn phải để dữ liệu thẳng hàng */
+    padding-left: 10px;
+}
+
+/* --- REVISED: CANCELED/REJECTED REASON BLOCK (Soft Warning) --- */
+.modal-footer-canceled {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px;
+    margin-top: 20px;
+    /* ✅ Sử dụng màu XANH NHẠT (Blue) để cảnh báo nhẹ nhàng, hài hòa */
+    background-color: #f0f9ff; 
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+}
+
+.rejection-title {
+    font-weight: 700;
+    color: #0369a1; /* Màu xanh đậm */
+    margin-bottom: 10px;
+    font-size: 1rem;
+}
+
+.rejection-reason-text {
+    background-color: #fff;
+    border: 1px solid #d1d5db;
+    padding: 12px;
+    border-radius: 6px;
+    width: 100%;
+    font-size: 0.9rem;
+    color: #374151;
+    white-space: pre-wrap;
+}
+
+/* --- REVISED: Modal Footer (Action Buttons) --- */
+.modal-footer {
+    padding-top: 20px;
+    border-top: none; /* Bỏ border trên nếu đã có margin-top */
+    background-color: transparent; /* Nền trong suốt */
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+.modal-footer.justify-content-center {
+    justify-content: center;
+    background-color: #f8f8f8; /* Nền nhạt cho vùng chỉ xem */
+    padding: 12px 20px;
+    border-top: 1px solid #f0f0f0; 
+}
+
+/* --- Refine Technology Table (Tech-table) --- */
+.tech-table th {
+    background-color: #f5f7fa; /* Màu nền header sáng hơn */
+    color: #4b5563; 
+    font-size: 0.8rem;
+    padding: 10px 12px;
+}
