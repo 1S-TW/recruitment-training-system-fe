@@ -1,0 +1,166 @@
+/* === WRAPPER === */
+.datepicker-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+/* === INPUT BUTTON === */
+.datepicker-input {
+    padding: 10px 16px;
+    font-size: 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #fff;
+    color: #111827;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.25s ease;
+}
+
+.datepicker-input:hover {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+}
+
+.calendar-icon {
+    color: #0284c7;
+}
+
+/* === POPUP === */
+.calendar-popup {
+    position: absolute;
+    top: 110%;
+    left: 0;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    padding: 16px;
+    z-index: 100;
+    width: 280px;
+    animation: fadeInCalendar 0.3s ease-in-out;
+}
+
+/* === HEADER: THÁNG + NĂM === */
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    font-size: 0.95rem;
+    color: #0f172a;
+}
+
+.month-select {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 0.95rem;
+    background: #f9fafb;
+    color: #0f172a;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.month-select:hover {
+    border-color: #0284c7;
+}
+
+.year-nav {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.year-btn {
+    background: #f1f5f9;
+    border: none;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    color: #0284c7;
+    transition: background 0.2s ease;
+}
+
+.year-btn:hover {
+    background-color: #e0f2fe;
+}
+
+/* === GRID NGÀY === */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.calendar-day {
+    padding: 8px 0;
+    text-align: center;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: #1e293b;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.calendar-day:hover {
+    background-color: #e0f2fe;
+    color: #0284c7;
+}
+
+.calendar-day.selected {
+    background-color: #0284c7;
+    color: white;
+    font-weight: bold;
+}
+
+/* === FOOTER BUTTONS === */
+.calendar-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+}
+
+.calendar-footer button {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.cancel-btn {
+    background-color: #f3f4f6;
+    color: #374151;
+}
+
+.cancel-btn:hover {
+    background-color: #e5e7eb;
+}
+
+.apply-btn {
+    background-color: #0284c7;
+    color: white;
+}
+
+.apply-btn:hover {
+    background-color: #0369a1;
+}
+
+/* === ANIMATION === */
+@keyframes fadeInCalendar {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

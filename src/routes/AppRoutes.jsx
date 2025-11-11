@@ -5,6 +5,7 @@ import LoginPage from "../pages/LoginPage";
 import HomePage from "../pages/HomePage";
 import HRRequestPage from "../pages/HrRequestPage"; // Thêm dòng này
 import ProtectedRoute from "../components/ProtectedRoute";
+import RecruitmentPlanPage from "../pages/RecruitmentPlanPage.jsx";
 
 function AppRoutes() {
   return (
@@ -20,7 +21,15 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-
+        {/* Trang Kế hoạch tuyển dụng */}
+        <Route
+            path="/recruitment/plan"
+            element={
+                <ProtectedRoute>
+                    <RecruitmentPlanPage />
+                </ProtectedRoute>
+            }
+        />
       {/* Trang Nhu cầu nhân sự */}
       <Route
         path="/recruitment/needs"
