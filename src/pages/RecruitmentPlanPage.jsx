@@ -295,36 +295,34 @@ const RecruitmentPlanPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {currentPlans.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="text-center">
-                      Không có dữ liệu
-                    </td>
-                  </tr>
-                ) : (
-                  currentPlans.map((plan, index) => (
-                    <tr key={plan.recruitmentPlanId || index}>
-                      <td>{indexOfFirst + index + 1}</td>
-                      <td>{plan.planName}</td>
-                      <td>{formatDate(plan.createdAt)}</td> {/* Dùng hàm formatDate */}
-                      <td>
-                        <span className="status-badge">{plan.status}</span>
-                      </td>
-                      <td>
-                        {plan.request?.createdBy?.fullName ||
-                          plan.request?.createdBy?.username ||
-                          "Không rõ"}
-                      </td>
-                      <td className="actions-cell text-center">
-                        {/* ✅ CẬP NHẬT CHỨC NĂNG CHO NÚT XEM */}
-                        <ActionButtons
-                          onView={() => handleViewDetails(plan)}
-                          onEdit={() => console.log("Chỉnh sửa", plan.recruitmentPlanId)}
-                        />
-                      </td>
-                    </tr>
-                  ))
-                )}
+                {Array.isArray(currentPlans) && currentPlans.length > 0 ? (
+        // Logic map chỉ chạy khi currentPlans chắc chắn là mảng và có dữ liệu
+        currentPlans.map((plan, index) => (
+            <tr key={plan.recruitmentPlanId || index}>
+                <td>{indexOfFirst + index + 1}</td>
+                <td>{plan.planName}</td>
+                <td>{formatDate(plan.createdAt)}</td>
+                <td>
+                    <span className="status-badge">{plan.status}</span>
+                </td>
+                <td>
+                    {plan.request?.createdBy?.fullName ||
+                      plan.request?.createdBy?.username ||
+                      "Không rõ"}
+                </td>
+                <td className="actions-cell text-center">
+                    <ActionButtons
+                      onView={() => handleViewDetails(plan)}
+                      onEdit={() => console.log("Chỉnh sửa", plan.recruitmentPlanId)}
+                    />
+                </td>
+            </tr>
+        ))
+    ) : (
+        <tr>
+            <td colSpan="6" className="text-center">Không có dữ liệu</td>
+        </tr>
+    )}
               </tbody>
             </table>
           )}
@@ -348,20 +346,33 @@ const RecruitmentPlanPage = () => {
           width={600}
         >
           {renderPlanDetails(selectedPlan, false)}
-          <div className="modal-footer">
-            <button 
-              className="modal-btn btn-reject" 
-              onClick={handleStartReject}
-            >
-              Từ chối
-            </button>
-            <button 
-              className="modal-btn btn-approve"
-              onClick={handleApprove}
-            >
-              Phê duyệt
-            </button>
-          </div>
+          {selectedPlan.status === "PENDING" ? (
+    <div className="modal-footer">
+        {/* HIỂN THỊ CÁC NÚT HÀNH ĐỘNG KHI STATUS LÀ PENDING */}
+        <button 
+            className="modal-btn btn-reject" 
+            onClick={handleStartReject}
+        >
+            Từ chối
+        </button>
+        <button 
+            className="modal-btn btn-approve"
+            onClick={handleApprove}
+        >
+            Phê duyệt
+        </button>
+    </div>
+) : (
+    <div className="modal-footer justify-content-center">
+        {/* HIỂN THỊ THÔNG BÁO VÀ NÚT ĐÓNG CHO CÁC STATUS KHÁC */}
+        <p style={{ margin: 0, color: '#6b7280', fontWeight: 600 }}>
+            Kế hoạch đang ở trạng thái "{selectedPlan.status}". Chỉ có thể xem.
+        </p>
+        <button className="modal-btn btn-secondary" onClick={handleCloseModal}>
+            Đóng
+        </button>
+    </div>
+)}
         </Modal>
       )}
 
