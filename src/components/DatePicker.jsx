@@ -14,62 +14,71 @@ const DatePicker = ({ selectedDate, onDateChange }) => {
   const [showCalendar, setShowCalendar] = useState(false);
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
-  const [tempDate, setTempDate] = useState(selectedDate || null);
+  const [selectedDay, setSelectedDay] = useState(null);
 
-useEffect(() => {
-  if (selectedDate && !showCalendar) {
-    setYear(selectedDate.getFullYear());
-    setMonth(selectedDate.getMonth());
-    setTempDate(selectedDate);
-  }
-}, [selectedDate, showCalendar]);
+  // Khi có selectedDate mới → cập nhật hiển thị
+  useEffect(() => {
+    if (selectedDate) {
+      const displayY = selectedDate.displayYear || selectedDate.getFullYear();
+      const displayM = selectedDate.displayMonth || selectedDate.getMonth();
+      setYear(displayY);
+      setMonth(displayM);
+      setSelectedDay(selectedDate.hasDaySelection ? selectedDate.getDate() : null);
+    } else {
+      setSelectedDay(null);
+    }
+  }, [selectedDate]);
 
   const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
-  const getFirstDay = (year, month) => (new Date(year, month, 1).getDay() + 6) % 7; // start Monday
+  const getFirstDay = (year, month) => (new Date(year, month, 1).getDay() + 6) % 7; // Bắt đầu từ T2
 
-  const handleDateClick = (day) => {
-    const date = new Date(year, month, day);
-    setTempDate(date);
+  const handleDateClick = (day) => setSelectedDay(day);
+
+  const handleApply = () => {
+    let dateToSend = new Date(year, month, selectedDay || 1);
+    dateToSend.displayYear = year;
+    dateToSend.displayMonth = month;
+
+    if (selectedDay !== null) {
+      dateToSend.filterMode = "day";
+      dateToSend.hasDaySelection = true;
+      dateToSend.displayText = dateToSend.toLocaleDateString("vi-VN");
+    } else {
+      dateToSend.filterMode = "month";
+      dateToSend.hasDaySelection = false;
+      dateToSend.displayText = `${months[month]} ${year}`;
+    }
+
+    onDateChange(dateToSend);
+    setShowCalendar(false);
   };
 
-const handleApply = () => {
-  let dateToApply = tempDate;
-
-  // Nếu chưa chọn ngày nào, mặc định chọn ngày 1 của tháng đang hiển thị
-  if (!dateToApply) {
-    dateToApply = new Date(year, month, 1);
-  }
-
-  onDateChange(dateToApply);
-  setShowCalendar(false);
-};
-
-const handleCancel = () => {
-  setShowCalendar(false);
-};
+  const handleCancel = () => setShowCalendar(false);
 
   return (
     <div className="datepicker-wrapper">
-<button
-  className="datepicker-input"
-  onClick={() => {
-    if (!showCalendar) {
-      if (selectedDate) {
-        setYear(selectedDate.getFullYear());
-        setMonth(selectedDate.getMonth());
-      }
-    }
-    setShowCalendar(!showCalendar);
-  }}
->
-        {selectedDate
-          ? selectedDate.toLocaleDateString("vi-VN")
-          : "dd/mm/yyyy"}
+      {/* Nút chính hiển thị ngày/tháng/năm */}
+      <button
+        className="datepicker-input"
+        onClick={() => setShowCalendar(!showCalendar)}
+      >
+        {selectedDate ? (
+          selectedDate.filterMode === "year" ? (
+            `Năm ${selectedDate.displayYear}`
+          ) : selectedDate.filterMode === "month" ? (
+            `${months[selectedDate.displayMonth]} ${selectedDate.displayYear}`
+          ) : (
+            selectedDate.toLocaleDateString("vi-VN")
+          )
+        ) : (
+          "dd/mm/yyyy"
+        )}
         <Calendar size={18} className="calendar-icon" />
       </button>
 
       {showCalendar && (
         <div className="calendar-popup">
+          {/* === Header chọn tháng và năm === */}
           <div className="calendar-header">
             <select
               value={month}
@@ -80,51 +89,63 @@ const handleCancel = () => {
                 <option key={i} value={i}>{m}</option>
               ))}
             </select>
+
             <div className="year-nav">
               <button className="year-btn" onClick={() => setYear(year - 1)}>&lt;</button>
-              <span className="year-display">{year}</span>
+              <span
+                className="year-display"
+                style={{ cursor: "pointer" }}
+                onClick={() => {
+                  const yearOnly = new Date(year, 0, 1);
+                  yearOnly.filterMode = "year";
+                  yearOnly.displayYear = year;
+                  yearOnly.displayText = `Năm ${year}`;
+                  onDateChange(yearOnly);
+                  setShowCalendar(false);
+                }}
+              >
+                {year}
+              </span>
               <button className="year-btn" onClick={() => setYear(year + 1)}>&gt;</button>
             </div>
           </div>
 
+          {/* === Hàng thứ trong tuần === */}
           <div className="calendar-days-header">
             {daysOfWeek.map((d, i) => (
               <div key={i} className="day-name">{d}</div>
             ))}
           </div>
 
+          {/* === Lưới ngày === */}
           <div className="calendar-grid">
-  {[...Array(getFirstDay(year, month))]
-    .fill(null)
-    .map((_, i) => (
-      <div key={`empty-${i}`} className="empty-day"></div>
-    ))}
+            {[...Array(getFirstDay(year, month))].fill(null).map((_, i) => (
+              <div key={`empty-${i}`} className="empty-day"></div>
+            ))}
 
-  {[...Array(getDaysInMonth(year, month))].map((_, i) => {
-    const day = i + 1;
-    const isSelected =
-      tempDate &&
-      tempDate.getDate() === day &&
-      tempDate.getMonth() === month &&
-      tempDate.getFullYear() === year;
+            {[...Array(getDaysInMonth(year, month))].map((_, i) => {
+              const day = i + 1;
+              const isSelected = selectedDay === day;
+              const isToday =
+                today.getDate() === day &&
+                today.getMonth() === month &&
+                today.getFullYear() === year;
 
-    const today = new Date();
-    const isToday =
-      today.getDate() === day &&
-      today.getMonth() === month &&
-      today.getFullYear() === year;
+              return (
+                <div
+                  key={day}
+                  className={`calendar-day ${isSelected ? "selected" : ""} ${
+                    isToday ? "today" : ""
+                  }`}
+                  onClick={() => handleDateClick(day)}
+                >
+                  {day}
+                </div>
+              );
+            })}
+          </div>
 
-    return (
-      <div
-        key={day}
-        className={`calendar-day ${isSelected ? "selected" : ""} ${isToday ? "today" : ""}`}
-        onClick={() => handleDateClick(day)}
-      >
-        {day}
-      </div>
-    );
-  })}
-</div>
+          {/* === Nút Hủy / Áp dụng === */}
           <div className="calendar-footer">
             <button className="cancel-btn" onClick={handleCancel}>Huỷ</button>
             <button className="apply-btn" onClick={handleApply}>Áp dụng</button>

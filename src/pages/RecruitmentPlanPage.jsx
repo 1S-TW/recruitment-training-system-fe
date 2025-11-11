@@ -5,6 +5,7 @@ import Pagination from "../components/Pagination";
 import ActionButtons from "../components/ActionButton";
 import "../styles/plan.css";
 import DatePicker from "../components/DatePicker";
+import { UserCheck } from "lucide-react";
 
 const RecruitmentPlanPage = () => {
   const [selectedDate, setSelectedDate] = useState(null);
@@ -56,15 +57,35 @@ useEffect(() => {
   }
 
 if (selectedDate) {
-  const selectedMonth = selectedDate.getMonth();
-  const selectedYear = selectedDate.getFullYear();
+  const createdFilter = new Date(selectedDate);
+  const filterMode = selectedDate.filterMode || "day";
+  const selectedDay = createdFilter.getDate();
+  const selectedMonth = selectedDate.displayMonth ?? createdFilter.getMonth();
+  const selectedYear = selectedDate.displayYear ?? createdFilter.getFullYear();
 
   filtered = filtered.filter((p) => {
     const created = new Date(p.createdAt);
-    return (
-      created.getMonth() === selectedMonth &&
-      created.getFullYear() === selectedYear
-    );
+
+    if (filterMode === "day") {
+      return (
+        created.getDate() === selectedDay &&
+        created.getMonth() === selectedMonth &&
+        created.getFullYear() === selectedYear
+      );
+    }
+
+    if (filterMode === "month") {
+      return (
+        created.getMonth() === selectedMonth &&
+        created.getFullYear() === selectedYear
+      );
+    }
+
+    if (filterMode === "year") {
+      return created.getFullYear() === selectedYear;
+    }
+
+    return true;``
   });
 }
   setFilteredPlans(filtered);
@@ -105,30 +126,32 @@ const handlePageChange = (page) => {
 };
   return (
     <Layout>
-      {/* === Breadcrumb === */}
-      <div className="breadcrumb-container fade-slide">
-        <div className="breadcrumb-left">
-          <span className="breadcrumb-icon">💼</span>
-          <span className="breadcrumb-item">Tuyển dụng</span>
-          <span className="breadcrumb-separator">&gt;</span>
-          <span className="breadcrumb-current">Kế hoạch tuyển dụng</span>
-        </div>
+<div className="breadcrumb-container fade-slide">
+  <div className="breadcrumb-left">
+    <div className="breadcrumb-icon-wrapper">
+      <UserCheck size={18} strokeWidth={2} />
+    </div>
+    <span className="breadcrumb-item">Tuyển dụng</span>
+    <span className="breadcrumb-separator">›</span>
+    <span className="breadcrumb-current">Kế hoạch tuyển dụng</span>
+  </div>
 
-        <div className="breadcrumb-right">
-          <div className="mini-pagination">
-            <label className="mini-pagination-label">Hiển thị:</label>
-            <select
-              value={itemsPerPage}
-              onChange={handleChangeItemsPerPage}
-              className="mini-pagination-select smooth-dropdown"
-            >
-              <option value={10}>10</option>
-              <option value={15}>15</option>
-              <option value={20}>20</option>
-            </select>
-          </div>
-        </div>
-      </div>
+  <div className="breadcrumb-right">
+    <div className="mini-pagination">
+      <label className="mini-pagination-label">Hiển thị:</label>
+      <select
+        value={itemsPerPage}
+        onChange={handleChangeItemsPerPage}
+        className="mini-pagination-select smooth-dropdown"
+      >
+        <option value={10}>10</option>
+        <option value={15}>15</option>
+        <option value={20}>20</option>
+      </select>
+    </div>
+  </div>
+</div>
+
 
       {/* === Content === */}
       <div className="recruitment-page fade-slide">
