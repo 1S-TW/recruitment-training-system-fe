@@ -100,19 +100,19 @@ export default function CreateRequestModal({ isOpen, onClose, onSuccess, initial
     if (isEdit) {
       update(initialData.requestId, data).then(res => {
         if (res?.success) {
-          onSuccess?.(res.message); // ✅ THÊM: truyền thông điệp ra ngoài
+          onSuccess?.(res.message); // ✅ truyền thông điệp ra ngoài
           onClose?.();
         } else if (res?.error) {
-          alert(res.error);        // ✅ THÊM: báo lỗi nếu BE trả về error
+          alert(res.error);        // giữ nguyên cảnh báo lỗi
         }
       });
     } else {
       create(data).then(res => {
         if (res?.success) {
-          onSuccess?.(res.message); // ✅ THÊM: truyền thông điệp ra ngoài
+          onSuccess?.(res.message); // ✅ truyền thông điệp ra ngoài
           onClose?.();
         } else if (res?.error) {
-          alert(res.error);         // ✅ THÊM: báo lỗi nếu BE trả về error
+          alert(res.error);         // giữ nguyên cảnh báo lỗi
         }
       });
     }

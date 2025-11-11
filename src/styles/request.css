@@ -764,3 +764,28 @@ tr[data-editable="false"] .btn-action-wrapper:hover .action-tooltip {
   opacity: 1;
   transform: translateX(-50%) scale(1);
 }
+
+
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 14px 20px;
+  border-radius: 8px;
+  backdrop-filter: blur(6px);
+  color: #fff;
+  font-size: 14px;
+  z-index: 9999;
+  opacity: 0;
+  animation: fadeInOut 3s ease forwards;
+}
+
+.toast-success { background: #28a745d9; }
+.toast-error   { background: #dc3545d9; }
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(-10px); }
+  15% { opacity: 1; transform: translateY(0); }
+  85% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-10px); }
+}
