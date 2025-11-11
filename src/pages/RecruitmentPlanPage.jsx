@@ -223,24 +223,23 @@ const handlePageChange = (page) => {
       setSelectedDate(null); // hoặc setDateFilter("") nếu bạn chưa dùng selectedDate
     }}
   >
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      width="18"
-      height="18"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="icon-refresh"
-    >
-      <path d="M21 12a9 9 0 1 1-3-6.7L21 8" />
-    </svg>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 24 24"
+  className="icon-refresh"
+>
+  <path
+    d="M21 12a9 9 0 1 1-3-6.7M21 8v4h-4"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  />
+</svg>
     <span>Xóa tất cả bộ lọc</span>
   </button>
 </div>
-
             {/* ➕ Nút thêm kế hoạch */}
             <div className="filter-item add-btn-wrapper">
               <button
