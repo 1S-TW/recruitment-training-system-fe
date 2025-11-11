@@ -23,7 +23,7 @@ const RecruitmentPlanPage = () => {
     if (!token) {
       setError("⚠️ Bạn chưa đăng nhập hoặc token đã hết hạn");
       setLoading(false);
-      return;z
+      return;
     }
 
     axios
@@ -55,7 +55,7 @@ useEffect(() => {
     filtered = filtered.filter((p) => p.status === statusFilter);
   }
 
- if (selectedDate) {
+if (selectedDate) {
   const selectedMonth = selectedDate.getMonth();
   const selectedYear = selectedDate.getFullYear();
 
@@ -67,9 +67,6 @@ useEffect(() => {
     );
   });
 }
-
-
-
   setFilteredPlans(filtered);
   setCurrentPage(1);
 }, [searchName, statusFilter, selectedDate, plans]);
@@ -190,6 +187,37 @@ const handlePageChange = (page) => {
     onDateChange={(date) => setSelectedDate(date)}
   />
 </div>
+<div className="filter-item clear-filters-wrapper">
+  <button
+    className="clear-filters-btn modern-reset"
+    onClick={(e) => {
+      const btn = e.currentTarget.querySelector(".icon-refresh");
+      btn.classList.add("spin-click");
+      setTimeout(() => btn.classList.remove("spin-click"), 600);
+
+      setSearchName("");
+      setStatusFilter("");
+      setSelectedDate(null); // hoặc setDateFilter("") nếu bạn chưa dùng selectedDate
+    }}
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="icon-refresh"
+    >
+      <path d="M21 12a9 9 0 1 1-3-6.7L21 8" />
+    </svg>
+    <span>Xóa tất cả bộ lọc</span>
+  </button>
+</div>
+
             {/* ➕ Nút thêm kế hoạch */}
             <div className="filter-item add-btn-wrapper">
               <button
@@ -202,33 +230,7 @@ const handlePageChange = (page) => {
           </div>
         </div>
         {/* === Bảng === */}
-        {/* 🧹 Nút xóa tất cả bộ lọc */}
-<div className="filter-item">
-  <button
-    className="clear-all-btn smooth-dropdown"
-    onClick={() => {
-      setSearchName("");
-      setStatusFilter("");
-      setSelectedDate(null);
-    }}
-  >
-    Xóa tất cả bộ lọc
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="clear-icon"
-    >
-      <path d="M3 6h18M9 6v12a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V6" />
-      <path d="M10 11v6M14 11v6" />
-    </svg>
-  </button>
-</div>
+
        <div
  className="table-container">
           {loading ? (

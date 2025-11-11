@@ -145,61 +145,54 @@
   position: relative;
 }
 
+/* === DROPDOWN TÌM KIẾM (TÊN + TRẠNG THÁI) === */
 .filter-input,
-.filter-select,
-.filter-date {
-  padding: 10px 15px;
+.filter-select {
   border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 1rem;
-  transition: all 0.25s ease-in-out;
-  background: #fff;
-  color: #111827;
-  height: 37px;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 9px 14px;
+  height: 38px;
+  transition: all 0.25s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .filter-input {
   width: 220px;
   padding-right: 30px;
 }
-.filter-select {
-  width: 150px;
-}
 .filter-date {
   width: 160px;
 }
-
-/* Hover & Focus */
-.filter-input:hover,
-.filter-select:hover,
-.filter-date:hover {
-  border-color: #94a3b8;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-  transform: translateY(-1px);
-}
-.filter-input:focus,
-.filter-select:focus,
-.filter-date:focus {
-  border-color: #0284c7;
-  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
-  outline: none;
-}
-
 /* Search icon inside input */
 .search-input-container {
   position: relative;
   width: 220px;
 }
+.filter-input.search-input {
+  padding-right: 35px; 
+}
+/* === ICON KÍNH LÚP CÓ HIỆU ỨNG NHẸ === */
 .filter-icon {
   position: absolute;
-  right: 8px;
+  right: 10px;
   top: 50%;
-  transform: translateY(-50%);
-  font-size: 0.9rem;
+  transform: translateY(-50%) scale(1);
+  font-size: 1rem;
   color: #64748b;
   pointer-events: none;
+  transition: transform 0.25s ease, color 0.25s ease;
 }
 
+/* Khi hover ô tìm kiếm hoặc focus thì icon nổi lên nhẹ */
+.search-input-container:hover .filter-icon,
+.filter-input:focus + .filter-icon {
+  transform: translateY(-52%) scale(1.15);
+  color: #0284c7; /* xanh đồng bộ border focus */
+}
 /* === SMOOTH DROPDOWN === */
 .smooth-dropdown {
   transition: all 0.25s ease-in-out;
@@ -235,12 +228,6 @@ margin-bottom: 20px; /* đẩy nút lên trên */
   background: #22c55e;
   transform: translateY(-1px);
   box-shadow: 0 2px 6px rgba(34, 197, 94, 0.25);
-}
-
-/* === DATE VALIDATION === */
-.filter-date:invalid {
-  border-color: #f87171;
-  box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.15);
 }
 
 /* === TABLE === */
@@ -356,8 +343,6 @@ margin-bottom: 20px; /* đẩy nút lên trên */
   height: 20px !important;
   flex-shrink: 0;
 }
-
-
 .btn-view {
   color: #0284c7;
 }
@@ -445,66 +430,37 @@ margin-bottom: 20px; /* đẩy nút lên trên */
   cursor: not-allowed;
   transform: none;
 }
-
-/* === ANIMATIONS === */
-.fade-in {
-  animation: fadeSlideIn 0.3s ease-in-out forwards;
-}
-.fade-out {
-  animation: fadeSlideOut 0.25s ease-in-out forwards;
-}
-@keyframes fadeSlideIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeSlideOut {
-  from { opacity: 1; transform: translateY(0); }
-  to { opacity: 0; transform: translateY(-8px); }
-}
-@keyframes slideIn {
-  from { opacity: 0; transform: translateX(12px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-/* === SELECT TRẠNG THÁI (giống HIỂN THỊ, có hiệu ứng mượt) === */
+/* === DROPDOWN TRẠNG THÁI (nền trắng, mũi tên tinh tế) === */
 .filter-select {
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
-  padding: 8px 15px;
-  font-size: 1rem;
-  font-weight: 500;
-  color: #0f172a;
-  background: #ffffff;
+  width: 170px; /* rộng hơn để cân với ô tìm kiếm */
   cursor: pointer;
-  transition: all 0.25s ease-in-out;
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='12' viewBox='0 0 24 24' width='12' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-image: url("data:image/svg+xml;utf8,<svg fill='%2364748b' height='14' viewBox='0 0 24 24' width='14' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
   background-repeat: no-repeat;
-  background-position: right 8px center;
-  background-size: 12px;
-  padding-right: 24px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  background-position: right 10px center;
+  background-size: 14px;
+  padding-right: 32px;
 }
-
-.filter-select:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.06);
-  transform: translateY(-1px);
-}
-
 .filter-select:focus {
   border-color: #0284c7;
   box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
   outline: none;
 }
 
-/* Dropdown option fade + nền trắng */
+/* Option trong dropdown trắng tinh + hover xanh nhẹ */
 .filter-select option {
-  background-color: #ffffff;
+  background: #ffffff;
   color: #111827;
-  animation: fadeDropdown 0.25s ease-in-out;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: background 0.2s ease, color 0.2s ease;
 }
-
+.filter-select option:hover {
+  background: #e0f2fe;
+  color: #0f172a;
+}
 @keyframes fadeDropdown {
   from {
     opacity: 0;
@@ -569,28 +525,168 @@ margin-bottom: 20px; /* đẩy nút lên trên */
   width: 280px;
   animation: fadeInCalendar 0.3s ease-in-out;
 }
-.clear-all-btn {
-  padding: 8px 12px;
-  font-size: 0.95rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  background-color: #ffffff;
-  color: #0f172a;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  height: 38px;
+/* === CLEAR FILTER BUTTON (PROFESSIONAL RELOAD STYLE) === */
+.clear-filters-wrapper {
   display: flex;
   align-items: center;
-  gap: 8px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-.clear-all-btn:hover {
-  background-color: #f9fafb;
-  border-color: #0284c7;
-  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.1);
+.clear-filters-btn.modern-reset {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(145deg, #f8fafc, #f1f5f9);
+  border: 1px solid #d1d5db;
+  color: #0f172a;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  height: 34px;
+  line-height: 1;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-.clear-icon {
-  vertical-align: middle;
+.clear-filters-btn.modern-reset:hover {
+  background: linear-gradient(145deg, #e0f2fe, #f0f9ff);
+  border-color: #38bdf8;
+  color: #44494d;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(56, 189, 248, 0.2);
+}
+/* === REFRESH ICON ANIMATION === */
+.icon-refresh {
+  transition: transform 0.4s ease, color 0.3s ease;
+}
+
+/* Khi hover icon xoay nhẹ */
+.clear-filters-btn.modern-reset:hover .icon-refresh {
+  transform: rotate(-360deg);
+  color: #0284c7;
+}
+
+/* Khi click icon xoay nhanh và sáng dần */
+.spin-click {
+  animation: spinAndGlow 0.6s ease forwards;
+}
+
+@keyframes spinAndGlow {
+  0% {
+    transform: rotate(0deg);
+    color: #0ea5e9;
+    filter: brightness(1);
+  }
+  50% {
+    transform: rotate(200deg);
+    color: #38bdf8;
+    filter: brightness(1.3);
+  }
+  100% {
+    transform: rotate(360deg);
+    color: #0369a1;
+    filter: brightness(1);
+  }
+}
+/* === BỘ LỌC ĐỒNG BỘ TONE TRẮNG === */
+.filter-input,
+.filter-select,
+.filter-date,
+.mini-pagination-select,
+.clear-filters-btn.modern-reset {
+  height: 36px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  color: #0f172a;
+  transition: all 0.25s ease-in-out;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  padding: 6px 12px;
+}
+
+/* === HOVER & FOCUS TRẮNG MƯỢT === */
+.filter-input:hover,
+.filter-select:hover,
+.filter-date:hover,
+.mini-pagination-select:hover,
+.clear-filters-btn.modern-reset:hover,
+.filter-input:focus,
+.filter-select:focus,
+.filter-date:focus,
+.mini-pagination-select:focus,
+.clear-filters-btn.modern-reset:focus {
+  background: #f0f9ff;             /* 🔹 trắng pha xanh rất nhẹ */
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 6px rgba(56, 189, 248, 0.15);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+/* === ĐỒNG BỘ ICON (KÍNH LÚP, CALENDAR, ARROW) === */
+.filter-icon,
+.mini-pagination-select,
+.filter-select {
+  color: #64748b;
+}
+
+/* === NÚT XÓA TẤT CẢ BỘ LỌC === */
+.clear-filters-btn.modern-reset {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  line-height: 1.2;
+  background: #ffffff;
+}
+
+/* Hover đồng bộ tone trắng */
+.clear-filters-btn.modern-reset:hover {
+  color: #0369a1;
+  background: #f0f9ff;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+/* === KHUNG CHUNG FILTER BAR === */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px; /* 🔹 spacing đồng bộ */
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+/* Dropdown trạng thái nhẹ nhàng hơn, không in đậm */
+.filter-select {
+  width: 180px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 9px 14px;
+  background-color: #ffffff;
+  color: #334155;               /* 🔹 chữ rõ hơn (xanh xám đậm nhẹ) */
+  font-size: 0.95rem;
+  font-weight: 500;             /* 🔹 bỏ in đậm, vừa phải */
+  background-image: url("data:image/svg+xml;utf8,<svg fill='%232874eb' height='14' viewBox='0 0 24 24' width='14' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 14px;
+  padding-right: 34px;
+  transition: all 0.25s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+/* Hover + Focus đồng bộ */
+.filter-select:hover,
+.filter-select:focus {
+  background-color: #f8fafc;
+  border-color: #38bdf8;
+  color: #1e293b;               /* 🔹 đậm hơn khi hover */
+  box-shadow: 0 2px 6px rgba(56, 189, 248, 0.15);
+  outline: none;
 }
