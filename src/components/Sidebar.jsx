@@ -1,10 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, BookOpen, Users } from "lucide-react";
+import { LayoutDashboard, BookOpen, Users, UserCog } from "lucide-react";
 import { useState, useEffect } from "react";
 
 const menu = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: BookOpen, label: "Đào tạo", path: "/training" },
+  { icon: UserCog , label: "Người dùng", path: "/admin" },
+  //{ icon: BookOpen, label: "Đào tạo", path: "/training" },
   {
     icon: Users,
     label: "Tuyển dụng",
@@ -12,7 +13,7 @@ const menu = [
     submenu: [
       { label: "Nhu cầu nhân sự", path: "/recruitment/needs" },
       { label: "Kế hoạch tuyển dụng", path: "/recruitment/plan" },
-      { label: "Phỏng vấn", path: "/recruitment/interview" },
+      //{ label: "Phỏng vấn", path: "/recruitment/interview" },
     ],
   },
 ];
@@ -83,8 +84,7 @@ export default function Sidebar() {
                     const subActive = location.pathname === sub.path;
                     return (
                       <Link
-                        key={j}
-to={sub.path}
+                        key={j} to={sub.path}
                         className={`nav__item nav__item--sub ${subActive ? "nav__item--active" : ""}`}
                       >
                         <span className="nav__label">{sub.label}</span>
