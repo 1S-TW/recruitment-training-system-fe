@@ -288,7 +288,12 @@ const handlePageChange = (page) => {
                           : "—"}
                       </td>
                       <td>
-                        <span className="status-badge">{plan.status}</span>
+                        <span className="status-badge">{{
+                            PENDING: "Đang chờ",
+                            IN_PROGRESS: "Đang xử lý",
+                            COMPLETED: "Hoàn thành",
+                            CANCELED: "Đã hủy"
+                          }[plan.status] || "Không rõ"}</span>
                       </td>
                       <td>
                         {plan.request?.createdBy?.fullName ||

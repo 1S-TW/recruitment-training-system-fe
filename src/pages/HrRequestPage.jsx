@@ -204,8 +204,14 @@ export default function HRRequestPage() {
                     <td>{indexOfFirst + index + 1}</td>
                     <td>{req.requestTitle}</td>
                     <td>{req.createdAt ? new Date(req.createdAt).toLocaleDateString() : "—"}</td>
-                    <td><span className="status-badge">{req.status}</span></td>
-                    <td>{req.createdBy || "Không rõ"}</td>
+                    <td><span className="status-badge">{{
+                      NEW: "Đang chờ",
+                      IN_PROGRESS: "Đang xử lý",
+                      COMPLETED: "Hoàn thành",
+                      CANCELED: "Đã hủy"
+                    }[req.status] || "Không rõ"}
+                    </span></td>
+                    <td>{req.createdByName || "Không rõ"}</td>
                     <td className="actions-cell text-center">
                       <ActionButtons
                         onView={() => console.log("Xem", req.requestId)}

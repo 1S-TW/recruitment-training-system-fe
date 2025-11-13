@@ -11,6 +11,7 @@ const ResetPassword = () => {
 
     const [formData, setFormData] = useState({ newPassword: '', confirmPassword: '' });
     const [formErrors, setFormErrors] = useState({});
+    
     const [apiError, setApiError] = useState(null);
     const [loading, setLoading] = useState(false);
     const { showNotification } = useNotification();

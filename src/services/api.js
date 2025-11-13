@@ -1,11 +1,16 @@
 import axios from 'axios';
 
-// Tạo một instance Axios trỏ đến backend của bạn
 const api = axios.create({
-    baseURL: 'http://localhost:8080/api', // Cổng backend Spring Boot
-    withCredentials: true,
+  baseURL: 'http://localhost:8080/api',
+  withCredentials: true,
 });
 
-// (Sau này chúng ta sẽ thêm Interceptor ở đây để tự động gắn token)
 
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 export default api;
