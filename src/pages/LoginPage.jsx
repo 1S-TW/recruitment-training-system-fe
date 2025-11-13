@@ -1,76 +1,92 @@
-import React, { useState, useContext } from "react";
-import { useNavigate } from "react-router-dom";
-import { login } from "../services/authService";
-import { AuthContext } from "../contexts/AuthContext";
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { login } from '../services/authService';
+import { useNotification } from '../contexts/NotificationContext';
+import { useAuth } from '../contexts/AuthContext';
+import Input from '../components/Form/Input';
 import "../styles/login.css";
 
-function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+const Login = () => {
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [apiError, setApiError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const { showNotification } = useNotification();
   const navigate = useNavigate();
+  const auth = useAuth(); // Lấy context
 
-  const { loginUser } = useContext(AuthContext);
-
+  // --- HÀM BỊ THIẾU LÀ ĐÂY ---Yêu cầu nhân sự đã được tạo thành công
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+  // --- KẾT THÚC SỬA ---
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
+    setApiError(null);
 
     try {
-      const data = await login(email, password);
-      if (data.token) {
-        loginUser(data.token, email); // ✅ Cập nhật state + localStorage
-        navigate("/");
+      const data = await login(formData); // data = { token, role, fullName }
+      auth.loginUser(data);
+      showNotification('Đăng nhập thành công!', 'success');
+
+      if (data.role === 'SUPER_ADMIN') {
+        navigate('/admin'); 
+      } else if (data.role) {
+        navigate('/forbidden'); 
+      } else {
+         showNotification('Tài khoản của bạn chưa được cấp quyền. Vui lòng liên hệ Admin.', 'error');
+         auth.logoutUser(); 
+         navigate('/login'); 
       }
+
     } catch (err) {
-      setError("Sai email hoặc mật khẩu. Vui lòng thử lại.");
+      const errorMsg = err.response?.data?.message || 'Sai tên đăng nhập hoặc mật khẩu';
+      setApiError(errorMsg);
     } finally {
       setLoading(false);
     }
   };
 
 
+
+
   return (
-  <div className="login-page">
-    <div className="login-wrapper">
-      <div className="login-card">
-        <h2>Đăng nhập hệ thống</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <input
-              type="text"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
-              required
-            />
-          </div>
-          <div className="form-group">
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Mật khẩu"
-              required
-            />
-          </div>
-          {error && <p className="error-text">{error}</p>}
+    <div className="login-page">
+      <div className="login-wrapper">
+        <form className="login-card" onSubmit={handleSubmit}>
+          <h2>Đăng Nhập</h2>
+          {apiError && <div className="error-text">{apiError}</div>}
+
+          <Input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="Nhập email của bạn"
+            required
+          />
+          <Input
+            type="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            placeholder="Nhập mật khẩu"
+            required
+          />
+
           <button type="submit" disabled={loading}>
-            {loading ? "Đang đăng nhập..." : "Đăng nhập"}
+            {loading ? 'Đang xử lý...' : 'Đăng Nhập'}
           </button>
 
           <div className="login-footer">
-            <a href="#">Quên mật khẩu?</a>
-            <span> | </span>
-            <a href="#">Đăng ký tài khoản</a>
+            <Link to="/register">Tạo tài khoản mới</Link> |{" "}
+            <Link to="/forgot-password">Quên mật khẩu?</Link>
           </div>
         </form>
       </div>
     </div>
-  </div>
   );
-}
+};
 
-export default LoginPage;
+
+export default Login;

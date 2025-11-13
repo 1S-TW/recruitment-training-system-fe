@@ -12,7 +12,8 @@ export default function CreateRequestModal({ isOpen, onClose, onSuccess, initial
     const [title, setTitle] = useState("");
     const [expectedDate, setExpectedDate] = useState("");
     const [note, setNote] = useState("");
-    const [techs, setTechs] = useState([{ technologyId: "", soLuong: 1 }]);
+    // ✅ soLuong mặc định để TRỐNG
+    const [techs, setTechs] = useState([{ technologyId: "", soLuong: "" }]);
     const [technologies, setTechnologies] = useState([]);
     const [dateError, setDateError] = useState("");
 
@@ -20,12 +21,14 @@ export default function CreateRequestModal({ isOpen, onClose, onSuccess, initial
     const { update, loading: updateLoading } = useUpdateRequest();
     const loading = createLoading || updateLoading;
 
+    // === 2 THÁNG RƯỠI KỂ TỪ HÔM NAY ===
     const today = new Date();
     const minDate = new Date(today);
     minDate.setMonth(today.getMonth() + 2);
+    minDate.setDate(minDate.getDate() + 15); // + nửa tháng
     const minDateStr = minDate.toISOString().split("T")[0];
 
-    // ====== Khóa scroll nền & bắt phím Esc (UX nhỏ) ======
+    // ====== Khóa scroll nền & bắt phím Esc ======
     useEffect(() => {
         if (!isOpen) return;
         const onKey = (e) => { if (e.key === "Escape") onClose?.(); };
@@ -37,7 +40,7 @@ export default function CreateRequestModal({ isOpen, onClose, onSuccess, initial
         };
     }, [isOpen, onClose]);
 
-    // ====== NẠP DỮ LIỆU VÀO FORM KHI MỞ MODAL (GIỮ NGUYÊN GỐC) ======
+    // ====== NẠP DỮ LIỆU VÀO FORM KHI MỞ MODAL ======
     useEffect(() => {
         if (!isOpen) return;
 
@@ -49,21 +52,24 @@ export default function CreateRequestModal({ isOpen, onClose, onSuccess, initial
                 initialData.techQuantities?.length > 0
                     ? initialData.techQuantities.map((t) => ({
                         technologyId: String(t.technologyId),
-                        soLuong: t.soLuong,
+                        // khi sửa thì có sẵn số lượng
+                        soLuong: t.soLuong?.toString() ?? "",
                     }))
-                    : [{ technologyId: "", soLuong: 1 }]
+                    : [{ technologyId: "", soLuong: "" }]
             );
         } else if (!isEdit) {
             setTitle("");
             setNote("");
             const defaultDate = new Date(today);
             defaultDate.setMonth(today.getMonth() + 2);
+            defaultDate.setDate(defaultDate.getDate() + 15); // 2.5 tháng
             setExpectedDate(defaultDate.toISOString().split("T")[0]);
-            setTechs([{ technologyId: "", soLuong: 1 }]);
+            // ✅ hàng công nghệ đầu tiên: số lượng rỗng
+            setTechs([{ technologyId: "", soLuong: "" }]);
         }
     }, [isOpen, isEdit, initialData]);
 
-    // ====== LẤY DANH SÁCH CÔNG NGHỆ (gộp 1 effect duy nhất) ======
+    // ====== LẤY DANH SÁCH CÔNG NGHỆ ======
     useEffect(() => {
         if (!isOpen) return;
         const token = localStorage.getItem("token");
@@ -80,19 +86,32 @@ export default function CreateRequestModal({ isOpen, onClose, onSuccess, initial
         setExpectedDate(value);
         const selected = new Date(value);
         if (selected < minDate) {
-            setDateError("Vui lòng chọn ngày bàn giao tối thiểu sau 2 tháng kể từ hôm nay.");
+            setDateError("Vui lòng chọn ngày bàn giao tối thiểu sau 2 tháng rưỡi kể từ hôm nay.");
         } else {
             setDateError("");
         }
     };
 
     // ====== Tech rows ======
-    const addTech = () => setTechs((prev) => [...prev, { technologyId: "", soLuong: 1 }]);
+    const addTech = () =>
+        setTechs((prev) => [...prev, { technologyId: "", soLuong: "" }]); // ✅ thêm hàng mới với soLuong trống
 
+    // ✅ cho phép xoá hết số rồi gõ lại; không auto set 1 nữa
     const updateTech = (i, field, value) => {
         setTechs((prev) => {
             const updated = [...prev];
-            updated[i][field] = field === "soLuong" ? Math.max(1, Number(value)) : value;
+
+            if (field === "soLuong") {
+                if (value === "") {
+                    updated[i].soLuong = "";
+                } else {
+                    const num = Number(value);
+                    updated[i].soLuong = Number.isNaN(num) || num <= 0 ? "" : value;
+                }
+            } else {
+                updated[i][field] = value;
+            }
+
             return updated;
         });
     };
@@ -101,21 +120,52 @@ export default function CreateRequestModal({ isOpen, onClose, onSuccess, initial
         setTechs((prev) => (prev.length <= 1 ? prev : prev.filter((_, idx) => idx !== i)));
     };
 
-    // ====== Submit (giữ luồng gốc, bổ sung emit event) ======
+    // ✅ TÍNH LIST CÔNG NGHỆ CÒN TRỐNG CHO MỖI DÒNG
+    const getAvailableTechnologies = (rowIndex) => {
+        if (!Array.isArray(technologies) || technologies.length === 0) return [];
+
+        // id các công nghệ đã dùng ở các dòng KHÁC
+        const usedIds = new Set(
+            techs
+                .map((t, idx) => (idx === rowIndex ? null : t.technologyId))
+                .filter(Boolean)
+                .map(String)
+        );
+
+        const filtered = technologies.filter((t) => {
+            const id = String(t.id ?? t.technologyId);
+            return !usedIds.has(id);
+        });
+
+        // Nếu lọc xong trống (vd số công nghệ < số dòng) thì cho hiện full (cho phép trùng)
+        if (filtered.length === 0) return technologies;
+
+        return filtered;
+    };
+
+    // helper: check điều kiện hợp lệ cho techs
+    const hasInvalidTech = techs.some(
+        (t) =>
+            !t.technologyId || // chưa chọn công nghệ
+            !t.soLuong ||      // chưa nhập số lượng
+            Number(t.soLuong) <= 0
+    );
+
+    // ====== Submit (giữ luồng gốc) ======
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (loading) return;
-        if (dateError || !title || techs.some((t) => !t.technologyId)) return;
+        if (dateError || !title || hasInvalidTech) return;
 
         const data = {
             requestTitle: title,
             expectedDeliveryDate: expectedDate,
             note: note || null,
             techQuantities: techs
-                .filter((t) => t.technologyId)
+                .filter((t) => t.technologyId && t.soLuong)
                 .map((t) => ({
                     technologyId: parseInt(t.technologyId, 10),
-                    soLuong: Number(t.soLuong) || 1,
+                    soLuong: Number(t.soLuong), // đã chắc chắn > 0
                 })),
         };
 
@@ -127,9 +177,9 @@ export default function CreateRequestModal({ isOpen, onClose, onSuccess, initial
         }
 
         if (res?.success) {
-            // phát sự kiện toàn cục để page refetch (bạn đã lắng nghe hr:requests:changed)
-            try { window.dispatchEvent(new Event("hr:requests:changed")); } catch (_) {}
-            onSuccess?.(res.message);
+            try {
+                window.dispatchEvent(new Event("hr:requests:changed"));
+            } catch (_) {}
             onClose?.();
         } else if (res?.error) {
             alert(res.error);
@@ -183,7 +233,6 @@ export default function CreateRequestModal({ isOpen, onClose, onSuccess, initial
                                 <label>
                                     Công nghệ <span className="required">*</span>
                                 </label>
-                                <small className="section-desc">Chọn công nghệ và số lượng cần tuyển</small>
                             </div>
 
                             <div className="tech-list-custom">
@@ -194,14 +243,15 @@ export default function CreateRequestModal({ isOpen, onClose, onSuccess, initial
                                         index={i}
                                         onChange={updateTech}
                                         onRemove={removeTech}
-                                        technologies={technologies}
+                                        technologies={getAvailableTechnologies(i)}
                                         totalTechs={techs.length}
                                     />
                                 ))}
                             </div>
 
+                            {/* ✅ Nút nhỏ lại, kiểu chữ như mẫu ảnh 2 */}
                             <button type="button" onClick={addTech} className="btn-add-tech-custom">
-                                <Plus size={18} /> Thêm công nghệ
+                                <Plus size={14} /> Thêm công nghệ
                             </button>
                         </div>
 
@@ -240,12 +290,22 @@ export default function CreateRequestModal({ isOpen, onClose, onSuccess, initial
 
                     {/* FOOTER */}
                     <div className="modal-footer">
-                        <button type="button" onClick={onClose} className="btn btn-cancel" disabled={loading}>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="btn btn-cancel"
+                            disabled={loading}
+                        >
                             Hủy
                         </button>
                         <button
                             type="submit"
-                            disabled={loading || !!dateError || !title || techs.some((t) => !t.technologyId)}
+                            disabled={
+                                loading ||
+                                !!dateError ||
+                                !title ||
+                                hasInvalidTech       // ✅ bắt buộc nhập số lượng > 0
+                            }
                             className="btn btn-submit"
                             aria-busy={loading ? "true" : "false"}
                         >

@@ -692,24 +692,8 @@ input.error {
 .theme-dark .btn-remove-tech-custom { border-color: #FF7676; color: #FF7676; }
 .theme-dark .btn-remove-tech-custom:hover { background: rgba(255, 118, 118, 0.12); }
 
-.btn-add-tech-custom {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    background: transparent;
-    border: 1.5px dashed #4B5563;
-    color: #4B5563;
-    padding: 0.75rem;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 0.875rem;
-    transition: all 0.2s;
-}
-.btn-add-tech-custom:hover { background: rgba(75, 85, 99, 0.06); border-style: solid; }
-.theme-dark .btn-add-tech-custom { border-color: #475569; color: #475569; }
-.theme-dark .btn-add-tech-custom:hover { background: rgba(71, 85, 105, 0.1); }
+
+
 
 /* Footer của modal (nút Hủy / Gửi) */
 .modal-footer {
@@ -912,3 +896,31 @@ tr[data-editable="false"] .btn-action-wrapper:hover .action-tooltip {
 .theme-dark select option { background: #131722 !important; color: #E5E7EB !important; }
 .theme-dark select option:checked { background: #3F51B5 !important; color: #FFFFFF !important; }
 .theme-dark select option:hover { background: #222735 !important; }
+
+
+/* Nút "Thêm công nghệ" kiểu chữ nhỏ, không chiếm full hàng */
+.btn-add-tech-custom {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: transparent;
+    border: none;                 /* bỏ khung dashed to */
+    color: #4B5563;
+    padding: 0;
+    margin-top: 4px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.btn-add-tech-custom:hover {
+    text-decoration: underline;   /* hover giống link nhỏ */
+    color: #111827;
+}
+
+.theme-dark .btn-add-tech-custom {
+    color: #E5E7EB;
+}
+.theme-dark .btn-add-tech-custom:hover {
+    color: #FFFFFF;
+}

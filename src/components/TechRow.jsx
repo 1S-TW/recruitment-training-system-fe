@@ -1,48 +1,58 @@
-// src/components/TechRow.jsx
+import React from "react";
 import { X } from "lucide-react";
 
-export default function TechRow({ tech, index, onChange, onRemove, technologies, totalTechs }) {
-  const canRemove = totalTechs > 1;
+export default function TechRow({
+  tech,
+  index,
+  onChange,
+  onRemove,
+  technologies,
+  totalTechs,
+}) {
+  const handleTechChange = (e) => {
+    onChange(index, "technologyId", e.target.value);
+  };
+
+  const handleQtyChange = (e) => {
+    onChange(index, "soLuong", e.target.value);
+  };
 
   return (
     <div className="tech-row-custom">
-      {/* SELECT CÔNG NGHỆ */}
       <select
-        value={tech.technologyId || ""}
-        onChange={(e) => onChange(index, "technologyId", e.target.value)}
         className="tech-select-custom"
-        required
-        autoFocus={index === totalTechs - 1}
+        value={tech.technologyId || ""}
+        onChange={handleTechChange}
       >
         <option value="">Chọn công nghệ</option>
-        {technologies.map(t => (
-          <option key={t.id} value={t.id}>
-            {t.name}
-          </option>
-        ))}
+        {(technologies || []).map((t) => {
+          const id = String(t.id ?? t.technologyId);
+          const name = t.name ?? t.technologyName ?? t.technology ?? "";
+          return (
+            <option key={id} value={id}>
+              {name}
+            </option>
+          );
+        })}
       </select>
 
-      {/* SỐ LƯỢNG */}
       <input
         type="number"
-        min="1"
-        value={tech.soLuong}
-        onChange={(e) =>
-          onChange(index, "soLuong", Math.max(1, parseInt(e.target.value) || 1))
-        }
         className="qty-input-custom"
-        required
+        min="1"
+        placeholder="Số lượng"
+        value={tech.soLuong}
+        onChange={handleQtyChange}
       />
 
-      {/* NÚT XÓA */}
-      {canRemove && (
+      {/* ẨN HOÀN TOÀN NÚT X NẾU CHỈ CÓ 1 DÒNG */}
+      {totalTechs > 1 && (
         <button
           type="button"
-          onClick={() => onRemove(index)}
           className="btn-remove-tech-custom"
-          aria-label="Xóa công nghệ"
+          onClick={() => onRemove(index)}
         >
-          <X size={18} />
+          <X size={14} />
         </button>
       )}
     </div>

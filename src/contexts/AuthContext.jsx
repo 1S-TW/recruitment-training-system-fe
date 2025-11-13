@@ -1,24 +1,44 @@
-// AuthContext.js
-import React, { createContext, useState, useEffect } from "react";
+import React, { createContext, useState, useContext } from 'react';
 
 export const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(localStorage.getItem("token"));
+const getInitialUser = () => {
+  try {
+    const storedUser = localStorage.getItem('user');
+    return storedUser ? JSON.parse(storedUser) : null;
+  } catch { 
+    console.error("Failed to parse user from localStorage");
+    return null;
+  }
+};
 
-  const loginUser = (token) => {
-    localStorage.setItem("token", token);
-    setToken(token); // cập nhật state → ProtectedRoute đọc được
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(getInitialUser);
+
+  const loginUser = (userData) => {
+    const { token, ...userDetails } = userData; 
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(userDetails)); 
+    setUser(userDetails); 
   };
 
   const logoutUser = () => {
-    localStorage.removeItem("token");
-    setToken(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
   };
 
-  return (
-    <AuthContext.Provider value={{ token, loginUser, logoutUser }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = {
+    user, 
+    isAuthenticated: !!user, 
+    isAdmin: user?.role === 'SUPER_ADMIN', 
+    loginUser,
+    logoutUser,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = () => {
+  return useContext(AuthContext);
 };

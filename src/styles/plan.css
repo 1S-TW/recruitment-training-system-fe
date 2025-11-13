@@ -626,3 +626,34 @@
         .tech-fixed th, .tech-fixed td { padding: 12px 14px; }
         .tech-fixed thead th { text-align: center; vertical-align: middle; line-height: 1.2; font-weight: 700; }
         .tech-fixed td.center, .tech-fixed th.center { text-align: center; }
+
+
+        /* Nút thêm hàng công nghệ – đã thu nhỏ lại, vừa đủ nội dung */
+.btn-add-tech-custom {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: transparent;
+    border: 1.5px dashed #4B5563;
+    color: #4B5563;
+    padding: 0.4rem 0.9rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+    margin-top: 4px;         /* nằm ngay bên dưới khu chọn công nghệ */
+    /* bỏ width: 100% để không còn kéo dài full hàng */
+}
+
+.btn-add-tech-custom:hover {
+    background: rgba(75, 85, 99, 0.06);
+    border-style: solid;
+}
+.theme-dark .btn-add-tech-custom {
+    border-color: #475569;
+    color: #475569;
+}
+.theme-dark .btn-add-tech-custom:hover {
+    background: rgba(71, 85, 105, 0.1);
+}

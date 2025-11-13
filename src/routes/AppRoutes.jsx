@@ -1,18 +1,90 @@
 // src/routes/AppRoutes.jsx
 import React from "react";
-import { Routes, Route } from "react-router-dom";
-import LoginPage from "../pages/LoginPage";
-import HomePage from "../pages/HomePage";
-import HRRequestPage from "../pages/HrRequestPage"; // Thêm dòng này
-import ProtectedRoute from "../components/ProtectedRoute";
-import RecruitmentPlanPage from "../pages/RecruitmentPlanPage.jsx";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
-function AppRoutes() {
+// ✅ ProtectedRoute ở cùng thư mục routes
+import ProtectedRoute from "./ProtectedRoute";
+
+
+import LoginPage from "../pages/LoginPage";
+import Register from "../pages/Register";
+import ForgotPassword from "../pages/ForgotPassword";
+import HomePage from "../pages/HomePage";
+import HrRequestPage from "../pages/HrRequestPage";
+import RecruitmentPlanPage from "../pages/RecruitmentPlanPage";
+import VerifyEmail from "../pages/VerifyEmail";
+import ResetPassword from "../pages/ResetPassword";
+import ForbiddenPage from "../pages/ForbiddenPage";
+
+/**
+ * Route dành cho khách (chưa login).
+ * Nếu đã đăng nhập thì redirect ra ngoài (về trang chính).
+ */
+const GuestRoute = ({ children }) => {
+  const { isAuthenticated } = useAuth();
+
+  if (isAuthenticated) {
+    // Đã đăng nhập thì đẩy về trang home
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
+
+const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
+      {/* ======================= */}
+      {/*   ROUTE DÀNH CHO KHÁCH  */}
+      {/* ======================= */}
+      <Route
+        path="/login"
+        element={
+          <GuestRoute>
+            <LoginPage />
+          </GuestRoute>
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          <GuestRoute>
+            <Register />
+          </GuestRoute>
+        }
+      />
+      <Route
+        path="/forgot-password"
+        element={
+          <GuestRoute>
+            <ForgotPassword />
+          </GuestRoute>
+        }
+      />
+      <Route
+        path="/verify"
+        element={
+          <GuestRoute>
+            <VerifyEmail />
+          </GuestRoute>
+        }
+      />
+      <Route
+        path="/reset-password"
+        element={
+          <GuestRoute>
+            <ResetPassword />
+          </GuestRoute>
+        }
+      />
+      <Route path="/forbidden" element={<ForbiddenPage />} />
 
-      {/* Trang chính */}
+      {/* ======================= */}
+      {/*   ROUTE CẦN ĐĂNG NHẬP   */}
+      {/* ======================= */}
+
+      {/* Trang Dashboard/Home */}
       <Route
         path="/"
         element={
@@ -21,30 +93,33 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-        {/* Trang Kế hoạch tuyển dụng */}
-        <Route
-            path="/recruitment/plan"
-            element={
-                <ProtectedRoute>
-                    <RecruitmentPlanPage />
-                </ProtectedRoute>
-            }
-        />
-      {/* Trang Nhu cầu nhân sự */}
+
+      {/* Nhu cầu tuyển dụng (HR Request) */}
       <Route
         path="/recruitment/needs"
         element={
           <ProtectedRoute>
-            <HRRequestPage />
+            <HrRequestPage />
           </ProtectedRoute>
         }
       />
-      
 
-      {/* Nếu người dùng nhập sai URL */}
-      <Route path="*" element={<LoginPage />} />
+      {/* Kế hoạch tuyển dụng */}
+      <Route
+        path="/recruitment/plan"
+        element={
+          <ProtectedRoute>
+            <RecruitmentPlanPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ======================= */}
+      {/*   ROUTE MẶC ĐỊNH        */}
+      {/* ======================= */}
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
-}
+};
 
 export default AppRoutes;

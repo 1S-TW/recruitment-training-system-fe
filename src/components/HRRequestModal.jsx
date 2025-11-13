@@ -4,10 +4,9 @@ import { useNavigate } from "react-router-dom";
 import "../styles/HRRequestModal.css";
 
 export default function HRRequestModal({ isOpen, onClose, request, onActionSuccess }) {
-  // ----- Hooks (luôn ở trên, không đặt sau return) -----
   const [loading, setLoading] = useState(false);
   const [note, setNote] = useState("");
-  const [techDict, setTechDict] = useState({}); // { id: name }
+  const [techDict, setTechDict] = useState({});
   const navigate = useNavigate();
 
   // tải danh mục công nghệ để map id -> name
@@ -30,7 +29,6 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
     if (isOpen && request) setNote(request.note || "");
   }, [isOpen, request]);
 
-  // map dữ liệu hiển thị bảng từ request?.techQuantities
   const techRows = useMemo(() => {
     const arr = request?.techQuantities || [];
     return arr.map((t) => ({
@@ -40,6 +38,7 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
   }, [request?.techQuantities, techDict]);
 
   const status = (request?.status || "").toUpperCase();
+  const isNew = status === "NEW";
   const isApproved = status === "APPROVED";
   const isCanceled = status === "CANCELED";
 
@@ -54,6 +53,8 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
   };
 
   const handleApprove = async () => {
+    if (!request || !isNew) return;
+
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
@@ -64,6 +65,7 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
         method: "PUT",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       });
+
       if (!res.ok) {
         const msg = await readErrorMessage(res);
         if (res.status === 401) alert("⚠️ Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
@@ -73,7 +75,8 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
         else alert(`⚠️ Lỗi khi phê duyệt yêu cầu: ${msg}`);
         return;
       }
-      alert("✅ Yêu cầu đã được phê duyệt!");
+
+
       onActionSuccess?.();
       onClose();
       navigate(`/recruitment/plan?requestId=${request.requestId}`);
@@ -85,6 +88,8 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
   };
 
   const handleReject = async () => {
+    if (!request || !isNew) return;
+
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
@@ -95,6 +100,7 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
         method: "PUT",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       });
+
       if (!res.ok) {
         const msg = await readErrorMessage(res);
         if (res.status === 401) alert("⚠️ Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
@@ -104,6 +110,7 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
         else alert(`⚠️ Lỗi khi từ chối yêu cầu: ${msg}`);
         return;
       }
+
       alert("❌ Yêu cầu đã bị từ chối!");
       onActionSuccess?.();
       onClose();
@@ -114,84 +121,145 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
     }
   };
 
-  // ----- chỉ render UI khi mở & có request -----
   if (!isOpen || !request) return null;
 
+  const disableActions = loading || !isNew;
+
   return (
-    <div className="modal-overlay">
-      <div className="modal-content">
+    <div className="hrmodal-overlay">
+      <div className="hrmodal-card">
         {/* Header */}
-        <div className="modal-header">
-          <h3>Chi tiết yêu cầu nhân sự</h3>
-          <button className="btn-close-top" onClick={onClose} aria-label="Đóng modal">✖</button>
+        <div className="hrmodal-header">
+          <div>
+            <h3 className="hrmodal-title">Chi tiết yêu cầu nhân sự</h3>
+            <span className={`status-pill status-${status.toLowerCase()}`}>
+              {request.status}
+            </span>
+          </div>
+          <button
+            className="hrmodal-close"
+            onClick={onClose}
+            aria-label="Đóng modal"
+          >
+            ✕
+          </button>
         </div>
 
-        <div className="modal-body">
-          <p><strong>Tên nhu cầu:</strong> {request.requestTitle}</p>
-          <p><strong>Người gửi:</strong> {request.createdByName}</p>
-          <p><strong>Ngày tạo:</strong> {new Date(request.createdAt).toLocaleString()}</p>
-          <p><strong>Ngày bàn giao dự kiến:</strong> {new Date(request.expectedDeliveryDate).toLocaleDateString()}</p>
-          <p><strong>Tổng số lượng ứng viên:</strong> {techRows.reduce((s, r) => s + (r.quantity || 0), 0)}</p>
-          <p><strong>Trạng thái:</strong> {request.status}</p>
+        {/* Body */}
+        <div className="hrmodal-body">
+          {/* khối thông tin chung */}
+          <div className="info-grid">
+            <div className="info-item">
+              <span className="info-label">Tên nhu cầu</span>
+              <span className="info-value">{request.requestTitle}</span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Người gửi</span>
+              <span className="info-value">{request.createdByName}</span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Ngày tạo</span>
+              <span className="info-value">
+                {new Date(request.createdAt).toLocaleString()}
+              </span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Ngày bàn giao dự kiến</span>
+              <span className="info-value">
+                {new Date(request.expectedDeliveryDate).toLocaleDateString()}
+              </span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Tổng số lượng ứng viên</span>
+              <span className="info-value strong">
+                {techRows.reduce((s, r) => s + (r.quantity || 0), 0)}
+              </span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Trạng thái</span>
+              <span className="info-value">{request.status}</span>
+            </div>
+          </div>
 
-          {/* Bảng công nghệ & số lượng */}
-          <table className="info-table">
-            <thead>
-              <tr>
-                <th>Công nghệ</th>
-                <th>Số lượng</th>
-              </tr>
-            </thead>
-            <tbody>
-              {techRows.length === 0 ? (
-                <tr><td colSpan={2} style={{ textAlign: "center", color: "#94a3b8" }}>Không có dữ liệu</td></tr>
-              ) : (
-                techRows.map((row, idx) => (
-                  <tr key={idx}>
-                    <td>{row.name}</td>
-                    <td style={{ textAlign: "center" }}>{row.quantity}</td>
+          {/* bảng công nghệ */}
+          <div className="section-block">
+            <div className="section-header">
+              <h4>Công nghệ &amp; số lượng</h4>
+            </div>
+            <table className="hr-info-table">
+              <thead>
+                <tr>
+                  <th>Công nghệ</th>
+                  <th style={{ width: 120 }}>Số lượng</th>
+                </tr>
+              </thead>
+              <tbody>
+                {techRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={2} className="table-empty">
+                      Không có dữ liệu
+                    </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  techRows.map((row, idx) => (
+                    <tr key={idx}>
+                      <td>{row.name}</td>
+                      <td className="text-center">{row.quantity}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
-          <textarea
-            placeholder="Nhập ghi chú (tùy chọn)..."
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-          />
+          {/* ghi chú */}
+          <div className="section-block">
+            <div className="section-header">
+              <h4>Ghi chú</h4>
+              <span className="section-sub">(tùy chọn)</span>
+            </div>
+            <textarea
+              className="note-input"
+              placeholder="Nhập ghi chú cho quyết định phê duyệt / từ chối..."
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+          </div>
 
-          {isApproved && (
-            <p className="hint-text" style={{ color: "#d89614", marginTop: 8 }}>
-              Yêu cầu đã được phê duyệt — thao tác “Từ chối” không khả dụng.
-            </p>
-          )}
-          {isCanceled && (
-            <p className="hint-text" style={{ color: "#d89614", marginTop: 8 }}>
-              Yêu cầu đã bị từ chối — thao tác “Phê duyệt” không khả dụng.
+          {(isApproved || isCanceled) && (
+            <p className="hint-text">
+              {isApproved &&
+                "Yêu cầu đã được phê duyệt — thao tác “Từ chối / Phê duyệt” không khả dụng."}
+              {isCanceled &&
+                "Yêu cầu đã bị từ chối — thao tác “Từ chối / Phê duyệt” không khả dụng."}
             </p>
           )}
         </div>
 
-        <div className="modal-actions">
-          <button
-            className={`btn-reject ${isApproved ? "is-disabled" : ""}`}
-            onClick={handleReject}
-            disabled={loading || isApproved}
-            title={isApproved ? "Yêu cầu đã được phê duyệt — không thể từ chối." : undefined}
-          >
-            Từ chối
-          </button>
-          <button
-            className={`btn-approve ${isCanceled ? "is-disabled" : ""}`}
-            onClick={handleApprove}
-            disabled={loading || isCanceled}
-            title={isCanceled ? "Yêu cầu đã bị từ chối — không thể phê duyệt." : undefined}
-          >
-            Phê duyệt và Khởi tạo
-          </button>
-          <button className="btn-close" onClick={onClose} disabled={loading}>Đóng</button>
+        {/* Footer */}
+        <div className="hrmodal-footer">
+          <div className="footer-left">
+
+          </div>
+          <div className="footer-actions">
+            <button
+              className={`btn-reject-main ${disableActions ? "btn-disabled" : ""}`}
+              onClick={handleReject}
+              disabled={disableActions}
+              title={!isNew ? "Chỉ trạng thái NEW mới được thao tác" : undefined}
+            >
+              Từ chối
+            </button>
+            <button
+              className={`btn-approve-main ${disableActions ? "btn-disabled" : ""}`}
+              onClick={handleApprove}
+              disabled={disableActions}
+              title={!isNew ? "Chỉ trạng thái NEW mới được thao tác" : undefined}
+            >
+              Phê duyệt và Khởi tạo
+            </button>
+
+          </div>
         </div>
       </div>
     </div>

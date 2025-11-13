@@ -1,31 +1,31 @@
-// src/services/authService.js
-import axios from "axios";
+import api from './api';
 
-const API_URL = "http://localhost:8080/api/auth";
-
-export const login = async (email, password) => {
-  try {
-    const response = await axios.post(`${API_URL}/login`, { email, password });
-    if (response.data.token) {
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("userEmail", email);
-    }
+// Phải có "export" ở đây
+export const login = async (credentials) => {
+    const response = await api.post('/auth/login', credentials);
     return response.data;
-  } catch (error) {
-    throw new Error(error.response?.data?.message || "Đăng nhập thất bại");
-  }
 };
 
-export const logout = () => {
-  localStorage.removeItem("token");
-  localStorage.removeItem("userEmail");
+// Phải có "export" ở đây
+export const register = async (userData) => {
+    const response = await api.post('/auth/register', userData);
+    return response.data;
 };
 
-export const getAuthHeader = () => {
-  const token = localStorage.getItem("token");
-  return {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  };
+// Phải có "export" ở đây
+export const forgotPassword = async (data) => {
+    const response = await api.post('/auth/forgot-password', data);
+    return response.data;
+};
+
+// Phải có "export" ở đây
+export const verifyEmail = async (token) => {
+    const response = await api.get(`/auth/verify?token=${token}`);
+    return response.data;
+};
+
+// Phải có "export" ở đây
+export const resetPassword = async (data) => {
+    const response = await api.post('/auth/reset-password', data);
+    return response.data;
 };
