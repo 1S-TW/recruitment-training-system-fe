@@ -6,7 +6,6 @@ import { useAuth } from "../contexts/AuthContext";
 // ✅ ProtectedRoute ở cùng thư mục routes
 import ProtectedRoute from "./ProtectedRoute";
 
-
 import LoginPage from "../pages/LoginPage";
 import Register from "../pages/Register";
 import ForgotPassword from "../pages/ForgotPassword";
@@ -16,6 +15,9 @@ import RecruitmentPlanPage from "../pages/RecruitmentPlanPage";
 import VerifyEmail from "../pages/VerifyEmail";
 import ResetPassword from "../pages/ResetPassword";
 import ForbiddenPage from "../pages/ForbiddenPage";
+
+// 👇 THÊM MỚI: page quản lý ứng viên
+import CandidateManagementPage from "../pages/CandidateManagementPage";
 
 /**
  * Route dành cho khách (chưa login).
@@ -110,6 +112,16 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <RecruitmentPlanPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* 👇 ROUTE MỚI: QUẢN LÝ ỨNG VIÊN */}
+      <Route
+        path="/recruitment/candidates"
+        element={
+          <ProtectedRoute>
+            <CandidateManagementPage />
           </ProtectedRoute>
         }
       />

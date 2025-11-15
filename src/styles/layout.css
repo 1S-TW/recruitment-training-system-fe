@@ -177,3 +177,36 @@
     .lead{ font-size: 1rem; color: var(--muted); margin: .5rem 0 0 0; }
 
     
+    /* === SUBMENU UI NÂNG CẤP === */
+
+.nav__submenu {
+  margin-left: 1.5rem;
+  margin-top: 0.25rem;
+  display: grid;
+  gap: 0.25rem;
+  border-left: 2px solid var(--border);
+  padding-left: 0.75rem;
+}
+
+.nav__item--sub {
+  padding: 0.55rem 0.75rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  border-radius: 0.5rem;
+}
+
+.nav__item--sub:hover {
+  background: var(--elev-1);
+  color: var(--text);
+}
+
+.nav__arrow {
+  margin-left: auto;
+  transition: transform 0.25s ease;
+  opacity: 0.7;
+  font-size: 0.7rem;
+}
+
+.nav__arrow--open {
+  transform: rotate(180deg);
+}
