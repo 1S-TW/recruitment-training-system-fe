@@ -1,4 +1,3 @@
-// src/pages/RecruitmentPlanPage.jsx
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
@@ -7,7 +6,36 @@ import Pagination from "../components/Pagination";
 import ActionButtons from "../components/ActionButtons.jsx";
 import AddPlanModal from "../components/AddPlanModal";
 import DatePicker from "../components/DatePicker";
+import Modal from "../components/Modal";
 import "../styles/plan.css";
+
+// Hàm helper định dạng ngày
+const formatDate = (dateString) => {
+  if (!dateString) return "—";
+  return new Date(dateString).toLocaleDateString("vi-VN");
+};
+
+// Map mã trạng thái -> label tiếng Việt
+const getStatusLabel = (status) => {
+  switch (status) {
+    case "NEW":
+      return "Mới tạo";
+    case "CONFIRMED":
+      return "Đã xác nhận";
+    case "REJECTED":
+      return "Bị từ chối";
+    case "PENDING":
+      return "Đã gửi đi";
+    case "IN_PROGRESS":
+      return "Đang xử lý";
+    case "COMPLETED":
+      return "Hoàn thành";
+    case "CANCELED":
+      return "Đã hủy";
+    default:
+      return status || "Không rõ";
+  }
+};
 
 const RecruitmentPlanPage = () => {
   const [selectedDate, setSelectedDate] = useState(null);
@@ -19,6 +47,7 @@ const RecruitmentPlanPage = () => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const [openAddModal, setOpenAddModal] = useState(false);
   const [techSummary, setTechSummary] = useState([]);
@@ -29,11 +58,15 @@ const RecruitmentPlanPage = () => {
   const [form, setForm] = useState({
     requestId: undefined,
     planName: "",
-    status: "DRAFT",
+    status: "NEW",
     recruitmentDeadline: "",
     deliveryDeadline: "",
     note: "",
   });
+
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [modalStep, setModalStep] = useState(0); // 0: đóng, 1: xem, 3: từ chối
+  const [rejectReason, setRejectReason] = useState("");
 
   const location = useLocation();
   const token = localStorage.getItem("token");
@@ -66,7 +99,7 @@ const RecruitmentPlanPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // mở modal từ phê duyệt (lock)
+  // Mở AddPlan từ URL ?requestId=...
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const requestId = params.get("requestId");
@@ -74,12 +107,14 @@ const RecruitmentPlanPage = () => {
 
     (async () => {
       try {
-        const res = await axiosAuth.get(`/api/hr-request/${requestId}/plan-defaults`);
+        const res = await axiosAuth.get(
+          `/api/hr-request/${requestId}/plan-defaults`
+        );
         const d = res.data;
         setForm({
           requestId: d.requestId,
           planName: "",
-          status: d.status || "DRAFT",
+          status: d.status || "NEW",
           recruitmentDeadline: d.recruitmentDeadline || "",
           deliveryDeadline: d.deliveryDeadline || "",
           note: d.note || "",
@@ -95,7 +130,7 @@ const RecruitmentPlanPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
 
-  // lọc bảng
+  // Lọc bảng
   useEffect(() => {
     let filtered = [...plans];
     if (searchName.trim()) {
@@ -103,7 +138,9 @@ const RecruitmentPlanPage = () => {
         (p.planName || "").toLowerCase().includes(searchName.toLowerCase())
       );
     }
-    if (statusFilter) filtered = filtered.filter((p) => p.status === statusFilter);
+    if (statusFilter) {
+      filtered = filtered.filter((p) => p.status === statusFilter);
+    }
     if (selectedDate) {
       const m = selectedDate.getMonth();
       const y = selectedDate.getFullYear();
@@ -125,17 +162,22 @@ const RecruitmentPlanPage = () => {
     setItemsPerPage(Number(e.target.value));
     setCurrentPage(1);
   };
+
   const handlePageChange = (p) => {
     if (p < 1 || p > totalPages) return;
-    setCurrentPage(p);
+    setIsAnimating(true);
+    setTimeout(() => {
+      setCurrentPage(p);
+      setIsAnimating(false);
+    }, 180);
   };
 
-  // mở modal chọn nhu cầu NEW
+  // Mở modal tạo kế hoạch mới: chỉ lấy nhu cầu trạng thái NEW
   const openEmptyAddModal = async () => {
     setForm({
       requestId: undefined,
       planName: "",
-      status: "DRAFT",
+      status: "NEW",
       recruitmentDeadline: "",
       deliveryDeadline: "",
       note: "",
@@ -147,6 +189,7 @@ const RecruitmentPlanPage = () => {
     try {
       const res = await axiosAuth.get("/api/hr-request");
       const opts = (res.data || [])
+        // 🔥 CHỈ LẤY NHỮNG NHU CẦU CÓ STATUS = NEW
         .filter((r) => String(r.status || "").toUpperCase() === "NEW")
         .map((r) => ({ id: r.requestId, title: r.requestTitle }))
         .sort((a, b) => a.title.localeCompare(b.title));
@@ -159,7 +202,12 @@ const RecruitmentPlanPage = () => {
 
   const handlePickRequest = async (id) => {
     if (!id) {
-      setForm((f) => ({ ...f, requestId: undefined, recruitmentDeadline: "", deliveryDeadline: "" }));
+      setForm((f) => ({
+        ...f,
+        requestId: undefined,
+        recruitmentDeadline: "",
+        deliveryDeadline: "",
+      }));
       setTechSummary([]);
       setRequestTitle("");
       return;
@@ -170,7 +218,7 @@ const RecruitmentPlanPage = () => {
       setForm({
         requestId: d.requestId,
         planName: "",
-        status: d.status || "DRAFT",
+        status: d.status || "NEW",
         recruitmentDeadline: d.recruitmentDeadline || "",
         deliveryDeadline: d.deliveryDeadline || "",
         note: d.note || "",
@@ -178,7 +226,12 @@ const RecruitmentPlanPage = () => {
       setRequestTitle(d.suggestedPlanName || d.requestTitle || "");
       setTechSummary(d.techQuantities || []);
     } catch {
-      setForm((f) => ({ ...f, requestId: undefined, recruitmentDeadline: "", deliveryDeadline: "" }));
+      setForm((f) => ({
+        ...f,
+        requestId: undefined,
+        recruitmentDeadline: "",
+        deliveryDeadline: "",
+      }));
       setTechSummary([]);
       setRequestTitle("");
     }
@@ -187,25 +240,191 @@ const RecruitmentPlanPage = () => {
   const submitPlan = async () => {
     try {
       if (!form.requestId) {
-        alert("⚠️ Vui lòng chọn nhu cầu (NEW) trước khi tạo kế hoạch.");
+        alert("⚠️ Vui lòng chọn nhu cầu trước khi tạo kế hoạch.");
         return;
       }
       if (!form.planName || !form.recruitmentDeadline || !form.deliveryDeadline) {
-        alert("⚠️ Vui lòng nhập tên kế hoạch.");
+        alert("⚠️ Vui lòng nhập tên kế hoạch và thời hạn.");
         return;
       }
       await axiosAuth.post("/api/recruitment-plans", form);
       setOpenAddModal(false);
       await loadPlans();
-      alert("✅ Tạo kế hoạch thành công!");
     } catch (e) {
       const msg = e?.response?.data?.message || e?.message || "Lỗi không xác định";
       alert(`⚠️ Không thể tạo kế hoạch: ${msg}`);
     }
   };
 
+  // ==== MODAL HANDLERS ====
+  const handleViewDetails = (plan) => {
+    setSelectedPlan(plan);
+    setModalStep(1); // mở modal xem chi tiết
+  };
+
+  const handleApprove = async () => {
+  if (!selectedPlan) return;
+  const planId = selectedPlan.recruitmentPlanId;
+
+  try {
+    const res = await axiosAuth.put(
+      `/api/recruitment-plans/${planId}/confirm`
+    );
+    const updated = res.data; // plan sau khi BE lưu CONFIRMED
+
+    // Cập nhật list + filteredList + selectedPlan
+    setPlans((prev) =>
+      prev.map((p) =>
+        p.recruitmentPlanId === planId ? updated : p
+      )
+    );
+    setFilteredPlans((prev) =>
+      prev.map((p) =>
+        p.recruitmentPlanId === planId ? updated : p
+      )
+    );
+    setSelectedPlan(updated);
+    // vẫn ở modal step 1, chỉ thay phần trạng thái
+    // hoặc nếu muốn popup "Đã xác nhận" riêng thì setModalStep(2);
+  } catch (error) {
+    console.error("Lỗi khi phê duyệt kế hoạch:", error);
+    // nếu không muốn alert gì thì để trống
+    // alert(error.response?.data?.error || "Lỗi không xác định khi phê duyệt.");
+  }
+};
+
+
+  const handleStartReject = () => {
+    setModalStep(3);
+    setRejectReason("");
+  };
+
+  const handleCloseModal = () => {
+    setModalStep(0);
+    setSelectedPlan(null);
+    setRejectReason("");
+  };
+
+  const handleSubmitRejection = async () => {
+  if (!selectedPlan) return;
+  const planId = selectedPlan.recruitmentPlanId;
+
+  if (!planId || !rejectReason.trim()) {
+    alert("Lý do từ chối không được để trống.");
+    return;
+  }
+
+  try {
+    const res = await axiosAuth.post(
+      `/api/recruitment-plans/${planId}/reject`,
+      { rejectionReason: rejectReason }
+    );
+
+    const updated = res.data; // plan sau khi BE set REJECTED + note
+
+    setPlans((prev) =>
+      prev.map((p) =>
+        p.recruitmentPlanId === planId ? updated : p
+      )
+    );
+    setFilteredPlans((prev) =>
+      prev.map((p) =>
+        p.recruitmentPlanId === planId ? updated : p
+      )
+    );
+    setSelectedPlan(updated);
+
+    handleCloseModal(); // đóng popup nhập lý do
+  } catch (error) {
+    console.error("Lỗi khi từ chối:", error);
+    // nếu không muốn alert thì comment dòng dưới:
+    // alert(error.response?.data?.error || "Lỗi không xác định khi từ chối.");
+  }
+};
+
+
+  // Render chi tiết kế hoạch trong modal
+  const renderPlanDetails = (plan, showStatus = false) => {
+    if (!plan) return null;
+
+    const request = plan.request;
+    if (!request) {
+      console.error("Plan không có 'request' object:", plan);
+      return (
+        <p className="error-text">
+          Lỗi: Kế hoạch này thiếu thông tin nhu cầu (request).
+        </p>
+      );
+    }
+
+    const techRows = request.quantityCandidates || [];
+
+    return (
+      <div className="detail-list">
+        <div className="detail-item">
+          <span className="detail-label">Tên nhu cầu:</span>
+          <span className="detail-value">{request.requestTitle}</span>
+        </div>
+        <div className="detail-item">
+          <span className="detail-label">Tên kế hoạch:</span>
+          <span className="detail-value">{plan.planName}</span>
+        </div>
+
+        <table className="tech-table">
+          <thead>
+            <tr>
+              <th>Công nghệ</th>
+              <th className="text-center">Đầu ra (SL)</th>
+              <th className="text-center">Đầu vào (SL)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {techRows.length > 0 ? (
+              techRows.map((qc) => (
+                <tr key={qc.technology.id}>
+                  <td>{qc.technology.name}</td>
+                  <td className="text-center">{qc.soLuong}</td>
+                  <td className="text-center">{qc.soLuong * 2}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="3" className="text-center">
+                  Không có thông tin công nghệ.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+
+        <div className="detail-item">
+          <span className="detail-label">Thời hạn tuyển dụng:</span>
+          <span className="detail-value">
+            {formatDate(plan.recruitmentDeadline)}
+          </span>
+        </div>
+        <div className="detail-item">
+          <span className="detail-label">Thời hạn bàn giao:</span>
+          <span className="detail-value">
+            {formatDate(plan.deliveryDeadline)}
+          </span>
+        </div>
+
+        {showStatus && (
+          <div className="detail-item">
+            <span className="detail-label">Trạng thái:</span>
+            <span className="detail-value status-confirmed">
+              {getStatusLabel(plan.status)}
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <Layout>
+      {/* Breadcrumb */}
       <div className="breadcrumb-container fade-slide">
         <div className="breadcrumb-left">
           <span className="breadcrumb-icon">💼</span>
@@ -229,11 +448,13 @@ const RecruitmentPlanPage = () => {
         </div>
       </div>
 
+      {/* Nội dung chính */}
       <div className="recruitment-page fade-slide">
         <div className="title-row">
           <h2 className="page-title-small">Kế hoạch tuyển dụng</h2>
 
           <div className="filter-bar">
+            {/* Search */}
             <div className="filter-item search-wrapper">
               <div className="search-input-container">
                 <input
@@ -246,13 +467,16 @@ const RecruitmentPlanPage = () => {
                 />
                 <span className="filter-icon">🔍</span>
                 <datalist id="recent-names">
-                  {(JSON.parse(localStorage.getItem("recentNames") || "[]")).map((name, i) => (
+                  {(
+                    JSON.parse(localStorage.getItem("recentNames") || "[]")
+                  ).map((name, i) => (
                     <option key={i} value={name} />
                   ))}
                 </datalist>
               </div>
             </div>
 
+            {/* Trạng thái */}
             <div className="filter-item">
               <select
                 className="filter-select smooth-dropdown"
@@ -260,26 +484,33 @@ const RecruitmentPlanPage = () => {
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="">Trạng thái</option>
-                <option value="DRAFT">Nháp</option>
-                <option value="PENDING">Đang chờ</option>
-                <option value="IN_PROGRESS">Đang xử lý</option>
-                <option value="COMPLETED">Hoàn thành</option>
-                <option value="CANCELED">Đã hủy</option>
+                <option value="NEW">Mới tạo</option>
+                <option value="CONFIRMED">Đã xác nhận</option>
+                <option value="REJECTED">Bị từ chối</option>
               </select>
             </div>
 
+            {/* Lọc theo tháng/năm tạo */}
             <div className="filter-item">
-              <DatePicker selectedDate={selectedDate} onDateChange={(d) => setSelectedDate(d)} />
+              <DatePicker
+                selectedDate={selectedDate}
+                onDateChange={setSelectedDate}
+              />
             </div>
 
+            {/* Nút thêm kế hoạch */}
             <div className="filter-item add-btn-wrapper">
-              <button className="add-plan-btn modern-add" onClick={openEmptyAddModal}>
+              <button
+                className="add-plan-btn modern-add"
+                onClick={openEmptyAddModal}
+              >
                 ＋ Thêm kế hoạch tuyển dụng
               </button>
             </div>
           </div>
         </div>
 
+        {/* Nút xoá tất cả filter */}
         <div className="filter-item">
           <button
             className="clear-all-btn smooth-dropdown"
@@ -293,7 +524,12 @@ const RecruitmentPlanPage = () => {
           </button>
         </div>
 
-        <div className="table-container">
+        {/* Bảng */}
+        <div
+          className={`table-container ${
+            isAnimating ? "fade-out" : "fade-in"
+          }`}
+        >
           {loading ? (
             <p className="loading-text">Đang tải dữ liệu...</p>
           ) : error ? (
@@ -313,15 +549,23 @@ const RecruitmentPlanPage = () => {
               <tbody>
                 {currentPlans.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="text-center">Không có dữ liệu</td>
+                    <td colSpan="6" className="text-center">
+                      Không có dữ liệu
+                    </td>
                   </tr>
                 ) : (
                   currentPlans.map((plan, index) => (
                     <tr key={plan.recruitmentPlanId || index}>
                       <td>{indexOfFirst + index + 1}</td>
                       <td>{plan.planName}</td>
-                      <td>{plan.createdAt ? new Date(plan.createdAt).toLocaleDateString() : "—"}</td>
-                      <td><span className="status-badge">{plan.status}</span></td>
+                      <td>
+                        {plan.createdAt ? formatDate(plan.createdAt) : "—"}
+                      </td>
+                      <td>
+                        <span className="status-badge">
+                          {getStatusLabel(plan.status)}
+                        </span>
+                      </td>
                       <td>
                         {plan.request?.createdBy?.fullName ||
                           plan.request?.createdBy?.username ||
@@ -329,8 +573,9 @@ const RecruitmentPlanPage = () => {
                       </td>
                       <td className="actions-cell text-center">
                         <ActionButtons
-                          onView={() => console.log("Xem", plan.recruitmentPlanId)}
-                          onEdit={() => console.log("Chỉnh sửa", plan.recruitmentPlanId)}
+                          onView={() => handleViewDetails(plan)}
+                          onEdit={() => {
+                          }}
                         />
                       </td>
                     </tr>
@@ -341,9 +586,14 @@ const RecruitmentPlanPage = () => {
           )}
         </div>
 
-        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
       </div>
 
+      {/* Modal tạo kế hoạch */}
       <AddPlanModal
         open={openAddModal}
         onClose={() => setOpenAddModal(false)}
@@ -356,6 +606,221 @@ const RecruitmentPlanPage = () => {
         requestOptions={requestOptions}
         onPickRequest={handlePickRequest}
       />
+
+      {/* 1. Modal Xem chi tiết */}
+            {/* 1. Modal Xem chi tiết */}
+            {/* 1. Modal Xem chi tiết */}
+      {modalStep === 1 && selectedPlan && (
+        <Modal
+          title="Chi tiết Kế hoạch tuyển dụng"
+          onClose={handleCloseModal}
+          width={640}
+        >
+          {renderPlanDetails(selectedPlan, false)}
+
+          {selectedPlan.status === "NEW" ? (
+            // ✅ Trạng thái NEW: hiển thị 2 nút Từ chối / Phê duyệt giống modal HR
+            <div className="modal-footer modal-footer-actions">
+              <button
+                className="modal-btn btn-reject"
+                onClick={handleStartReject}
+              >
+                Từ chối
+              </button>
+              <button
+                className="modal-btn btn-approve btn-approve-green"
+                onClick={handleApprove}
+              >
+                Phê duyệt
+              </button>
+            </div>
+          ) : selectedPlan.status === "CANCELED" ||
+            selectedPlan.status === "REJECTED" ? (
+            // ✅ Đã bị hủy / từ chối: chỉ xem lý do
+            <div className="rejection-card">
+              <p className="rejection-title">
+                LÝ DO KẾ HOẠCH BỊ{" "}
+                {selectedPlan.status === "CANCELED" ? "HỦY" : "TỪ CHỐI"}:
+              </p>
+              <p className="rejection-reason-text">
+                {selectedPlan.note || "Không có lý do cụ thể được ghi lại."}
+              </p>
+              <div className="modal-footer justify-end">
+
+              </div>
+            </div>
+          ) : (
+            // ✅ Các trạng thái khác: chỉ xem
+            <div className="modal-footer justify-center only-view-footer">
+              <p className="only-view-text">
+                Kế hoạch đang ở trạng thái "
+                {getStatusLabel(selectedPlan.status)}". Chỉ có thể xem.
+              </p>
+
+            </div>
+          )}
+        </Modal>
+      )}
+
+      {/* 2. Modal Đã duyệt */}
+      {modalStep === 2 && selectedPlan && (
+        <Modal
+          title="Kế hoạch Đã xác nhận"
+          onClose={handleCloseModal}
+          width={640}
+        >
+          {renderPlanDetails(selectedPlan, true)}
+          <div className="modal-footer justify-between">
+            <p className="only-view-text">
+              Kế hoạch đã được phê duyệt. Bạn có thể xem thêm các kết quả liên
+              quan bên dưới.
+            </p>
+            <div className="modal-footer-buttons">
+
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* 3. Modal Từ chối */}
+      {modalStep === 3 && selectedPlan && (
+        <Modal
+          title="Lý do Từ chối Kế hoạch"
+          onClose={handleCloseModal}
+          width={520}
+        >
+          <div className="reject-form">
+            <label htmlFor="rejectReason" className="reject-label">
+              Vui lòng nhập lý do từ chối kế hoạch:{" "}
+              <span className="reject-plan-name">
+                "{selectedPlan.planName}"
+              </span>
+            </label>
+            <textarea
+              id="rejectReason"
+              className="reject-textarea"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Nhập lý do cụ thể, rõ ràng để người lập kế hoạch dễ dàng điều chỉnh..."
+            />
+          </div>
+          <div className="modal-footer modal-footer-actions">
+            <button
+              className="modal-btn btn-secondary"
+              onClick={handleCloseModal}
+            >
+              Hủy
+            </button>
+            <button
+              className="modal-btn btn-reject"
+              onClick={handleSubmitRejection}
+              disabled={!rejectReason.trim()}
+            >
+              Xác nhận từ chối
+            </button>
+          </div>
+        </Modal>
+      )}
+
+
+      {/* 2. Modal Đã duyệt */}
+      {modalStep === 2 && selectedPlan && (
+        <Modal
+          title="Kế hoạch Đã xác nhận"
+          onClose={handleCloseModal}
+          width={640}
+        >
+          {renderPlanDetails(selectedPlan, true)}
+          <div className="modal-footer justify-between">
+            <p className="only-view-text">
+              Kế hoạch đã được phê duyệt. Bạn có thể xem thêm các kết quả liên
+              quan bên dưới.
+            </p>
+            <div className="modal-footer-buttons">
+
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* 3. Modal Từ chối */}
+      {modalStep === 3 && selectedPlan && (
+        <Modal
+          title="Lý do Từ chối Kế hoạch"
+          onClose={handleCloseModal}
+          width={520}
+        >
+          <div className="reject-form">
+            <label htmlFor="rejectReason" className="reject-label">
+              Vui lòng nhập lý do từ chối kế hoạch:{" "}
+              <span className="reject-plan-name">
+                "{selectedPlan.planName}"
+              </span>
+            </label>
+            <textarea
+              id="rejectReason"
+              className="reject-textarea"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Nhập lý do cụ thể, rõ ràng để người lập kế hoạch dễ dàng điều chỉnh..."
+            />
+          </div>
+          <div className="modal-footer modal-footer-actions">
+            <button
+              className="modal-btn btn-secondary"
+              onClick={handleCloseModal}
+            >
+              Hủy
+            </button>
+            <button
+              className="modal-btn btn-reject"
+              onClick={handleSubmitRejection}
+              disabled={!rejectReason.trim()}
+            >
+              Xác nhận từ chối
+            </button>
+          </div>
+        </Modal>
+      )}
+
+
+      {/* 3. Modal Từ chối */}
+      {modalStep === 3 && selectedPlan && (
+        <Modal
+          title="Lý do Từ chối Kế hoạch"
+          onClose={handleCloseModal}
+          width={500}
+        >
+          <div className="reject-form">
+            <label htmlFor="rejectReason">
+              Vui lòng nhập lý do từ chối kế hoạch: "
+              {selectedPlan.planName}"
+            </label>
+            <textarea
+              id="rejectReason"
+              className="reject-textarea"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Nhập lý do..."
+            />
+          </div>
+          <div className="modal-footer">
+            <button
+              className="modal-btn btn-secondary"
+              onClick={handleCloseModal}
+            >
+              Hủy
+            </button>
+            <button
+              className="modal-btn btn-reject"
+              onClick={handleSubmitRejection}
+              disabled={!rejectReason.trim()}
+            >
+              Xác nhận từ chối
+            </button>
+          </div>
+        </Modal>
+      )}
     </Layout>
   );
 };

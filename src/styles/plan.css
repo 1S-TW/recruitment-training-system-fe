@@ -657,3 +657,515 @@
 .theme-dark .btn-add-tech-custom:hover {
     background: rgba(71, 85, 105, 0.1);
 }
+
+
+
+/* --- MODAL STYLES --- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(17, 24, 39, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 40;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  z-index: 50;
+  width: 90%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: zoomIn 0.25s ease-out;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.modal-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #4b5563;
+  transition: all 0.2s ease;
+}
+.modal-close-btn:hover {
+  background: #e5e7eb;
+  color: #111827;
+  transform: rotate(90deg);
+}
+
+.modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  color: #374151;
+}
+
+/* --- Modal Detail List --- */
+/* Bản revised, cân label/value đẹp hơn */
+.detail-list {
+  display: flex;
+  flex-direction: column;
+  padding: 15px 0;
+  margin-bottom: 10px;
+}
+.detail-item {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.95rem;
+}
+.detail-item:last-of-type {
+  border-bottom: none;
+}
+.detail-label {
+  font-weight: 500;
+  color: #4b5563;
+}
+.detail-value {
+  font-weight: 600;
+  color: #111827;
+  text-align: right;
+  padding-left: 10px;
+}
+.detail-value.status-confirmed {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+/* --- Tech List Table --- */
+.tech-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+  font-size: 0.9rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.tech-table th,
+.tech-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+}
+.tech-table th {
+  background: #f5f7fa;
+  color: #4b5563;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+.tech-table td {
+  background: #fff;
+  color: #1e293b;
+}
+.tech-table tr:last-child td {
+  border-bottom: none;
+}
+.text-center {
+  text-align: center !important;
+}
+
+/* --- Modal Footer/Actions --- */
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 20px;
+  background-color: transparent;
+}
+.modal-footer.justify-content-center {
+  justify-content: center;
+  background-color: #f8f8f8;
+  padding: 12px 20px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.modal-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.modal-btn:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+.modal-btn.btn-approve {
+  background-color: #2563eb;
+  color: white;
+}
+.modal-btn.btn-reject {
+  background-color: #dc2626;
+  color: white;
+}
+.modal-btn.btn-secondary {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+/* --- Block hiển thị lý do CANCELED/REJECTED --- */
+.modal-footer-canceled {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 20px;
+  margin-top: 20px;
+  background-color: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+}
+.rejection-title {
+  font-weight: 700;
+  color: #0369a1;
+  margin-bottom: 10px;
+  font-size: 1rem;
+}
+.rejection-reason-text {
+  background-color: #fff;
+  border: 1px solid #d1d5db;
+  padding: 12px;
+  border-radius: 6px;
+  width: 100%;
+  font-size: 0.9rem;
+  color: #374151;
+  white-space: pre-wrap;
+}
+
+/* --- Reject Form --- */
+.reject-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.reject-textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+.reject-textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+/* Keyframes cho modal */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes zoomIn {
+  from { opacity: 0.5; transform: translate(-50%, -50%) scale(0.9); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Dấu ... trong phân trang (nếu cần) */
+.dots {
+  color: #94a3b8;
+  padding: 0 4px;
+}
+
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(17, 24, 39, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 40;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  z-index: 50;
+  width: 90%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: zoomIn 0.25s ease-out;
+}
+
+/* ... phần detail-list, tech-table, modal-footer, modal-footer-canceled,
+   reject-form, reject-textarea, @keyframes fadeIn, zoomIn
+   y như bạn đã gửi ở trên, giữ nguyên là được */
+
+
+   /* ====== Modal detail layout ====== */
+
+.detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.detail-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.detail-value {
+  font-size: 14px;
+  color: #111827;
+}
+
+.tech-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0 16px;
+  background: #f9fafb;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.tech-table th,
+.tech-table td {
+  padding: 10px 14px;
+  font-size: 13px;
+}
+
+.tech-table thead tr {
+  background: #eef2ff;
+}
+
+.tech-table tbody tr:nth-child(odd) {
+  background: #ffffff;
+}
+
+.tech-table tbody tr:nth-child(even) {
+  background: #f3f4f6;
+}
+
+.text-center {
+  text-align: center;
+}
+
+/* ====== Modal footer / buttons ====== */
+
+.modal-footer {
+  margin-top: 20px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.modal-footer-actions {
+  justify-content: flex-end;
+}
+
+.modal-footer-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-end {
+  justify-content: flex-end;
+}
+
+.modal-btn {
+  padding: 9px 22px;
+  border-radius: 999px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.08s ease,
+    box-shadow 0.08s ease;
+}
+
+.modal-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.modal-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(15, 23, 42, 0.08);
+}
+
+/* giống màu modal HR: đỏ & xanh lá */
+
+.btn-reject {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.btn-reject:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.btn-approve.btn-approve-green {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.btn-approve.btn-approve-green:hover:not(:disabled) {
+  background: #15803d;
+}
+
+.btn-secondary {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #d1d5db;
+}
+
+/* ====== Only-view text ====== */
+
+.only-view-footer {
+  flex-direction: column;
+  gap: 12px;
+}
+
+.only-view-text {
+  font-size: 14px;
+  color: #6b7280;
+  text-align: center;
+}
+
+/* ====== Card hiển thị lý do đã bị từ chối ====== */
+
+.rejection-card {
+  margin-top: 18px;
+  padding: 14px 16px 12px;
+  border-radius: 14px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+}
+
+.rejection-title {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #1d4ed8;
+  text-transform: uppercase;
+}
+
+.rejection-reason-text {
+  margin: 0;
+  font-size: 14px;
+  color: #111827;
+}
+
+/* ====== Form nhập lý do từ chối ====== */
+
+.reject-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.reject-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.reject-plan-name {
+  font-weight: 600;
+  color: #111827;
+}
+
+.reject-textarea {
+  resize: vertical;
+  min-height: 120px;
+  max-height: 260px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  background: #f9fafb;
+}
+
+.reject-textarea:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.2);
+  background: #ffffff;
+}
+
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+/* Màu trạng thái */
+.status-approved {
+  background-color: #d4edda;
+  color: #1e7e34;
+}
+
+.status-rejected {
+  background-color: #f8d7da;
+  color: #b71c1c;
+}
+
+.status-new {
+  background-color: #e3f2fd;
+  color: #0d47a1;
+}
+
+.status-inprogress {
+  background-color: #fff3cd;
+  color: #b36b00;
+}
+

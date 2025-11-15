@@ -111,11 +111,10 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
         return;
       }
 
-      alert("❌ Yêu cầu đã bị từ chối!");
       onActionSuccess?.();
       onClose();
     } catch (err) {
-      alert(`⚠️ Lỗi mạng khi từ chối yêu cầu: ${err?.message || ""}`);
+      alert(``);
     } finally {
       setLoading(false);
     }
