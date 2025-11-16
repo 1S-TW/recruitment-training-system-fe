@@ -1,30 +1,31 @@
 // src/pages/CandidateManagementPage.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import api from "../services/api"; // 👈 Dùng axios instance chung
+import api from "../services/api"; // Dùng axios instance chung
 
 // 1. IMPORT MODAL MỚI
 import AddCandidateModal from "../components/AddCandidateModal";
+import AddResultModal from "../components/AddResultModal"; // 👈 THÊM DÒNG NÀY
+
 import Layout from "../components/Layout";
 import Pagination from "../components/Pagination";
 import ActionButtons from "../components/ActionButtons.jsx";
 
-import "../styles/request.css"; // Dùng chung
-import "../styles/toast.css"; // Dùng chung
-import "../styles/CandidateManagementPage.css"; // CSS riêng
+import "../styles/request.css";
+import "../styles/toast.css";
+import "../styles/CandidateManagementPage.css";
 
 export default function CandidateManagementPage() {
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  // Kế hoạch tuyển dụng CONFIRMED cho dropdown
-  // 🔹 State này sẽ lưu [{ id, name }]
   const [planOptions, setPlanOptions] = useState([]);
 
-  // 2. THÊM STATE CHO MODAL
+  // --- State cho 2 Modal ---
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false); // 👈 THÊM STATE NÀY
+  const [selectedCandidate, setSelectedCandidate] = useState(null); // 👈 THÊM STATE NÀY
 
-  // 🔹 3. Sửa hàm: Dùng 'api' (axios instance đã có token)
+  // ... (các hàm fetchCandidates, fetchConfirmedPlans giữ nguyên) ...
   const fetchCandidates = async () => {
     setLoading(true);
     setError(null);
@@ -40,11 +41,8 @@ export default function CandidateManagementPage() {
     }
   };
 
-  // 🔹 4. Sửa hàm: Lấy plan TỪ API (giống RecruitmentPlanPage)
   const fetchConfirmedPlans = async () => {
     try {
-      // Dùng 'api' (axios instance đã có token)
-      // Gọi endpoint /approved (BE trả về List<PlanOptionDto> [{id, name}])
       const res = await api.get("/recruitment-plans/approved");
       setPlanOptions(Array.isArray(res.data) ? res.data : []);
     } catch (e) {
@@ -53,22 +51,20 @@ export default function CandidateManagementPage() {
     }
   };
 
-  // Chạy 2 API khi tải trang
   useEffect(() => {
     fetchCandidates();
     fetchConfirmedPlans();
   }, []);
 
-  // --- State cho Filter & Pagination ---
+
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [isAnimating, setIsAnimating] = useState(false);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  // 🔹 5. Sửa: Filter bằng ID (planId) thay vì tên
-  const [planFilter, setPlanFilter] = useState(""); // Sẽ lưu ID
+  const [planFilter, setPlanFilter] = useState("");
 
-  // --- Toast (giữ nguyên) ---
   const [toast, setToast] = useState(null);
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -76,12 +72,11 @@ export default function CandidateManagementPage() {
     showToast._t = window.setTimeout(() => setToast(null), 2500);
   };
 
-  // 🔹 6. Sửa: Filter ứng viên
+  // ... (filteredCandidates, filteredSorted, Phân trang... giữ nguyên) ...
   const filteredCandidates = useMemo(
     () =>
       (candidates || []).filter((c) => {
         const keyword = searchTerm.trim().toLowerCase();
-
         if (keyword) {
           const name = (c.fullName || c.name || "").toLowerCase();
           const email = (c.email || "").toLowerCase();
@@ -94,26 +89,20 @@ export default function CandidateManagementPage() {
             return false;
           }
         }
-
         if (statusFilter) {
           const status = (c.status || "").toLowerCase();
           if (status !== statusFilter.toLowerCase()) return false;
         }
-
-        // 🔹 Sửa: Lọc theo planId
         if (planFilter) {
-          // planFilter là ID (dạng string), c.recruitmentPlanId là number
           if (c.recruitmentPlanId?.toString() !== planFilter) {
             return false;
           }
         }
-
         return true;
       }),
     [candidates, searchTerm, statusFilter, planFilter]
   );
 
-  // Sắp xếp (giữ nguyên)
   const filteredSorted = useMemo(
     () =>
       [...filteredCandidates].sort((a, b) => {
@@ -124,7 +113,6 @@ export default function CandidateManagementPage() {
     [filteredCandidates]
   );
 
-  // Phân trang (giữ nguyên)
   const totalPages = Math.ceil(filteredSorted.length / itemsPerPage) || 1;
   const indexOfLast = currentPage * itemsPerPage;
   const indexOfFirst = indexOfLast - itemsPerPage;
@@ -144,30 +132,40 @@ export default function CandidateManagementPage() {
     }, 180);
   };
 
-  // Actions (giữ nguyên)
+  // --- Cập nhật handlers ---
   const handleViewCandidate = (candidate) => {
     console.log("Xem ứng viên:", candidate);
     showToast("Mở chi tiết ứng viên (TODO)", "success");
   };
 
+  // 2. SỬA HÀM NÀY
   const handleEditCandidate = (candidate) => {
-    console.log("Sửa ứng viên:", candidate);
-    showToast("Mở form sửa ứng viên (TODO)", "success");
+    setSelectedCandidate(candidate); // 👈 Lưu ứng viên được chọn
+    setShowEditModal(true); // 👈 Mở modal chấm điểm
   };
 
-  // 7. THÊM HÀM XỬ LÝ KHI TẠO THÀNH CÔNG
+  // 3. THÊM HÀM SUCCESS CHO ADD
   const handleAddSuccess = (newCandidate) => {
-    // Thêm ứng viên mới vào đầu danh sách (để user thấy ngay)
     setCandidates((prev) => [newCandidate, ...prev]);
-    // Hiển thị thông báo
     showToast("Thêm ứng viên thành công!", "success");
-    // Về trang 1
     setCurrentPage(1);
+  };
+
+  // 4. THÊM HÀM SUCCESS CHO EDIT (CHẤM ĐIỂM)
+  const handleEditSuccess = (updatedCandidate) => {
+    // Tìm và thay thế ứng viên trong danh sách
+    setCandidates((prev) =>
+      prev.map((c) =>
+        c.candidateId === updatedCandidate.candidateId ? updatedCandidate : c
+      )
+    );
+    setShowEditModal(false);
+    showToast("Chấm điểm thành công!", "success");
   };
 
   return (
     <Layout>
-      {/* BREADCRUMB (giữ nguyên) */}
+      {/* ... (Breadcrumb và Filter bar giữ nguyên) ... */}
       <div className="breadcrumb-container fade-slide">
         <div className="breadcrumb-left">
           <span className="breadcrumb-icon">👤</span>
@@ -191,14 +189,11 @@ export default function CandidateManagementPage() {
         </div>
       </div>
 
-      {/* CONTENT */}
       <div className="recruitment-page fade-slide">
         <div className="title-row">
           <h2 className="page-title-small">Quản lý ứng viên</h2>
-
-          {/* Thanh filter */}
           <div className="filter-bar candidate-filter-bar">
-            {/* Search (giữ nguyên) */}
+            {/* Search */}
             <div className="filter-item">
               <input
                 type="text"
@@ -213,7 +208,7 @@ export default function CandidateManagementPage() {
               <span className="filter-icon">🔍</span>
             </div>
 
-            {/* Trạng thái (giữ nguyên) */}
+            {/* Trạng thái */}
             <div className="filter-item">
               <select
                 className="filter-select"
@@ -227,22 +222,27 @@ export default function CandidateManagementPage() {
                 <option value="Chưa có kết quả">Chưa có kết quả</option>
                 <option value="Đã có kết quả">Đã có kết quả</option>
                 <option value="Không nhận việc">Không nhận việc</option>
-                {/* ... các option khác ... */}
+                <option value="Đã gửi mail cảm ơn">
+                  Đã gửi email cảm ơn
+                </option>
+                <option value="Đã nhận việc">Đã nhận việc</option>
+                <option value="Đã thông báo thời gian TT">
+                  Đã thông báo thời gian TT
+                </option>
               </select>
             </div>
 
-            {/* 🔹 8. Sửa: Kế hoạch tuyển dụng (dùng ID) */}
+            {/* Kế hoạch tuyển dụng */}
             <div className="filter-item">
               <select
                 className="filter-select candidate-plan-select"
-                value={planFilter} // 👈 Sửa: value là planFilter (ID)
+                value={planFilter}
                 onChange={(e) => {
-                  setPlanFilter(e.target.value); // 👈 Sửa: set ID
+                  setPlanFilter(e.target.value);
                   setCurrentPage(1);
                 }}
               >
                 <option value="">Kế hoạch tuyển dụng...</option>
-                {/* 🔹 Sửa: Lặp qua planOptions (đã chuẩn) */}
                 {planOptions.map((plan) => (
                   <option key={plan.id} value={plan.id}>
                     {plan.name}
@@ -251,12 +251,12 @@ export default function CandidateManagementPage() {
               </select>
             </div>
 
-            {/* 🔹 9. Sửa: Nút "Thêm ứng viên" */}
+            {/* Nút Thêm ứng viên */}
             <div className="filter-item filter-right-group">
               <button
                 type="button"
-                className="add-plan-btn clean" // Dùng style có sẵn
-                onClick={() => setShowAddModal(true)} // 👈 Mở modal
+                className="add-plan-btn clean"
+                onClick={() => setShowAddModal(true)}
               >
                 ＋ Thêm ứng viên
               </button>
@@ -264,7 +264,7 @@ export default function CandidateManagementPage() {
           </div>
         </div>
 
-        {/* TABLE (giữ nguyên) */}
+        {/* TABLE (Cập nhật key cho điểm số) */}
         <div
           className={`table-container table-fade ${
             isAnimating ? "fade-out" : "fade-in"
@@ -274,8 +274,6 @@ export default function CandidateManagementPage() {
             <p className="loading-text">Đang tải dữ liệu...</p>
           ) : error ? (
             <p className="text-center text-error">{error}</p>
-          ) : filteredSorted.length === 0 ? (
-            <p className="text-center">Không có ứng viên phù hợp.</p>
           ) : (
             <table className="styled-table">
               <thead>
@@ -291,41 +289,50 @@ export default function CandidateManagementPage() {
                 </tr>
               </thead>
               <tbody>
-                {currentCandidates.map((c, index) => {
-                  const stt = indexOfFirst + index + 1;
-                  const name = c.fullName || c.name || "—";
-                  const email = c.email || "—";
-                  const phone = c.phone || c.phoneNumber || "—";
-                  // 🔹 Sửa: Đảm bảo lấy đúng key (testScore, interviewScore)
-                  const testScore = c.testScore ?? "—";
-                  const interviewScore = c.interviewScore ?? "—";
-                  const status = c.status || "Chưa có kết quả";
+                {currentCandidates.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="text-center">
+                      Không có ứng viên phù hợp.
+                    </td>
+                  </tr>
+                ) : (
+                  currentCandidates.map((c, index) => {
+                    const stt = indexOfFirst + index + 1;
+                    const name = c.fullName || "—";
+                    const email = c.email || "—";
+                    const phone = c.phoneNumber || "—";
+                    // 5. SỬA KEY (DTO trả về là testScore, interviewScore)
+                    const testScore = c.testScore ?? "—";
+                    const interviewScore = c.interviewScore ?? "—";
+                    const status = c.status || "Chưa có kết quả";
 
-                  return (
-                    <tr key={c.id || c.candidateId || stt}>
-                      <td style={{ textAlign: "center" }}>{stt}</td>
-                      <td>{name}</td>
-                      <td style={{ textAlign: "left" }}>{email}</td>
-                      <td style={{ textAlign: "center" }}>{phone}</td>
-                      <td style={{ textAlign: "center" }}>{testScore}</td>
-                      <td style={{ textAlign: "center" }}>{interviewScore}</td>
-                      <td style={{ textAlign: "center" }}>
-                        <span className="status-badge">{status}</span>
-                      </td>
-                      <td className="actions-cell text-center">
-                        <div className="btn-action-wrapper">
-                          <ActionButtons
-                            onView={() => handleViewCandidate(c)}
-                            onEdit={() => handleEditCandidate(c)}
-                          />
-                          <div className="action-tooltip">
-                            Xem / sửa ứng viên
+                    return (
+                      <tr key={c.candidateId || stt}>
+                        <td style={{ textAlign: "center" }}>{stt}</td>
+                        <td>{name}</td>
+                        <td style={{ textAlign: "left" }}>{email}</td>
+                        <td style={{ textAlign: "center" }}>{phone}</td>
+                        <td style={{ textAlign: "center" }}>{testScore}</td>
+                        <td style={{ textAlign: "center" }}>{interviewScore}</td>
+                        <td style={{ textAlign: "center" }}>
+                          <span className="status-badge">{status}</span>
+                        </td>
+                        <td className="actions-cell text-center">
+                          <div className="btn-action-wrapper">
+                            {/* 6. SỬA: Nút Edit sẽ gọi handleEditCandidate */}
+                            <ActionButtons
+                              onView={() => handleViewCandidate(c)}
+                              onEdit={() => handleEditCandidate(c)}
+                            />
+                            <div className="action-tooltip">
+                              Xem / Chấm điểm
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           )}
@@ -339,12 +346,22 @@ export default function CandidateManagementPage() {
         />
       </div>
 
-      {/* 10. THÊM MODAL VÀO TRANG */}
+      {/* 7. RENDER CẢ 2 MODAL */}
+      
+      {/* Modal Thêm (đã làm) */}
       <AddCandidateModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSuccess={handleAddSuccess}
         planOptions={planOptions}
+      />
+
+      {/* Modal Sửa/Chấm điểm (Mới) */}
+      <AddResultModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSuccess={handleEditSuccess}
+        candidate={selectedCandidate}
       />
 
       {/* TOAST (giữ nguyên) */}
