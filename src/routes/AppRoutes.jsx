@@ -16,8 +16,11 @@ import VerifyEmail from "../pages/VerifyEmail";
 import ResetPassword from "../pages/ResetPassword";
 import ForbiddenPage from "../pages/ForbiddenPage";
 
-// 👇 THÊM MỚI: page quản lý ứng viên
+// 👇 page quản lý ứng viên
 import CandidateManagementPage from "../pages/CandidateManagementPage";
+
+// 👇 CHỈ THÊM DÒNG NÀY: page Quản lý đào tạo
+import TrainingManagementPage from "../pages/TrainingManagementPage";
 
 /**
  * Route dành cho khách (chưa login).
@@ -92,6 +95,16 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <HomePage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* 👇 CHỈ THÊM BLOCK NÀY: ĐÀO TẠO */}
+      <Route
+        path="/training"
+        element={
+          <ProtectedRoute>
+            <TrainingManagementPage />
           </ProtectedRoute>
         }
       />
