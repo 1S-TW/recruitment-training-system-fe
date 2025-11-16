@@ -1,0 +1,121 @@
+/* src/styles/AddCandidateModal.css */
+
+/* Chia form modal làm 2 cột */
+.candidate-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 24px; /* Chỉ cách ngang, không cách dọc */
+}
+
+.form-column {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ghi đè CSS từ Form.css/login.css để input/label đẹp hơn trong modal */
+.candidate-form-grid .form-group {
+  margin-bottom: 16px;
+}
+
+.candidate-form-grid label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+  text-align: left; /* Đảm bảo label căn trái */
+}
+
+/* Dùng input-style chung (giống plan.css) */
+.input-style,
+.candidate-form-grid .input-wrapper input,
+.candidate-form-grid select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  outline: none;
+  background: #ffffff;
+  color: #111827;
+  transition: all 0.2s;
+  box-sizing: border-box; /* Quan trọng */
+  height: 42px;
+}
+
+.candidate-form-grid .input-wrapper {
+  height: auto;
+}
+
+/* Ghi đè màu của Input.jsx (nếu nó dùng màu xanh từ login) */
+.candidate-form-grid .input-wrapper input {
+  background: #ffffff;
+  color: #111827;
+  border: 1px solid #d1d5db;
+}
+
+.candidate-form-grid .input-wrapper input::placeholder {
+  color: #9ca3af;
+}
+
+.candidate-form-grid .input-wrapper input:focus,
+.candidate-form-grid select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+/* Input lỗi (validation) */
+.input-error,
+.candidate-form-grid .input-wrapper input.input-error {
+  border-color: #ef4444 !important;
+}
+
+.candidate-form-grid .error-message {
+  color: #ef4444;
+  font-size: 0.8rem;
+  margin-top: 4px;
+  text-align: left; /* Đảm bảo lỗi căn trái */
+}
+
+/* Box hiển thị lỗi API */
+.api-error-box {
+  grid-column: 1 / -1; /* Trải dài 2 cột */
+  background-color: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Nút "Thêm" (style xanh lá giống nút ở trang list) */
+.modal-btn.btn-add-candidate {
+  background: #22c55e;
+  color: #ffffff;
+}
+.modal-btn.btn-add-candidate:hover:not(:disabled) {
+  background: #16a34a;
+}
+.modal-btn.btn-add-candidate:disabled {
+  background: #bbf7d0;
+  color: #166534;
+  opacity: 1; /* Tắt opacity mặc định của:disabled */
+  cursor: not-allowed;
+}
+
+/* Nút "Hủy" (style xám giống các modal khác) */
+.modal-btn.btn-secondary {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+.modal-btn.btn-secondary:hover:not(:disabled) {
+  background: #d1d5db;
+}
+
+/* Căn lề footer (dùng lại class của plan.css) */
+.modal-footer.justify-end {
+  justify-content: flex-end;
+}
