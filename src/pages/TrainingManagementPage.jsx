@@ -338,4 +338,4 @@ export default function TrainingManagementPage() {
     </Layout>
   );
 }
-    
+      
