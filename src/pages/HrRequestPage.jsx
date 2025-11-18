@@ -10,6 +10,24 @@ import HRRequestModal from "../components/HRRequestModal.jsx";
 import "../styles/request.css";
 import "../styles/toast.css"; // CSS riêng cho toast
 
+// 🔹 Map mã trạng thái -> label tiếng Việt
+const getStatusLabel = (status) => {
+  switch (String(status || "").toUpperCase()) {
+    case "NEW":
+      return "Đã gửi";          // NEW = ĐÃ GỬI
+    case "PENDING":
+      return "Đang chờ";
+    case "IN_PROGRESS":
+      return "Đang tiến hành";  // sau khi tạo kế hoạch
+    case "COMPLETED":
+      return "Đã hoàn thành";
+    case "CANCELED":
+      return "Đã hủy";
+    default:
+      return status || "Không rõ";
+  }
+};
+
 export default function HRRequestPage() {
   // Lấy data + refetch để gọi lại API sau khi tạo/cập nhật (không cần F5)
   const { requests, loading, error, refetch } = useHrRequests();
@@ -97,17 +115,18 @@ export default function HRRequestPage() {
 
   // === helper tooltip tạm thời khi không phải NEW ===
   const flashEditTooltip = (btnWrapperEl) => {
-    const tip = btnWrapperEl?.querySelector(".action-tooltip");
-    if (!tip) return;
-    const original = tip.textContent;
-    tip.textContent = "Chỉ trạng thái NEW mới được sửa";
-    tip.style.opacity = "1";
-    tip.style.transform = "translateX(-50%) scale(1)";
-    setTimeout(() => {
-      tip.textContent = original;
-      tip.removeAttribute("style");
-    }, 1200);
-  };
+  const tip = btnWrapperEl?.querySelector(".action-tooltip");
+  if (!tip) return;
+  const original = tip.textContent;
+  tip.textContent = "Chỉ trạng thái ĐÃ GỬI (NEW) mới được sửa";
+  tip.style.opacity = "1";
+  tip.style.transform = "translateX(-50%) scale(1)";
+  setTimeout(() => {
+    tip.textContent = original;
+    tip.removeAttribute("style");
+  }, 1200);
+};
+
 
   // === Lắng nghe event toàn cục sau khi create/update từ modal ===
   useEffect(() => {
@@ -172,12 +191,10 @@ export default function HRRequestPage() {
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="">Trạng thái</option>
-                <option value="NEW">NEW</option>
-                <option value="PENDING">Đang chờ</option>
-                <option value="IN_PROGRESS">Đang xử lý</option>
-                <option value="COMPLETED">Hoàn thành</option>
+                <option value="NEW">Đã gửi</option>
+                <option value="IN_PROGRESS">Đang tiến hành</option>
+                <option value="COMPLETED">Đã hoàn thành</option>
                 <option value="CANCELED">Đã hủy</option>
-
               </select>
             </div>
 
@@ -236,7 +253,9 @@ export default function HRRequestPage() {
                           : "—"}
                       </td>
                       <td>
-                        <span className="status-badge">{req.status}</span>
+                        <span className="status-badge">
+                          {getStatusLabel(req.status)}
+                        </span>
                       </td>
                       <td>{req.createdByName || "Không rõ"}</td>
                       <td className="actions-cell text-center">
@@ -283,22 +302,19 @@ export default function HRRequestPage() {
           setEditData(null);
         }}
         onSuccess={(msgFromBE) => {
-          // gọi lại API + đưa về trang 1 để thấy item mới
           refetch?.();
           setCurrentPage(1);
           setShowModal(false);
           setEditData(null);
-          // Toast thành công
           showToast(
             msgFromBE || (editData ? "Cập nhật thành công!" : "Tạo mới thành công!"),
             "success"
           );
         }}
-        initialData={editData} // null => tạo mới; có object => sửa
+        initialData={editData}
       />
 
-      {/* === Modal xem chi tiết (approve/reject) ===
-          Lưu ý: HRRequestModal sẽ tự chặn 2 nút khi status ≠ NEW */}
+      {/* === Modal xem chi tiết (approve/reject) === */}
       <HRRequestModal
         isOpen={!!selectedRequest}
         onClose={() => setSelectedRequest(null)}

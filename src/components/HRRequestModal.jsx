@@ -29,7 +29,7 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
     if (isOpen && request) setNote(request.note || "");
   }, [isOpen, request]);
 
-  const techRows = useMemo(() => {
+    const techRows = useMemo(() => {
     const arr = request?.techQuantities || [];
     return arr.map((t) => ({
       name: techDict[t.technologyId] || `#${t.technologyId}`,
@@ -37,10 +37,36 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
     }));
   }, [request?.techQuantities, techDict]);
 
-  const status = (request?.status || "").toUpperCase();
-  const isNew = status === "NEW";
-  const isApproved = status === "APPROVED";
-  const isCanceled = status === "CANCELED";
+  // 🔹 Map mã trạng thái -> label tiếng Việt
+  const getStatusLabel = (status) => {
+    switch (String(status || "").toUpperCase()) {
+      case "NEW":
+        return "Đã gửi";
+      case "PENDING":
+        return "Đang chờ";
+      case "IN_PROGRESS":
+        return "Đang tiến hành";
+      case "COMPLETED":
+        return "Đã hoàn thành";
+      case "CANCELED":
+        return "Đã hủy";
+      default:
+        return status || "Không rõ";
+    }
+  };
+
+  // 🔹 status "thô" để check logic + className
+  const statusRaw = (request?.status || "").toUpperCase();
+
+  // 🔹 label tiếng Việt để hiển thị
+  const statusLabel = getStatusLabel(request?.status);
+
+
+
+  // const status = (request?.status || "").toUpperCase();
+  // const isNew = status === "NEW";
+  // const isApproved = status === "APPROVED";
+  // const isCanceled = status === "CANCELED";
 
   const readErrorMessage = async (res) => {
     const text = await res.text();
@@ -131,9 +157,12 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
         <div className="hrmodal-header">
           <div>
             <h3 className="hrmodal-title">Chi tiết yêu cầu nhân sự</h3>
-            <span className={`status-pill status-${status.toLowerCase()}`}>
-              {request.status}
-            </span>
+            <span className={`status-pill status-${statusRaw.toLowerCase()}`}>
+  {statusLabel}
+</span>
+
+
+
           </div>
           <button
             className="hrmodal-close"
@@ -175,9 +204,10 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
               </span>
             </div>
             <div className="info-item">
-              <span className="info-label">Trạng thái</span>
-              <span className="info-value">{request.status}</span>
-            </div>
+  <span className="info-label">Trạng thái</span>
+  <span className="info-value">{statusLabel}</span>
+</div>
+
           </div>
 
           {/* bảng công nghệ */}
@@ -242,21 +272,23 @@ export default function HRRequestModal({ isOpen, onClose, request, onActionSucce
           </div>
           <div className="footer-actions">
             <button
-              className={`btn-reject-main ${disableActions ? "btn-disabled" : ""}`}
-              onClick={handleReject}
-              disabled={disableActions}
-              title={!isNew ? "Chỉ trạng thái NEW mới được thao tác" : undefined}
-            >
-              Từ chối
-            </button>
+  className={`btn-reject-main ${disableActions ? "btn-disabled" : ""}`}
+  onClick={handleReject}
+  disabled={disableActions}
+  title={!isNew ? "Chỉ trạng thái ĐÃ GỬI (NEW) mới được thao tác" : undefined}
+>
+  Từ chối
+</button>
+
             <button
-              className={`btn-approve-main ${disableActions ? "btn-disabled" : ""}`}
-              onClick={handleApprove}
-              disabled={disableActions}
-              title={!isNew ? "Chỉ trạng thái NEW mới được thao tác" : undefined}
-            >
-              Phê duyệt và Khởi tạo
-            </button>
+  className={`btn-approve-main ${disableActions ? "btn-disabled" : ""}`}
+  onClick={handleApprove}
+  disabled={disableActions}
+  title={!isNew ? "Chỉ trạng thái ĐÃ GỬI (NEW) mới được thao tác" : undefined}
+>
+  Phê duyệt và Khởi tạo
+</button>
+
 
           </div>
         </div>
