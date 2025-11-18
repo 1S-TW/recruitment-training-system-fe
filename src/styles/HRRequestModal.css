@@ -316,3 +316,31 @@
     width: 100%;
   }
 }
+
+
+.hrmodal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60; /* hoặc 100, miễn nhỏ hơn z-index trong modal.css */
+}
+
+
+.hrmodal-overlay {
+  z-index: 1000;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+}
+
+.modal {
+  position: fixed;
+  z-index: 1201;
+}
+
