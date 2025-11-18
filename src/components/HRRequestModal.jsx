@@ -15,7 +15,7 @@ export default function HRRequestModal({
   const [note, setNote] = useState("");
   const [techDict, setTechDict] = useState({});
 
-  // Bước 2: modal lý do từ chối
+  // modal lý do từ chối
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
 
@@ -65,7 +65,7 @@ export default function HRRequestModal({
       case "COMPLETED":
         return "Đã hoàn thành";
       case "CANCELED":
-        return "Bị từ chối"; // label ngoài list
+        return "Bị từ chối";
       default:
         return status || "Không rõ";
     }
@@ -79,51 +79,30 @@ export default function HRRequestModal({
   const isApproved = status === "APPROVED";
   const isCanceled = status === "CANCELED";
 
-  // 🔍 Parse rejectReason cho cả 2 trường hợp:
-  //  - "Người từ chối kế hoạch: ..."
-  //  - "Người từ chối nhu cầu: ..."
+  // tách chuỗi "Người từ chối kế hoạch: X. Lý do: Y"
   const parsedReject = useMemo(() => {
     const raw = request?.rejectReason || "";
-    if (!raw) return { by: "", reason: "", source: "" };
+    if (!raw) return { by: "", reason: "" };
 
+    const nameLabel = "Người từ chối kế hoạch:";
     const reasonLabel = "Lý do:";
-    const patterns = [
-      {
-        nameLabel: "Người từ chối kế hoạch:",
-        source: "Kế hoạch tuyển dụng",
-      },
-      {
-        nameLabel: "Người từ chối nhu cầu:",
-        source: "Nhu cầu tuyển dụng",
-      },
-    ];
 
     let by = "";
     let reason = raw.trim();
-    let source = "";
-
-    const matched = patterns.find((p) => raw.includes(p.nameLabel));
-
-    if (!matched) {
-      // trường hợp cũ: chỉ có mỗi lý do, không meta
-      return { by: "", reason, source: "" };
-    }
-
-    source = matched.source;
 
     const reasonIdx = raw.indexOf(reasonLabel);
     if (reasonIdx !== -1) {
       reason = raw.slice(reasonIdx + reasonLabel.length).trim();
     }
 
-    const nameIdx = raw.indexOf(matched.nameLabel);
+    const nameIdx = raw.indexOf(nameLabel);
     if (nameIdx !== -1) {
       const endIdx = reasonIdx === -1 ? raw.length : reasonIdx;
-      const namePart = raw.slice(nameIdx + matched.nameLabel.length, endIdx);
+      const namePart = raw.slice(nameIdx + nameLabel.length, endIdx);
       by = namePart.replace(/[.\s]+$/g, "").trim();
     }
 
-    return { by, reason, source };
+    return { by, reason };
   }, [request?.rejectReason]);
 
   const readErrorMessage = async (res) => {
@@ -242,6 +221,7 @@ export default function HRRequestModal({
   if (!isOpen || !request) return null;
 
   const disableActions = loading || !isNew;
+  const hasNote = note && note.trim().length > 0;
 
   return (
     <>
@@ -306,7 +286,7 @@ export default function HRRequestModal({
                 </div>
               </div>
 
-              {/* ✅ Nếu đã bị từ chối thì hiển thị meta + lý do */}
+              {/* nếu đã bị từ chối thì hiển thị LÝ DO TỪ CHỐI (từ Kế hoạch) */}
               {isCanceled &&
                 (parsedReject.by ||
                   parsedReject.reason ||
@@ -316,26 +296,26 @@ export default function HRRequestModal({
                       <h4>Lý do từ chối</h4>
                     </div>
 
-                    {parsedReject.source && (
-                      <div className="reject-meta-row">
-                        <span className="reject-meta-label">Bị từ chối tại:</span>
-                        <span className="reject-meta-name">
-                          {parsedReject.source}
-                        </span>
-                      </div>
-                    )}
-
                     {parsedReject.by && (
-                      <div className="reject-meta-row">
-                        <span className="reject-meta-label">
-                          {parsedReject.source === "Kế hoạch tuyển dụng"
-                            ? "Người từ chối kế hoạch:"
-                            : "Người từ chối nhu cầu:"}
-                        </span>
-                        <span className="reject-meta-name">
-                          {parsedReject.by}
-                        </span>
-                      </div>
+                      <>
+                        <div className="reject-meta-row">
+                          <span className="reject-meta-label">
+                            Bị từ chối tại:
+                          </span>
+                          <span className="reject-meta-name">
+                            Kế hoạch tuyển dụng
+                          </span>
+                        </div>
+
+                        <div className="reject-meta-row">
+                          <span className="reject-meta-label">
+                            Người từ chối kế hoạch:
+                          </span>
+                          <span className="reject-meta-name">
+                            {parsedReject.by}
+                          </span>
+                        </div>
+                      </>
                     )}
 
                     <div className="reject-reason-text">
@@ -344,20 +324,20 @@ export default function HRRequestModal({
                   </div>
                 )}
 
-              {/* ghi chú chung */}
-              <div className="section-block">
-                <div className="section-header">
-                  <h4>Ghi chú</h4>
-                  <span className="section-sub">(tùy chọn)</span>
+              {/* Ghi chú: chỉ hiển thị khi THỰC SỰ có ghi chú, và chỉ đọc */}
+              {hasNote && (
+                <div className="section-block">
+                  <div className="section-header">
+                    <h4>Ghi chú</h4>
+                  </div>
+                  <textarea
+                    className="note-input note-readonly"
+                    value={note}
+                    readOnly
+                    onFocus={(e) => e.target.blur()} // không cho focus/gõ
+                  />
                 </div>
-                <textarea
-                  className="note-input"
-                  placeholder="Nhập ghi chú cho quyết định phê duyệt / từ chối..."
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  disabled={!isNew}
-                />
-              </div>
+              )}
 
               {(isApproved || isCanceled) && (
                 <p className="hint-text">

@@ -64,7 +64,7 @@ const RecruitmentPlanPage = () => {
   });
 
   const [selectedPlan, setSelectedPlan] = useState(null);
-  const [modalStep, setModalStep] = useState(0);
+  const [modalStep, setModalStep] = useState(0); // 0: none, 1: view, 2: viewed-confirmed, 3: reject reason
   const [rejectReason, setRejectReason] = useState("");
 
   const location = useLocation();
@@ -246,20 +246,16 @@ const RecruitmentPlanPage = () => {
       }
 
       // 1. Tạo kế hoạch tuyển dụng
-      const res = await axiosAuth.post("/api/recruitment-plans", form);
-      const createdPlan = res.data;
+      await axiosAuth.post("/api/recruitment-plans", form);
 
       // 2. Approve nhu cầu sau khi đã tạo kế hoạch
       try {
-        await axiosAuth.put(
-          `/api/hr-request/${form.requestId}/approve?note=`
-        );
+        await axiosAuth.put(`/api/hr-request/${form.requestId}/approve?note=`);
       } catch (err) {
         console.error(
           "Không thể cập nhật trạng thái nhu cầu sau khi tạo kế hoạch:",
           err
         );
-        // Không chặn user, kế hoạch vẫn đã được tạo
       }
 
       // 3. Thông báo cho trang Nhu cầu để refetch
@@ -267,7 +263,6 @@ const RecruitmentPlanPage = () => {
 
       // 4. Đóng modal và reload list kế hoạch
       setOpenAddModal(false);
-      // Có thể thêm createdPlan vào state, nhưng để đơn giản ta refetch
       await loadPlans();
     } catch (e) {
       const msg =
@@ -299,7 +294,6 @@ const RecruitmentPlanPage = () => {
       );
       setSelectedPlan(updated);
 
-      // cho màn Nhu cầu (HRRequestPage) biết để refetch
       window.dispatchEvent(new Event("hr:requests:changed"));
     } catch (error) {
       console.error("Lỗi khi phê duyệt kế hoạch:", error);
@@ -307,7 +301,7 @@ const RecruitmentPlanPage = () => {
   };
 
   const handleStartReject = () => {
-    setModalStep(3);
+    setModalStep(3);     // 👉 chuyển sang bước nhập lý do
     setRejectReason("");
   };
 
@@ -342,7 +336,6 @@ const RecruitmentPlanPage = () => {
       );
       setSelectedPlan(updated);
 
-      // thông báo sang HRRequestPage
       window.dispatchEvent(new Event("hr:requests:changed"));
 
       handleCloseModal();
@@ -673,6 +666,46 @@ const RecruitmentPlanPage = () => {
               quan bên dưới.
             </p>
             <div className="modal-footer-buttons" />
+          </div>
+        </Modal>
+      )}
+
+      {/* 3. Modal Từ chối – NHẬP LÝ DO */}
+      {modalStep === 3 && selectedPlan && (
+        <Modal
+          title="Lý do Từ chối Kế hoạch"
+          onClose={handleCloseModal}
+          width={520}
+        >
+          <div className="reject-form">
+            <label htmlFor="rejectReason" className="reject-label">
+              Vui lòng nhập lý do từ chối kế hoạch:{" "}
+              <span className="reject-plan-name">
+                "{selectedPlan.planName}"
+              </span>
+            </label>
+            <textarea
+              id="rejectReason"
+              className="reject-textarea"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Nhập lý do cụ thể, rõ ràng để người lập kế hoạch dễ dàng điều chỉnh..."
+            />
+          </div>
+          <div className="modal-footer modal-footer-actions">
+            <button
+              className="modal-btn btn-secondary"
+              onClick={handleCloseModal}
+            >
+              Hủy
+            </button>
+            <button
+              className="modal-btn btn-reject"
+              onClick={handleSubmitRejection}
+              disabled={!rejectReason.trim()}
+            >
+              Xác nhận từ chối
+            </button>
           </div>
         </Modal>
       )}

@@ -367,3 +367,10 @@
   color: #111827;
   white-space: pre-wrap;
 }
+
+/* ghi chú chỉ đọc trong Chi tiết yêu cầu nhân sự */
+.note-input.note-readonly {
+  background-color: #f9fafb;
+  cursor: not-allowed;
+  resize: none;
+}
