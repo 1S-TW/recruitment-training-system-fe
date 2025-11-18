@@ -8,31 +8,29 @@ import CreateRequestModal from "../components/CreateRequestModal.jsx";
 import HRRequestModal from "../components/HRRequestModal.jsx";
 
 import "../styles/request.css";
-import "../styles/toast.css"; // CSS riêng cho toast
+import "../styles/toast.css";
 
-// 🔹 Map mã trạng thái -> label tiếng Việt
+// Map mã trạng thái -> label tiếng Việt
 const getStatusLabel = (status) => {
   switch (String(status || "").toUpperCase()) {
     case "NEW":
-      return "Đã gửi";          // NEW = ĐÃ GỬI
+      return "Đã gửi";
     case "PENDING":
       return "Đang chờ";
     case "IN_PROGRESS":
-      return "Đang tiến hành";  // sau khi tạo kế hoạch
+      return "Đang tiến hành";
     case "COMPLETED":
       return "Đã hoàn thành";
     case "CANCELED":
-      return "Đã hủy";
+      return "Bị từ chối"; // ✅ đổi lại
     default:
       return status || "Không rõ";
   }
 };
 
 export default function HRRequestPage() {
-  // Lấy data + refetch để gọi lại API sau khi tạo/cập nhật (không cần F5)
   const { requests, loading, error, refetch } = useHrRequests();
 
-  // --- State phân trang & filter ---
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -40,14 +38,11 @@ export default function HRRequestPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
 
-  // --- Modal create/edit (tận dụng form add để sửa) ---
   const [showModal, setShowModal] = useState(false);
   const [editData, setEditData] = useState(null);
 
-  // --- Modal xem chi tiết (approve/reject…) ---
   const [selectedRequest, setSelectedRequest] = useState(null);
 
-  // --- Toast góc phải dưới ---
   const [toast, setToast] = useState(null);
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -55,27 +50,26 @@ export default function HRRequestPage() {
     showToast._t = window.setTimeout(() => setToast(null), 2500);
   };
 
-  // === Guard inline: chỉ NEW mới được thao tác (phê duyệt/khởi tạo/sửa) ===
   const isActionable = (status) => String(status || "").toUpperCase() === "NEW";
 
-  // --- Filter theo tên, trạng thái, ngày ---
   const filteredRequests = (requests || []).filter((req) => {
-    const matchesName = req.requestTitle?.toLowerCase().includes(searchName.toLowerCase());
+    const matchesName = req.requestTitle
+      ?.toLowerCase()
+      .includes(searchName.toLowerCase());
     const matchesStatus = statusFilter ? req.status === statusFilter : true;
     const matchesDate = dateFilter
-      ? (req.createdAt && new Date(req.createdAt).toISOString().split("T")[0] === dateFilter)
+      ? req.createdAt &&
+        new Date(req.createdAt).toISOString().split("T")[0] === dateFilter
       : true;
     return matchesName && matchesStatus && matchesDate;
   });
 
-  // --- Sắp xếp mới nhất lên đầu ---
   const filteredSorted = [...filteredRequests].sort((a, b) => {
     const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
     const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    return db - da; // desc
+    return db - da;
   });
 
-  // --- Phân trang ---
   const totalPages = Math.ceil(filteredSorted.length / itemsPerPage) || 1;
   const indexOfLast = currentPage * itemsPerPage;
   const indexOfFirst = indexOfLast - itemsPerPage;
@@ -95,7 +89,6 @@ export default function HRRequestPage() {
     }, 180);
   };
 
-  // === Mở modal tạo/sửa ===
   const openCreate = () => {
     setEditData(null);
     setShowModal(true);
@@ -107,28 +100,26 @@ export default function HRRequestPage() {
       requestTitle: req.requestTitle || "",
       expectedDeliveryDate: req.expectedDeliveryDate || "",
       note: req.note || "",
-      techQuantities: req.techQuantities || [], // mảng [{technologyId, quantity}]
+      techQuantities: req.techQuantities || [],
       status: req.status,
     });
     setShowModal(true);
   };
 
-  // === helper tooltip tạm thời khi không phải NEW ===
   const flashEditTooltip = (btnWrapperEl) => {
-  const tip = btnWrapperEl?.querySelector(".action-tooltip");
-  if (!tip) return;
-  const original = tip.textContent;
-  tip.textContent = "Chỉ trạng thái ĐÃ GỬI (NEW) mới được sửa";
-  tip.style.opacity = "1";
-  tip.style.transform = "translateX(-50%) scale(1)";
-  setTimeout(() => {
-    tip.textContent = original;
-    tip.removeAttribute("style");
-  }, 1200);
-};
+    const tip = btnWrapperEl?.querySelector(".action-tooltip");
+    if (!tip) return;
+    const original = tip.textContent;
+    tip.textContent = "Chỉ trạng thái ĐÃ GỬI (NEW) mới được sửa";
+    tip.style.opacity = "1";
+    tip.style.transform = "translateX(-50%) scale(1)";
+    setTimeout(() => {
+      tip.textContent = original;
+      tip.removeAttribute("style");
+    }, 1200);
+  };
 
-
-  // === Lắng nghe event toàn cục sau khi create/update từ modal ===
+  // Lắng nghe event từ trang kế hoạch (khi reject/approve plan)
   useEffect(() => {
     const handler = () => {
       refetch?.();
@@ -140,7 +131,7 @@ export default function HRRequestPage() {
 
   return (
     <Layout>
-      {/* === Breadcrumb === */}
+      {/* Breadcrumb */}
       <div className="breadcrumb-container fade-slide">
         <div className="breadcrumb-left">
           <span className="breadcrumb-icon">💼</span>
@@ -165,13 +156,12 @@ export default function HRRequestPage() {
         </div>
       </div>
 
-      {/* === CONTENT === */}
+      {/* Content */}
       <div className="recruitment-page fade-slide">
         <div className="title-row">
           <h2 className="page-title-small">Nhu cầu tuyển dụng</h2>
 
           <div className="filter-bar">
-            {/* Search theo tên */}
             <div className="filter-item">
               <input
                 type="text"
@@ -183,7 +173,6 @@ export default function HRRequestPage() {
               <span className="filter-icon">🔍</span>
             </div>
 
-            {/* Trạng thái */}
             <div className="filter-item">
               <select
                 className="filter-select"
@@ -194,11 +183,10 @@ export default function HRRequestPage() {
                 <option value="NEW">Đã gửi</option>
                 <option value="IN_PROGRESS">Đang tiến hành</option>
                 <option value="COMPLETED">Đã hoàn thành</option>
-                <option value="CANCELED">Đã hủy</option>
+                <option value="CANCELED">Bị từ chối</option>
               </select>
             </div>
 
-            {/* Lọc theo ngày tạo (yyyy-mm-dd) */}
             <div className="filter-item">
               <input
                 type="date"
@@ -208,15 +196,18 @@ export default function HRRequestPage() {
               />
             </div>
 
-            {/* Nút thêm nhu cầu */}
             <button className="add-plan-btn clean" onClick={openCreate}>
               ＋ Thêm nhu cầu tuyển dụng
             </button>
           </div>
         </div>
 
-        {/* === Table === */}
-        <div className={`table-container table-fade ${isAnimating ? "fade-out" : "fade-in"}`}>
+        {/* Table */}
+        <div
+          className={`table-container table-fade ${
+            isAnimating ? "fade-out" : "fade-in"
+          }`}
+        >
           {loading ? (
             <p className="loading-text">Đang tải dữ liệu...</p>
           ) : error ? (
@@ -266,7 +257,9 @@ export default function HRRequestPage() {
                               if (!canEdit) {
                                 e?.preventDefault?.();
                                 const wrapper =
-                                  e?.currentTarget?.closest?.(".btn-action-wrapper") ||
+                                  e?.currentTarget?.closest?.(
+                                    ".btn-action-wrapper"
+                                  ) ||
                                   e?.target?.closest?.(".btn-action-wrapper");
                                 flashEditTooltip(wrapper);
                                 return;
@@ -274,7 +267,6 @@ export default function HRRequestPage() {
                               openEdit(req);
                             }}
                           />
-                          {/* tooltip ẩn mặc định; flashEditTooltip sẽ tô sáng khi không cho edit */}
                           <div className="action-tooltip">Sửa</div>
                         </div>
                       </td>
@@ -286,7 +278,6 @@ export default function HRRequestPage() {
           )}
         </div>
 
-        {/* === Pagination === */}
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
@@ -294,7 +285,7 @@ export default function HRRequestPage() {
         />
       </div>
 
-      {/* === Modal create/edit === */}
+      {/* Modal tạo/sửa */}
       <CreateRequestModal
         isOpen={showModal}
         onClose={() => {
@@ -307,14 +298,15 @@ export default function HRRequestPage() {
           setShowModal(false);
           setEditData(null);
           showToast(
-            msgFromBE || (editData ? "Cập nhật thành công!" : "Tạo mới thành công!"),
+            msgFromBE ||
+              (editData ? "Cập nhật thành công!" : "Tạo mới thành công!"),
             "success"
           );
         }}
         initialData={editData}
       />
 
-      {/* === Modal xem chi tiết (approve/reject) === */}
+      {/* Modal xem chi tiết */}
       <HRRequestModal
         isOpen={!!selectedRequest}
         onClose={() => setSelectedRequest(null)}
@@ -327,10 +319,12 @@ export default function HRRequestPage() {
         onActionError={(msg) => showToast(msg || "Có lỗi xảy ra", "error")}
       />
 
-      {/* === Toast góc phải dưới === */}
+      {/* Toast */}
       {toast && (
         <div
-          className={`toast-container ${toast.type === "success" ? "toast-success" : "toast-error"}`}
+          className={`toast-container ${
+            toast.type === "success" ? "toast-success" : "toast-error"
+          }`}
           role="status"
         >
           {toast.msg}

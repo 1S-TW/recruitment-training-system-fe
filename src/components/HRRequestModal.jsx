@@ -65,7 +65,7 @@ export default function HRRequestModal({
       case "COMPLETED":
         return "Đã hoàn thành";
       case "CANCELED":
-        return "Đã hủy";
+        return "Bị từ chối"; // label trạng thái bị hủy
       default:
         return status || "Không rõ";
     }
@@ -79,6 +79,32 @@ export default function HRRequestModal({
   const isApproved = status === "APPROVED";
   const isCanceled = status === "CANCELED";
 
+  // 🔍 Tách chuỗi "Người từ chối kế hoạch: X. Lý do: Y" thành 2 phần
+  const parsedReject = useMemo(() => {
+    const raw = request?.rejectReason || "";
+    if (!raw) return { by: "", reason: "" };
+
+    const nameLabel = "Người từ chối kế hoạch:";
+    const reasonLabel = "Lý do:";
+
+    let by = "";
+    let reason = raw.trim();
+
+    const reasonIdx = raw.indexOf(reasonLabel);
+    if (reasonIdx !== -1) {
+      reason = raw.slice(reasonIdx + reasonLabel.length).trim();
+    }
+
+    const nameIdx = raw.indexOf(nameLabel);
+    if (nameIdx !== -1) {
+      const endIdx = reasonIdx === -1 ? raw.length : reasonIdx;
+      const namePart = raw.slice(nameIdx + nameLabel.length, endIdx);
+      by = namePart.replace(/[.\s]+$/g, "").trim();
+    }
+
+    return { by, reason };
+  }, [request?.rejectReason]);
+
   const readErrorMessage = async (res) => {
     const text = await res.text();
     try {
@@ -90,49 +116,18 @@ export default function HRRequestModal({
   };
 
   // =============== PHÊ DUYỆT =================
-  const handleApprove = async () => {
-    if (!request || !isNew) return;
+  // =============== PHÊ DUYỆT =================
+const handleApprove = () => {
+  if (!request || !isNew) return;
 
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("token");
-      const url = `http://localhost:8080/api/hr-request/${
-        request.requestId
-      }/approve?note=${encodeURIComponent(note || "")}`;
+  // ❌ Không gọi API approve ở đây nữa
+  // ✅ Chỉ đóng modal và điều hướng sang trang kế hoạch
+  onClose();
+  navigate(`/recruitment/plan?requestId=${request.requestId}`);
+};
 
-      const res = await fetch(url, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
 
-      if (!res.ok) {
-        const msg = await readErrorMessage(res);
-        if (res.status === 401)
-          alert("⚠️ Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
-        else if (res.status === 403)
-          alert("⚠️ Bạn không có quyền phê duyệt yêu cầu này.");
-        else if (res.status === 409) alert(`⚠️ Không thể phê duyệt: ${msg}`);
-        else if (res.status === 400)
-          alert(`⚠️ Dữ liệu không hợp lệ: ${msg}`);
-        else alert(`⚠️ Lỗi khi phê duyệt yêu cầu: ${msg}`);
-        onActionError?.(msg);
-        return;
-      }
 
-      onActionSuccess?.();
-      onClose();
-      navigate(`/recruitment/plan?requestId=${request.requestId}`);
-    } catch (err) {
-      const msg = err?.message || "";
-      alert(`⚠️ Lỗi mạng khi phê duyệt yêu cầu: ${msg}`);
-      onActionError?.(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // =============== BẮT ĐẦU TỪ CHỐI (mở bước 2) =================
   const handleStartReject = () => {
@@ -162,7 +157,7 @@ export default function HRRequestModal({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            rejectionReason: rejectReason.trim(), // map đúng với DTO BE
+            rejectionReason: rejectReason.trim(),
           }),
         }
       );
@@ -181,8 +176,8 @@ export default function HRRequestModal({
       }
 
       onActionSuccess?.();
-      setShowRejectModal(false); // đóng popup lý do
-      onClose(); // đóng luôn modal Chi tiết
+      setShowRejectModal(false);
+      onClose();
     } catch (err) {
       const msg = err?.message || "";
       alert(`⚠️ Lỗi mạng khi từ chối yêu cầu: ${msg}`);
@@ -259,46 +254,45 @@ export default function HRRequestModal({
                 </div>
               </div>
 
-              {/* bảng công nghệ */}
-              <div className="section-block">
-                <div className="section-header">
-                  <h4>Công nghệ &amp; số lượng</h4>
-                </div>
-                <table className="hr-info-table">
-                  <thead>
-                    <tr>
-                      <th>Công nghệ</th>
-                      <th style={{ width: 120 }}>Số lượng</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {techRows.length === 0 ? (
-                      <tr>
-                        <td colSpan={2} className="table-empty">
-                          Không có dữ liệu
-                        </td>
-                      </tr>
-                    ) : (
-                      techRows.map((row, idx) => (
-                        <tr key={idx}>
-                          <td>{row.name}</td>
-                          <td className="text-center">{row.quantity}</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              {/* ✅ nếu đã bị từ chối thì hiển thị LÝ DO TỪ CHỐI (gộp 1 block) */}
+              {isCanceled &&
+                (parsedReject.by ||
+                  parsedReject.reason ||
+                  request.rejectReason) && (
+                  <div className="section-block">
+                    <div className="section-header">
+                      <h4>Lý do từ chối</h4>
+                    </div>
 
-              {/* nếu đã bị từ chối thì hiển thị LÝ DO TỪ CHỐI (đọc từ BE) */}
-              {isCanceled && request.rejectReason && (
-                <div className="section-block">
-                  <div className="section-header">
-                    <h4>Lý do từ chối</h4>
+                    {/* Nếu rejectReason đến từ KẾ HOẠCH TUYỂN DỤNG */}
+                    {parsedReject.by && (
+                      <>
+                        <div className="reject-meta-row">
+                          <span className="reject-meta-label">
+                            Bị từ chối tại:
+                          </span>
+                          <span className="reject-meta-name">
+                            Kế hoạch tuyển dụng
+                          </span>
+                        </div>
+
+                        <div className="reject-meta-row">
+                          <span className="reject-meta-label">
+                            Người từ chối kế hoạch:
+                          </span>
+                          <span className="reject-meta-name">
+                            {parsedReject.by}
+                          </span>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Lý do chi tiết */}
+                    <div className="reject-reason-text">
+                      {parsedReject.reason || request.rejectReason}
+                    </div>
                   </div>
-                  <div className="info-value">{request.rejectReason}</div>
-                </div>
-              )}
+                )}
 
               {/* ghi chú chung */}
               <div className="section-block">
@@ -311,7 +305,7 @@ export default function HRRequestModal({
                   placeholder="Nhập ghi chú cho quyết định phê duyệt / từ chối..."
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  disabled={!isNew} // tránh sửa ghi chú khi đã xử lý
+                  disabled={!isNew}
                 />
               </div>
 
@@ -364,7 +358,7 @@ export default function HRRequestModal({
         </div>
       )}
 
-      {/* ====== BƯỚC 2: MODAL LÝ DO TỪ CHỐI (y hệt bên kế hoạch) ====== */}
+      {/* ====== BƯỚC 2: MODAL LÝ DO TỪ CHỐI ====== */}
       {showRejectModal && (
         <Modal
           title="Lý do Từ chối Nhu cầu"
@@ -406,4 +400,3 @@ export default function HRRequestModal({
     </>
   );
 }
-  

@@ -1,3 +1,4 @@
+// src/pages/RecruitmentPlanPage.jsx
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
@@ -9,13 +10,11 @@ import DatePicker from "../components/DatePicker";
 import Modal from "../components/Modal";
 import "../styles/plan.css";
 
-// Hàm helper định dạng ngày
 const formatDate = (dateString) => {
   if (!dateString) return "—";
   return new Date(dateString).toLocaleDateString("vi-VN");
 };
 
-// Map mã trạng thái -> label tiếng Việt
 const getStatusLabel = (status) => {
   switch (status) {
     case "NEW":
@@ -52,7 +51,7 @@ const RecruitmentPlanPage = () => {
   const [openAddModal, setOpenAddModal] = useState(false);
   const [techSummary, setTechSummary] = useState([]);
   const [requestTitle, setRequestTitle] = useState("");
-  const [modalMode, setModalMode] = useState("select"); // 'locked' | 'select'
+  const [modalMode, setModalMode] = useState("select");
   const [requestOptions, setRequestOptions] = useState([]);
 
   const [form, setForm] = useState({
@@ -65,7 +64,7 @@ const RecruitmentPlanPage = () => {
   });
 
   const [selectedPlan, setSelectedPlan] = useState(null);
-  const [modalStep, setModalStep] = useState(0); // 0: đóng, 1: xem, 3: từ chối
+  const [modalStep, setModalStep] = useState(0);
   const [rejectReason, setRejectReason] = useState("");
 
   const location = useLocation();
@@ -130,7 +129,6 @@ const RecruitmentPlanPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
 
-  // Lọc bảng
   useEffect(() => {
     let filtered = [...plans];
     if (searchName.trim()) {
@@ -172,7 +170,6 @@ const RecruitmentPlanPage = () => {
     }, 180);
   };
 
-  // Mở modal tạo kế hoạch mới: chỉ lấy nhu cầu trạng thái NEW
   const openEmptyAddModal = async () => {
     setForm({
       requestId: undefined,
@@ -189,7 +186,6 @@ const RecruitmentPlanPage = () => {
     try {
       const res = await axiosAuth.get("/api/hr-request");
       const opts = (res.data || [])
-        // 🔥 CHỈ LẤY NHỮNG NHU CẦU CÓ STATUS = NEW
         .filter((r) => String(r.status || "").toUpperCase() === "NEW")
         .map((r) => ({ id: r.requestId, title: r.requestTitle }))
         .sort((a, b) => a.title.localeCompare(b.title));
@@ -237,6 +233,7 @@ const RecruitmentPlanPage = () => {
     }
   };
 
+  // ====== TẠO KẾ HOẠCH: tạo xong mới APPROVE HR REQUEST ======
   const submitPlan = async () => {
     try {
       if (!form.requestId) {
@@ -247,52 +244,67 @@ const RecruitmentPlanPage = () => {
         alert("⚠️ Vui lòng nhập tên kế hoạch và thời hạn.");
         return;
       }
-      await axiosAuth.post("/api/recruitment-plans", form);
+
+      // 1. Tạo kế hoạch tuyển dụng
+      const res = await axiosAuth.post("/api/recruitment-plans", form);
+      const createdPlan = res.data;
+
+      // 2. Approve nhu cầu sau khi đã tạo kế hoạch
+      try {
+        await axiosAuth.put(
+          `/api/hr-request/${form.requestId}/approve?note=`
+        );
+      } catch (err) {
+        console.error(
+          "Không thể cập nhật trạng thái nhu cầu sau khi tạo kế hoạch:",
+          err
+        );
+        // Không chặn user, kế hoạch vẫn đã được tạo
+      }
+
+      // 3. Thông báo cho trang Nhu cầu để refetch
+      window.dispatchEvent(new Event("hr:requests:changed"));
+
+      // 4. Đóng modal và reload list kế hoạch
       setOpenAddModal(false);
+      // Có thể thêm createdPlan vào state, nhưng để đơn giản ta refetch
       await loadPlans();
     } catch (e) {
-      const msg = e?.response?.data?.message || e?.message || "Lỗi không xác định";
+      const msg =
+        e?.response?.data?.message || e?.message || "Lỗi không xác định";
       alert(`⚠️ Không thể tạo kế hoạch: ${msg}`);
     }
   };
 
-  // ==== MODAL HANDLERS ====
   const handleViewDetails = (plan) => {
     setSelectedPlan(plan);
-    setModalStep(1); // mở modal xem chi tiết
+    setModalStep(1);
   };
 
   const handleApprove = async () => {
-  if (!selectedPlan) return;
-  const planId = selectedPlan.recruitmentPlanId;
+    if (!selectedPlan) return;
+    const planId = selectedPlan.recruitmentPlanId;
 
-  try {
-    const res = await axiosAuth.put(
-      `/api/recruitment-plans/${planId}/confirm`
-    );
-    const updated = res.data; // plan sau khi BE lưu CONFIRMED
+    try {
+      const res = await axiosAuth.put(
+        `/api/recruitment-plans/${planId}/confirm`
+      );
+      const updated = res.data;
 
-    // Cập nhật list + filteredList + selectedPlan
-    setPlans((prev) =>
-      prev.map((p) =>
-        p.recruitmentPlanId === planId ? updated : p
-      )
-    );
-    setFilteredPlans((prev) =>
-      prev.map((p) =>
-        p.recruitmentPlanId === planId ? updated : p
-      )
-    );
-    setSelectedPlan(updated);
-    // vẫn ở modal step 1, chỉ thay phần trạng thái
-    // hoặc nếu muốn popup "Đã xác nhận" riêng thì setModalStep(2);
-  } catch (error) {
-    console.error("Lỗi khi phê duyệt kế hoạch:", error);
-    // nếu không muốn alert gì thì để trống
-    // alert(error.response?.data?.error || "Lỗi không xác định khi phê duyệt.");
-  }
-};
+      setPlans((prev) =>
+        prev.map((p) => (p.recruitmentPlanId === planId ? updated : p))
+      );
+      setFilteredPlans((prev) =>
+        prev.map((p) => (p.recruitmentPlanId === planId ? updated : p))
+      );
+      setSelectedPlan(updated);
 
+      // cho màn Nhu cầu (HRRequestPage) biết để refetch
+      window.dispatchEvent(new Event("hr:requests:changed"));
+    } catch (error) {
+      console.error("Lỗi khi phê duyệt kế hoạch:", error);
+    }
+  };
 
   const handleStartReject = () => {
     setModalStep(3);
@@ -306,44 +318,39 @@ const RecruitmentPlanPage = () => {
   };
 
   const handleSubmitRejection = async () => {
-  if (!selectedPlan) return;
-  const planId = selectedPlan.recruitmentPlanId;
+    if (!selectedPlan) return;
+    const planId = selectedPlan.recruitmentPlanId;
 
-  if (!planId || !rejectReason.trim()) {
-    alert("Lý do từ chối không được để trống.");
-    return;
-  }
+    if (!planId || !rejectReason.trim()) {
+      alert("Lý do từ chối không được để trống.");
+      return;
+    }
 
-  try {
-    const res = await axiosAuth.post(
-      `/api/recruitment-plans/${planId}/reject`,
-      { rejectionReason: rejectReason }
-    );
+    try {
+      const res = await axiosAuth.post(
+        `/api/recruitment-plans/${planId}/reject`,
+        { rejectionReason: rejectReason }
+      );
 
-    const updated = res.data; // plan sau khi BE set REJECTED + note
+      const updated = res.data;
 
-    setPlans((prev) =>
-      prev.map((p) =>
-        p.recruitmentPlanId === planId ? updated : p
-      )
-    );
-    setFilteredPlans((prev) =>
-      prev.map((p) =>
-        p.recruitmentPlanId === planId ? updated : p
-      )
-    );
-    setSelectedPlan(updated);
+      setPlans((prev) =>
+        prev.map((p) => (p.recruitmentPlanId === planId ? updated : p))
+      );
+      setFilteredPlans((prev) =>
+        prev.map((p) => (p.recruitmentPlanId === planId ? updated : p))
+      );
+      setSelectedPlan(updated);
 
-    handleCloseModal(); // đóng popup nhập lý do
-  } catch (error) {
-    console.error("Lỗi khi từ chối:", error);
-    // nếu không muốn alert thì comment dòng dưới:
-    // alert(error.response?.data?.error || "Lỗi không xác định khi từ chối.");
-  }
-};
+      // thông báo sang HRRequestPage
+      window.dispatchEvent(new Event("hr:requests:changed"));
 
+      handleCloseModal();
+    } catch (error) {
+      console.error("Lỗi khi từ chối:", error);
+    }
+  };
 
-  // Render chi tiết kế hoạch trong modal
   const renderPlanDetails = (plan, showStatus = false) => {
     if (!plan) return null;
 
@@ -454,7 +461,6 @@ const RecruitmentPlanPage = () => {
           <h2 className="page-title-small">Kế hoạch tuyển dụng</h2>
 
           <div className="filter-bar">
-            {/* Search */}
             <div className="filter-item search-wrapper">
               <div className="search-input-container">
                 <input
@@ -476,7 +482,6 @@ const RecruitmentPlanPage = () => {
               </div>
             </div>
 
-            {/* Trạng thái */}
             <div className="filter-item">
               <select
                 className="filter-select smooth-dropdown"
@@ -490,7 +495,6 @@ const RecruitmentPlanPage = () => {
               </select>
             </div>
 
-            {/* Lọc theo tháng/năm tạo */}
             <div className="filter-item">
               <DatePicker
                 selectedDate={selectedDate}
@@ -498,7 +502,6 @@ const RecruitmentPlanPage = () => {
               />
             </div>
 
-            {/* Nút thêm kế hoạch */}
             <div className="filter-item add-btn-wrapper">
               <button
                 className="add-plan-btn modern-add"
@@ -510,7 +513,6 @@ const RecruitmentPlanPage = () => {
           </div>
         </div>
 
-        {/* Nút xoá tất cả filter */}
         <div className="filter-item">
           <button
             className="clear-all-btn smooth-dropdown"
@@ -574,8 +576,7 @@ const RecruitmentPlanPage = () => {
                       <td className="actions-cell text-center">
                         <ActionButtons
                           onView={() => handleViewDetails(plan)}
-                          onEdit={() => {
-                          }}
+                          onEdit={() => {}}
                         />
                       </td>
                     </tr>
@@ -608,8 +609,6 @@ const RecruitmentPlanPage = () => {
       />
 
       {/* 1. Modal Xem chi tiết */}
-            {/* 1. Modal Xem chi tiết */}
-            {/* 1. Modal Xem chi tiết */}
       {modalStep === 1 && selectedPlan && (
         <Modal
           title="Chi tiết Kế hoạch tuyển dụng"
@@ -619,7 +618,6 @@ const RecruitmentPlanPage = () => {
           {renderPlanDetails(selectedPlan, false)}
 
           {selectedPlan.status === "NEW" ? (
-            // ✅ Trạng thái NEW: hiển thị 2 nút Từ chối / Phê duyệt giống modal HR
             <div className="modal-footer modal-footer-actions">
               <button
                 className="modal-btn btn-reject"
@@ -636,7 +634,6 @@ const RecruitmentPlanPage = () => {
             </div>
           ) : selectedPlan.status === "CANCELED" ||
             selectedPlan.status === "REJECTED" ? (
-            // ✅ Đã bị hủy / từ chối: chỉ xem lý do
             <div className="rejection-card">
               <p className="rejection-title">
                 LÝ DO KẾ HOẠCH BỊ{" "}
@@ -645,18 +642,18 @@ const RecruitmentPlanPage = () => {
               <p className="rejection-reason-text">
                 {selectedPlan.note || "Không có lý do cụ thể được ghi lại."}
               </p>
-              <div className="modal-footer justify-end">
-
-              </div>
+              <p className="rejection-meta">
+                Người thực hiện:{" "}
+                {selectedPlan.rejectedByName || "Không rõ"}
+              </p>
+              <div className="modal-footer justify-end" />
             </div>
           ) : (
-            // ✅ Các trạng thái khác: chỉ xem
             <div className="modal-footer justify-center only-view-footer">
               <p className="only-view-text">
                 Kế hoạch đang ở trạng thái "
                 {getStatusLabel(selectedPlan.status)}". Chỉ có thể xem.
               </p>
-
             </div>
           )}
         </Modal>
@@ -675,70 +672,7 @@ const RecruitmentPlanPage = () => {
               Kế hoạch đã được phê duyệt. Bạn có thể xem thêm các kết quả liên
               quan bên dưới.
             </p>
-            <div className="modal-footer-buttons">
-
-            </div>
-          </div>
-        </Modal>
-      )}
-
-      {/* 3. Modal Từ chối */}
-      {modalStep === 3 && selectedPlan && (
-        <Modal
-          title="Lý do Từ chối Kế hoạch"
-          onClose={handleCloseModal}
-          width={520}
-        >
-          <div className="reject-form">
-            <label htmlFor="rejectReason" className="reject-label">
-              Vui lòng nhập lý do từ chối kế hoạch:{" "}
-              <span className="reject-plan-name">
-                "{selectedPlan.planName}"
-              </span>
-            </label>
-            <textarea
-              id="rejectReason"
-              className="reject-textarea"
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Nhập lý do cụ thể, rõ ràng để người lập kế hoạch dễ dàng điều chỉnh..."
-            />
-          </div>
-          <div className="modal-footer modal-footer-actions">
-            <button
-              className="modal-btn btn-secondary"
-              onClick={handleCloseModal}
-            >
-              Hủy
-            </button>
-            <button
-              className="modal-btn btn-reject"
-              onClick={handleSubmitRejection}
-              disabled={!rejectReason.trim()}
-            >
-              Xác nhận từ chối
-            </button>
-          </div>
-        </Modal>
-      )}
-
-
-      {/* 2. Modal Đã duyệt */}
-      {modalStep === 2 && selectedPlan && (
-        <Modal
-          title="Kế hoạch Đã xác nhận"
-          onClose={handleCloseModal}
-          width={640}
-        >
-          {renderPlanDetails(selectedPlan, true)}
-          <div className="modal-footer justify-between">
-            <p className="only-view-text">
-              Kế hoạch đã được phê duyệt. Bạn có thể xem thêm các kết quả liên
-              quan bên dưới.
-            </p>
-            <div className="modal-footer-buttons">
-
-            </div>
+            <div className="modal-footer-buttons" />
           </div>
         </Modal>
       )}

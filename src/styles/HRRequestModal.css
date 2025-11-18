@@ -344,3 +344,26 @@
   z-index: 1201;
 }
 
+.reject-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.reject-meta-label {
+  font-weight: 600;
+}
+
+.reject-meta-name {
+  font-weight: 600;
+  color: #b91c1c; /* đỏ nhẹ cho nổi lên */
+}
+
+.reject-reason-text {
+  font-size: 0.9rem;
+  color: #111827;
+  white-space: pre-wrap;
+}
