@@ -530,3 +530,181 @@
 .candidate-plan-select {
   min-width: 200px;
 }
+
+
+/* ====== BẢNG CON MÔN HỌC (TRONG QUẢN LÝ ĐÀO TẠO) ====== */
+
+/* Header môn học – hiển thị 3 ô, kéo để xem thêm */
+.subject-scroll-header {
+  max-width: 280px;          /* khoảng 3 ô môn học */
+  overflow-x: auto;
+}
+
+/* Body môn học – giống header, chỉ scroll trong ô này */
+.subject-scroll {
+  max-width: 280px;          /* đúng bằng header để thẳng cột */
+  overflow-x: auto;
+}
+
+/* Ẩn viền ngoài của bảng con để nó hòa vào bảng lớn */
+.subject-table {
+  border-collapse: collapse;
+  width: max-content;        /* đủ rộng cho 6 môn */
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.subject-table th,
+.subject-table td {
+  border: none;
+  padding: 6px 8px;
+  text-align: center;
+}
+
+/* Thanh scroll nhỏ gọn cho phần môn học */
+.subject-scroll::-webkit-scrollbar,
+.subject-scroll-header::-webkit-scrollbar {
+  height: 6px;
+}
+.subject-scroll::-webkit-scrollbar-track,
+.subject-scroll-header::-webkit-scrollbar-track {
+  background: #e5e7eb;
+  border-radius: 999px;
+}
+.subject-scroll::-webkit-scrollbar-thumb,
+.subject-scroll-header::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 999px;
+}
+.subject-scroll::-webkit-scrollbar-thumb:hover,
+.subject-scroll-header::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+
+/* ====== BẢNG CON MÔN HỌC (QUẢN LÝ ĐÀO TẠO) ====== */
+
+.subject-scroll {
+  width: 280px;          /* ~ 3 môn nhìn rõ, kéo để xem 4–6 */
+  overflow-x: auto;
+}
+
+.subject-table {
+  border-collapse: collapse;
+  width: max-content;    /* đủ rộng cho 6 môn */
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.subject-table th,
+.subject-table td {
+  padding: 4px 8px;
+  text-align: center;
+  border: none;          /* để hòa với bảng chính */
+}
+
+/* Thanh scroll nhẹ, đẹp */
+.subject-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.subject-scroll::-webkit-scrollbar-track {
+  background: #e5e7eb;
+  border-radius: 999px;
+}
+.subject-scroll::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 999px;
+}
+.subject-scroll::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* ====== QUẢN LÝ ĐÀO TẠO – CỘT MÔN HỌC ====== */
+
+.training-table th:nth-child(5),
+.training-table td:nth-child(5) {
+  width: 360px; /* đủ để thấy 3 môn */
+}
+
+/* Vùng cuộn cho 6 môn */
+.training-table .subject-scroll {
+  width: 360px;          /* khớp width cột */
+  overflow-x: auto;
+}
+
+/* Bảng mini chứa 6 môn – mỗi môn ~120px => 3 môn/viewport */
+.training-table .subject-table {
+  border-collapse: collapse;
+  width: max-content;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.training-table .subject-table th,
+.training-table .subject-table td {
+  padding: 4px 8px;
+  text-align: center;
+  border: none;
+  min-width: 120px;      /* 3 * 120 = 360 → hiển thị 3 môn */
+}
+
+/* Thanh scroll nhỏ gọn */
+.training-table .subject-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.training-table .subject-scroll::-webkit-scrollbar-track {
+  background: #e5e7eb;
+  border-radius: 999px;
+}
+.training-table .subject-scroll::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 999px;
+}
+.training-table .subject-scroll::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+/* ====== QUẢN LÝ ĐÀO TẠO – CỘT MÔN HỌC ====== */
+
+.training-table th:nth-child(5),
+.training-table td:nth-child(5) {
+  width: 330px; /* đủ để thấy 3 môn, có chút padding 2 bên */
+}
+
+/* Vùng cuộn cho 6 môn */
+.training-table .subject-scroll {
+  width: 330px;          /* khớp width cột */
+  overflow-x: auto;
+}
+
+/* Bảng mini chứa 6 môn – dùng table-layout: fixed để chia đều cột */
+.training-table .subject-table {
+  border-collapse: collapse;
+  width: max-content;    /* rộng theo số môn */
+  table-layout: fixed;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.training-table .subject-table th,
+.training-table .subject-table td {
+  padding: 4px 4px;
+  text-align: center;
+  border: none;
+  width: 100px;          /* ✅ mọi môn đều rộng 100px */
+}
+
+/* Thanh scroll nhỏ gọn */
+.training-table .subject-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.training-table .subject-scroll::-webkit-scrollbar-track {
+  background: #e5e7eb;
+  border-radius: 999px;
+}
+.training-table .subject-scroll::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 999px;
+}
+.training-table .subject-scroll::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}

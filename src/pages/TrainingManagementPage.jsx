@@ -199,7 +199,7 @@ export default function TrainingManagementPage() {
           ) : error ? (
             <p className="text-center text-error">{error}</p>
           ) : (
-            <table className="styled-table">
+            <table className="styled-table training-table">
               <thead>
                 <tr>
                   <th style={{ width: "60px", textAlign: "center" }}>STT</th>
@@ -210,14 +210,15 @@ export default function TrainingManagementPage() {
                   <th style={{ textAlign: "center", whiteSpace: "nowrap" }}>
                     Số ngày TT
                   </th>
-                  <th style={{ textAlign: "center", whiteSpace: "nowrap" }}>
-                    Môn học 1
-                  </th>
-                  <th style={{ textAlign: "center", whiteSpace: "nowrap" }}>
-                    Môn học 2
-                  </th>
-                  <th style={{ textAlign: "center", whiteSpace: "nowrap" }}>
-                    Môn học 3
+                  {/* Vùng Môn học – bên trong hiển thị 3 môn + scroll */}
+                  <th
+                    style={{
+                      textAlign: "center",
+                      whiteSpace: "nowrap",
+                      minWidth: "280px",
+                    }}
+                  >
+                    Môn học
                   </th>
                   <th style={{ textAlign: "center", whiteSpace: "nowrap" }}>
                     Tổng kết
@@ -253,7 +254,7 @@ export default function TrainingManagementPage() {
               <tbody>
                 {currentTrainings.length === 0 ? (
                   <tr>
-                    <td colSpan={11} className="text-center">
+                    <td colSpan={9} className="text-center">
                       Không có bản ghi đào tạo phù hợp.
                     </td>
                   </tr>
@@ -273,12 +274,20 @@ export default function TrainingManagementPage() {
                       t.soNgayThucTap ??
                       t.soNgayTT ??
                       "NA";
+
                     const subject1 =
                       t.subject1Score ?? t.monHoc1 ?? t.subject1 ?? "NA";
                     const subject2 =
                       t.subject2Score ?? t.monHoc2 ?? t.subject2 ?? "NA";
                     const subject3 =
                       t.subject3Score ?? t.monHoc3 ?? t.subject3 ?? "NA";
+                    const subject4 =
+                      t.subject4Score ?? t.monHoc4 ?? t.subject4 ?? "NA";
+                    const subject5 =
+                      t.subject5Score ?? t.monHoc5 ?? t.subject5 ?? "NA";
+                    const subject6 =
+                      t.subject6Score ?? t.monHoc6 ?? t.subject6 ?? "NA";
+
                     const finalScore = t.finalScore ?? t.tongKet ?? "NA";
                     const teamEval =
                       t.teamEvaluation ?? t.danhGiaTeam ?? "NA";
@@ -292,9 +301,35 @@ export default function TrainingManagementPage() {
                           {formatDate(startDate)}
                         </td>
                         <td style={{ textAlign: "center" }}>{internDays}</td>
-                        <td style={{ textAlign: "center" }}>{subject1}</td>
-                        <td style={{ textAlign: "center" }}>{subject2}</td>
-                        <td style={{ textAlign: "center" }}>{subject3}</td>
+
+                        {/* Ô MÔN HỌC – 3 môn hiển thị, kéo để xem 4–6 */}
+                        <td style={{ padding: "4px 6px" }}>
+                          <div className="subject-scroll">
+                            <table className="subject-table">
+                              <thead>
+                                <tr>
+                                  <th>Môn 1</th>
+                                  <th>Môn 2</th>
+                                  <th>Môn 3</th>
+                                  <th>Môn 4</th>
+                                  <th>Môn 5</th>
+                                  <th>Môn 6</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr>
+                                  <td>{subject1}</td>
+                                  <td>{subject2}</td>
+                                  <td>{subject3}</td>
+                                  <td>{subject4}</td>
+                                  <td>{subject5}</td>
+                                  <td>{subject6}</td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </td>
+
                         <td style={{ textAlign: "center" }}>{finalScore}</td>
                         <td style={{ textAlign: "center" }}>{teamEval}</td>
                         <td style={{ textAlign: "center" }}>{internStatus}</td>
@@ -338,4 +373,3 @@ export default function TrainingManagementPage() {
     </Layout>
   );
 }
-      
