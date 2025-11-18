@@ -22,7 +22,7 @@ const getStatusLabel = (status) => {
     case "COMPLETED":
       return "Đã hoàn thành";
     case "CANCELED":
-      return "Bị từ chối"; // ✅ đổi lại
+      return "Bị từ chối";
     default:
       return status || "Không rõ";
   }
@@ -50,17 +50,23 @@ export default function HRRequestPage() {
     showToast._t = window.setTimeout(() => setToast(null), 2500);
   };
 
-  const isActionable = (status) => String(status || "").toUpperCase() === "NEW";
+  const isActionable = (status) =>
+    String(status || "").toUpperCase() === "NEW";
 
   const filteredRequests = (requests || []).filter((req) => {
-    const matchesName = req.requestTitle
-      ?.toLowerCase()
+    const matchesName = (req.requestTitle || "")
+      .toLowerCase()
       .includes(searchName.toLowerCase());
-    const matchesStatus = statusFilter ? req.status === statusFilter : true;
+
+    const matchesStatus = statusFilter
+      ? String(req.status || "").toUpperCase() === statusFilter
+      : true;
+
     const matchesDate = dateFilter
       ? req.createdAt &&
         new Date(req.createdAt).toISOString().split("T")[0] === dateFilter
       : true;
+
     return matchesName && matchesStatus && matchesDate;
   });
 
