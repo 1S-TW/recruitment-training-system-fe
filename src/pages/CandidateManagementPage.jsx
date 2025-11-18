@@ -2,9 +2,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import api from "../services/api"; // Dùng axios instance chung
 
-// 1. IMPORT MODAL MỚI
 import AddCandidateModal from "../components/AddCandidateModal";
-import AddResultModal from "../components/AddResultModal"; // 👈 THÊM DÒNG NÀY
+import AddResultModal from "../components/AddResultModal";
 
 import Layout from "../components/Layout";
 import Pagination from "../components/Pagination";
@@ -22,10 +21,9 @@ export default function CandidateManagementPage() {
 
   // --- State cho 2 Modal ---
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false); // 👈 THÊM STATE NÀY
-  const [selectedCandidate, setSelectedCandidate] = useState(null); // 👈 THÊM STATE NÀY
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedCandidate, setSelectedCandidate] = useState(null);
 
-  // ... (các hàm fetchCandidates, fetchConfirmedPlans giữ nguyên) ...
   const fetchCandidates = async () => {
     setLoading(true);
     setError(null);
@@ -56,7 +54,6 @@ export default function CandidateManagementPage() {
     fetchConfirmedPlans();
   }, []);
 
-
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -65,14 +62,8 @@ export default function CandidateManagementPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [planFilter, setPlanFilter] = useState("");
 
-  const [toast, setToast] = useState(null);
-  const showToast = (msg, type = "success") => {
-    setToast({ msg, type });
-    window.clearTimeout(showToast._t);
-    showToast._t = window.setTimeout(() => setToast(null), 2500);
-  };
+  // ✅ ĐÃ XÓA: State 'toast' và hàm 'showToast'
 
-  // ... (filteredCandidates, filteredSorted, Phân trang... giữ nguyên) ...
   const filteredCandidates = useMemo(
     () =>
       (candidates || []).filter((c) => {
@@ -132,40 +123,34 @@ export default function CandidateManagementPage() {
     }, 180);
   };
 
-  // --- Cập nhật handlers ---
   const handleViewCandidate = (candidate) => {
     console.log("Xem ứng viên:", candidate);
-    showToast("Mở chi tiết ứng viên (TODO)", "success");
+    // ✅ ĐÃ XÓA: showToast("Mở chi tiết ứng viên (TODO)", "success");
   };
 
-  // 2. SỬA HÀM NÀY
   const handleEditCandidate = (candidate) => {
-    setSelectedCandidate(candidate); // 👈 Lưu ứng viên được chọn
-    setShowEditModal(true); // 👈 Mở modal chấm điểm
+    setSelectedCandidate(candidate);
+    setShowEditModal(true);
   };
 
-  // 3. THÊM HÀM SUCCESS CHO ADD
   const handleAddSuccess = (newCandidate) => {
     setCandidates((prev) => [newCandidate, ...prev]);
-    showToast("Thêm ứng viên thành công!", "success");
+    // ✅ ĐÃ XÓA: showToast("Thêm ứng viên thành công!", "success");
     setCurrentPage(1);
   };
 
-  // 4. THÊM HÀM SUCCESS CHO EDIT (CHẤM ĐIỂM)
   const handleEditSuccess = (updatedCandidate) => {
-    // Tìm và thay thế ứng viên trong danh sách
     setCandidates((prev) =>
       prev.map((c) =>
         c.candidateId === updatedCandidate.candidateId ? updatedCandidate : c
       )
     );
     setShowEditModal(false);
-    showToast("Chấm điểm thành công!", "success");
+    // ✅ ĐÃ XÓA: showToast("Chấm điểm thành công!", "success");
   };
 
   return (
     <Layout>
-      {/* ... (Breadcrumb và Filter bar giữ nguyên) ... */}
       <div className="breadcrumb-container fade-slide">
         <div className="breadcrumb-left">
           <span className="breadcrumb-icon">👤</span>
@@ -223,7 +208,7 @@ export default function CandidateManagementPage() {
                 <option value="Đã có kết quả">Đã có kết quả</option>
                 <option value="Không nhận việc">Không nhận việc</option>
                 <option value="Đã gửi mail cảm ơn">
-                  Đã gửi email cảm ơn
+                  Đã gửi mail cảm ơn
                 </option>
                 <option value="Đã nhận việc">Đã nhận việc</option>
                 <option value="Đã thông báo thời gian TT">
@@ -264,7 +249,7 @@ export default function CandidateManagementPage() {
           </div>
         </div>
 
-        {/* TABLE (Cập nhật key cho điểm số) */}
+        {/* TABLE */}
         <div
           className={`table-container table-fade ${
             isAnimating ? "fade-out" : "fade-in"
@@ -301,7 +286,6 @@ export default function CandidateManagementPage() {
                     const name = c.fullName || "—";
                     const email = c.email || "—";
                     const phone = c.phoneNumber || "—";
-                    // 5. SỬA KEY (DTO trả về là testScore, interviewScore)
                     const testScore = c.testScore ?? "—";
                     const interviewScore = c.interviewScore ?? "—";
                     const status = c.status || "Chưa có kết quả";
@@ -318,16 +302,11 @@ export default function CandidateManagementPage() {
                           <span className="status-badge">{status}</span>
                         </td>
                         <td className="actions-cell text-center">
-                          <div className="btn-action-wrapper">
-                            {/* 6. SỬA: Nút Edit sẽ gọi handleEditCandidate */}
-                            <ActionButtons
-                              onView={() => handleViewCandidate(c)}
-                              onEdit={() => handleEditCandidate(c)}
-                            />
-                            <div className="action-tooltip">
-                              Xem / Chấm điểm
-                            </div>
-                          </div>
+                          {/* Đã bỏ div wrapper thừa ở đây theo yêu cầu trước */}
+                          <ActionButtons
+                            onView={() => handleViewCandidate(c)}
+                            onEdit={() => handleEditCandidate(c)}
+                          />
                         </td>
                       </tr>
                     );
@@ -338,7 +317,7 @@ export default function CandidateManagementPage() {
           )}
         </div>
 
-        {/* PAGINATION (giữ nguyên) */}
+        {/* PAGINATION */}
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
@@ -346,9 +325,7 @@ export default function CandidateManagementPage() {
         />
       </div>
 
-      {/* 7. RENDER CẢ 2 MODAL */}
-      
-      {/* Modal Thêm (đã làm) */}
+      {/* Modal Thêm */}
       <AddCandidateModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
@@ -356,7 +333,7 @@ export default function CandidateManagementPage() {
         planOptions={planOptions}
       />
 
-      {/* Modal Sửa/Chấm điểm (Mới) */}
+      {/* Modal Sửa/Chấm điểm */}
       <AddResultModal
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
@@ -364,17 +341,7 @@ export default function CandidateManagementPage() {
         candidate={selectedCandidate}
       />
 
-      {/* TOAST (giữ nguyên) */}
-      {toast && (
-        <div
-          className={`toast-container ${
-            toast.type === "success" ? "toast-success" : "toast-error"
-          }`}
-          role="status"
-        >
-          {toast.msg}
-        </div>
-      )}
+
     </Layout>
   );
 }

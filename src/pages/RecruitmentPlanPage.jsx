@@ -64,7 +64,7 @@ const RecruitmentPlanPage = () => {
   });
 
   const [selectedPlan, setSelectedPlan] = useState(null);
-  const [modalStep, setModalStep] = useState(0); // 0: none, 1: view, 2: viewed-confirmed, 3: reject reason
+  const [modalStep, setModalStep] = useState(0); 
   const [rejectReason, setRejectReason] = useState("");
 
   const location = useLocation();
@@ -95,7 +95,6 @@ const RecruitmentPlanPage = () => {
       return;
     }
     loadPlans();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Mở AddPlan từ URL ?requestId=...
@@ -126,7 +125,6 @@ const RecruitmentPlanPage = () => {
         setModalMode("locked");
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
 
   useEffect(() => {
@@ -233,7 +231,7 @@ const RecruitmentPlanPage = () => {
     }
   };
 
-  // ====== TẠO KẾ HOẠCH: tạo xong mới APPROVE HR REQUEST ======
+  // ====== TẠO KẾ HOẠCH ======
   const submitPlan = async () => {
     try {
       if (!form.requestId) {
@@ -245,23 +243,14 @@ const RecruitmentPlanPage = () => {
         return;
       }
 
-      // 1. Tạo kế hoạch tuyển dụng
       await axiosAuth.post("/api/recruitment-plans", form);
-
-      // 2. Approve nhu cầu sau khi đã tạo kế hoạch
       try {
         await axiosAuth.put(`/api/hr-request/${form.requestId}/approve?note=`);
       } catch (err) {
-        console.error(
-          "Không thể cập nhật trạng thái nhu cầu sau khi tạo kế hoạch:",
-          err
-        );
+        console.error("Không thể cập nhật trạng thái nhu cầu:", err);
       }
 
-      // 3. Thông báo cho trang Nhu cầu để refetch
       window.dispatchEvent(new Event("hr:requests:changed"));
-
-      // 4. Đóng modal và reload list kế hoạch
       setOpenAddModal(false);
       await loadPlans();
     } catch (e) {
@@ -301,7 +290,7 @@ const RecruitmentPlanPage = () => {
   };
 
   const handleStartReject = () => {
-    setModalStep(3);     // 👉 chuyển sang bước nhập lý do
+    setModalStep(3);
     setRejectReason("");
   };
 
@@ -349,7 +338,6 @@ const RecruitmentPlanPage = () => {
 
     const request = plan.request;
     if (!request) {
-      console.error("Plan không có 'request' object:", plan);
       return (
         <p className="error-text">
           Lỗi: Kế hoạch này thiếu thông tin nhu cầu (request).
@@ -506,18 +494,7 @@ const RecruitmentPlanPage = () => {
           </div>
         </div>
 
-        <div className="filter-item">
-          <button
-            className="clear-all-btn smooth-dropdown"
-            onClick={() => {
-              setSearchName("");
-              setStatusFilter("");
-              setSelectedDate(null);
-            }}
-          >
-            Xóa tất cả bộ lọc
-          </button>
-        </div>
+        {/* ✅ ĐÃ XÓA NÚT "Xóa tất cả bộ lọc" Ở ĐÂY */}
 
         {/* Bảng */}
         <div
@@ -601,7 +578,7 @@ const RecruitmentPlanPage = () => {
         onPickRequest={handlePickRequest}
       />
 
-      {/* 1. Modal Xem chi tiết */}
+      {/* Modal Xem/Sửa/Từ chối (giữ nguyên) */}
       {modalStep === 1 && selectedPlan && (
         <Modal
           title="Chi tiết Kế hoạch tuyển dụng"
@@ -635,10 +612,6 @@ const RecruitmentPlanPage = () => {
               <p className="rejection-reason-text">
                 {selectedPlan.note || "Không có lý do cụ thể được ghi lại."}
               </p>
-              <p className="rejection-meta">
-                Người thực hiện:{" "}
-                {selectedPlan.rejectedByName || "Không rõ"}
-              </p>
               <div className="modal-footer justify-end" />
             </div>
           ) : (
@@ -652,25 +625,7 @@ const RecruitmentPlanPage = () => {
         </Modal>
       )}
 
-      {/* 2. Modal Đã duyệt */}
-      {modalStep === 2 && selectedPlan && (
-        <Modal
-          title="Kế hoạch Đã xác nhận"
-          onClose={handleCloseModal}
-          width={640}
-        >
-          {renderPlanDetails(selectedPlan, true)}
-          <div className="modal-footer justify-between">
-            <p className="only-view-text">
-              Kế hoạch đã được phê duyệt. Bạn có thể xem thêm các kết quả liên
-              quan bên dưới.
-            </p>
-            <div className="modal-footer-buttons" />
-          </div>
-        </Modal>
-      )}
-
-      {/* 3. Modal Từ chối – NHẬP LÝ DO */}
+      {/* Modal Reject Reason */}
       {modalStep === 3 && selectedPlan && (
         <Modal
           title="Lý do Từ chối Kế hoạch"
@@ -689,7 +644,7 @@ const RecruitmentPlanPage = () => {
               className="reject-textarea"
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Nhập lý do cụ thể, rõ ràng để người lập kế hoạch dễ dàng điều chỉnh..."
+              placeholder="Nhập lý do cụ thể..."
             />
           </div>
           <div className="modal-footer modal-footer-actions">

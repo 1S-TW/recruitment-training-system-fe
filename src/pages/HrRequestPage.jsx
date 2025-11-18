@@ -64,7 +64,7 @@ export default function HRRequestPage() {
 
     const matchesDate = dateFilter
       ? req.createdAt &&
-        new Date(req.createdAt).toISOString().split("T")[0] === dateFilter
+      new Date(req.createdAt).toISOString().split("T")[0] === dateFilter
       : true;
 
     return matchesName && matchesStatus && matchesDate;
@@ -112,6 +112,7 @@ export default function HRRequestPage() {
     setShowModal(true);
   };
 
+  // Logic nháy tooltip khi không được sửa (vẫn giữ nguyên logic nhưng selector sẽ tự tìm đúng tooltip con)
   const flashEditTooltip = (btnWrapperEl) => {
     const tip = btnWrapperEl?.querySelector(".action-tooltip");
     if (!tip) return;
@@ -125,7 +126,6 @@ export default function HRRequestPage() {
     }, 1200);
   };
 
-  // Lắng nghe event từ trang kế hoạch (khi reject/approve plan)
   useEffect(() => {
     const handler = () => {
       refetch?.();
@@ -137,7 +137,6 @@ export default function HRRequestPage() {
 
   return (
     <Layout>
-      {/* Breadcrumb */}
       <div className="breadcrumb-container fade-slide">
         <div className="breadcrumb-left">
           <span className="breadcrumb-icon">💼</span>
@@ -162,7 +161,6 @@ export default function HRRequestPage() {
         </div>
       </div>
 
-      {/* Content */}
       <div className="recruitment-page fade-slide">
         <div className="title-row">
           <h2 className="page-title-small">Nhu cầu tuyển dụng</h2>
@@ -208,11 +206,9 @@ export default function HRRequestPage() {
           </div>
         </div>
 
-        {/* Table */}
         <div
-          className={`table-container table-fade ${
-            isAnimating ? "fade-out" : "fade-in"
-          }`}
+          className={`table-container table-fade ${isAnimating ? "fade-out" : "fade-in"
+            }`}
         >
           {loading ? (
             <p className="loading-text">Đang tải dữ liệu...</p>
@@ -255,26 +251,23 @@ export default function HRRequestPage() {
                         </span>
                       </td>
                       <td>{req.createdByName || "Không rõ"}</td>
+
+                      {/* ✅ SỬA TẠI ĐÂY: Xóa thẻ div bọc thừa để fix tooltip */}
                       <td className="actions-cell text-center">
-                        <div className="btn-action-wrapper">
-                          <ActionButtons
-                            onView={() => setSelectedRequest(req)}
-                            onEdit={(e) => {
-                              if (!canEdit) {
-                                e?.preventDefault?.();
-                                const wrapper =
-                                  e?.currentTarget?.closest?.(
-                                    ".btn-action-wrapper"
-                                  ) ||
-                                  e?.target?.closest?.(".btn-action-wrapper");
-                                flashEditTooltip(wrapper);
-                                return;
-                              }
-                              openEdit(req);
-                            }}
-                          />
-                          <div className="action-tooltip">Sửa</div>
-                        </div>
+                        <ActionButtons
+                          onView={() => setSelectedRequest(req)}
+                          onEdit={(e) => {
+                            if (!canEdit) {
+                              e?.preventDefault?.();
+                              // Tìm tooltip bên trong ActionButtons để flash
+                              const wrapper = e?.currentTarget?.closest(".btn-action-wrapper")
+                                || e?.target?.closest(".btn-action-wrapper");
+                              flashEditTooltip(wrapper);
+                              return;
+                            }
+                            openEdit(req);
+                          }}
+                        />
                       </td>
                     </tr>
                   );
@@ -291,7 +284,6 @@ export default function HRRequestPage() {
         />
       </div>
 
-      {/* Modal tạo/sửa */}
       <CreateRequestModal
         isOpen={showModal}
         onClose={() => {
@@ -305,14 +297,13 @@ export default function HRRequestPage() {
           setEditData(null);
           showToast(
             msgFromBE ||
-              (editData ? "Cập nhật thành công!" : "Tạo mới thành công!"),
+            (editData ? "Cập nhật thành công!" : "Tạo mới thành công!"),
             "success"
           );
         }}
         initialData={editData}
       />
 
-      {/* Modal xem chi tiết */}
       <HRRequestModal
         isOpen={!!selectedRequest}
         onClose={() => setSelectedRequest(null)}
@@ -325,12 +316,10 @@ export default function HRRequestPage() {
         onActionError={(msg) => showToast(msg || "Có lỗi xảy ra", "error")}
       />
 
-      {/* Toast */}
       {toast && (
         <div
-          className={`toast-container ${
-            toast.type === "success" ? "toast-success" : "toast-error"
-          }`}
+          className={`toast-container ${toast.type === "success" ? "toast-success" : "toast-error"
+            }`}
           role="status"
         >
           {toast.msg}

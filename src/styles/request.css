@@ -104,10 +104,14 @@
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 12px; /* Khoảng cách đều giữa các ô */
+    justify-content: flex-start; 
     animation: slideIn 0.4s ease forwards;
+    margin-top: 4px;
 }
-
+.filter-bar .add-plan-btn {
+    margin-left: auto; 
+}
 .filter-item {
     position: relative;
     display: flex;
