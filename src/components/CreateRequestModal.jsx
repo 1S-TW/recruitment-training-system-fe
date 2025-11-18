@@ -191,7 +191,7 @@ export default function CreateRequestModal({ isOpen, onClose, onSuccess, initial
     return (
         <>
             {/* Click backdrop để đóng */}
-            <div className="modal-backdrop" onClick={() => !loading && onClose?.()} />
+            <div className="modal-backdrop" onClick={() => !loading } />
             <div className="modal create-modal" role="dialog" aria-modal="true">
                 {/* HEADER */}
                 <div className="modal-header-custom">

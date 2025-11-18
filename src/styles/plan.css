@@ -1169,3 +1169,118 @@
   color: #b36b00;
 }
 
+/* Modal container: đảm bảo position để bố trí các nút tuyệt đối */
+.modal.add-plan-modal {
+  position: fixed;            /* phủ lên màn hình */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(720px, 92vw);
+  max-height: 90vh;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.12);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Header */
+.modal-header-flex {
+  position: relative;         /* để nút close bám theo header */
+  padding: 16px 24px;
+  border-bottom: 1px solid #eee;
+}
+
+/* Nút close ở góc trên bên phải */
+.btn-close-large {
+  position: absolute;
+  top: 12px;
+  right: 12px;                /* góc phải */
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: #f2f3f5;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  line-height: 1;
+}
+.btn-close-large:hover {
+  background: #e9eaee;
+}
+
+/* Nội dung form cuộn được, để footer luôn bám đáy */
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+
+
+/* Footer bám đáy, chỉ có nút submit bên trái */
+.modal-footer-flex.no-cancel {
+  position: sticky;           /* bám đáy phần form */
+  bottom: 0;
+  padding: 12px 24px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-start; /* đưa nút về bên trái */
+  gap: 12px;
+  background: #fff;
+}
+
+/* Nút submit xanh */
+.btn-green {
+  background: #2fb35d;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-green[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-green:not([disabled]):hover {
+  background: #27a353;
+}
+
+/* Ẩn nút Hủy cũ nếu còn style cũ */
+.btn-gray { display: none !important; }
+
+/* Backdrop */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+}
+
+/* --- NÚT TẠO KẾ HOẠCH CỐ ĐỊNH GÓC PHẢI MÀN HÌNH --- */
+.fixed-create-btn {
+   position: fixed;
+   right: 32px;
+   bottom: 32px;
+   z-index: 9999;
+   padding: 12px 24px;
+   font-size: 16px;
+   border-radius: 8px;
+}
+
+
+
+.create-plan-fixed-area {
+   width: 100%;
+   display: flex;
+   justify-content: flex-end;
+   margin-top: 8px;
+}
+.create-plan-fixed-area .btn-green {
+   padding: 10px 20px;
+   font-size: 15px;
+}

@@ -177,8 +177,7 @@ export default function HRRequestPage() {
                 <option value="IN_PROGRESS">Đang xử lý</option>
                 <option value="COMPLETED">Hoàn thành</option>
                 <option value="CANCELED">Đã hủy</option>
-                <option value="APPROVED">APPROVED</option>
-                <option value="REJECTED">REJECTED</option>
+
               </select>
             </div>
 

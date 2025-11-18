@@ -1,6 +1,4 @@
-// src/components/AddPlanModal.jsx
 import { useMemo } from "react";
-
 
 export default function AddPlanModal({
   open,
@@ -40,13 +38,20 @@ export default function AddPlanModal({
 
   return (
     <>
-      <div className="modal-backdrop" onClick={onClose} />
+      <div className="modal-backdrop" />
 
       <div className="modal add-plan-modal" role="dialog" aria-modal="true">
         {/* Header */}
         <div className="modal-header-flex">
           <h3 className="modal-title">Thêm kế hoạch tuyển dụng</h3>
-          <button className="btn-close-large" onClick={onClose}>✖</button>
+          {/* Đặt cố định góc trên bên phải */}
+          <button
+            className="btn-close-large"
+            onClick={onClose}
+            aria-label="Đóng"
+          >
+            ✖
+          </button>
         </div>
 
         <form
@@ -101,7 +106,7 @@ export default function AddPlanModal({
             </div>
           )}
 
-          {/* Thời gian tuyển dụng */}
+          {/* Thời gian tuyển dụng & Hạn bàn giao */}
           {showFields && (
             <>
               <div className="form-group">
@@ -148,16 +153,20 @@ export default function AddPlanModal({
             </div>
           )}
 
-          {/* Footer */}
-          <div className="modal-footer-flex">
-            <button type="button" className="btn-gray" onClick={onClose}>
-              Hủy
-            </button>
-
-            <button type="submit" className="btn-green" disabled={!canSubmit}>
-              Tạo kế hoạch
-            </button>
-          </div>
+          {/* Footer: chỉ còn nút tạo, đặt ở góc dưới bên trái */}
+<div className="modal-footer-flex no-cancel">
+ {/* Footer này giữ nguyên, KHÔNG còn nút ở đây */}
+</div>
+{/* Nút Tạo kế hoạch nằm dưới footer */}
+<div className="create-plan-fixed-area">
+<button
+   type="submit"
+   className="btn-green"
+   disabled={!canSubmit}
+>
+   Tạo kế hoạch
+</button>
+</div>
         </form>
       </div>
     </>

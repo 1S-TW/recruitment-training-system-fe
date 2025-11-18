@@ -465,7 +465,7 @@ const RecruitmentPlanPage = () => {
                   onChange={(e) => setSearchName(e.target.value)}
                   list="recent-names"
                 />
-                <span className="filter-icon">🔍</span>
+                <span className="filter-icon"> 🔍</span>
                 <datalist id="recent-names">
                   {(
                     JSON.parse(localStorage.getItem("recentNames") || "[]")
@@ -739,85 +739,6 @@ const RecruitmentPlanPage = () => {
             <div className="modal-footer-buttons">
 
             </div>
-          </div>
-        </Modal>
-      )}
-
-      {/* 3. Modal Từ chối */}
-      {modalStep === 3 && selectedPlan && (
-        <Modal
-          title="Lý do Từ chối Kế hoạch"
-          onClose={handleCloseModal}
-          width={520}
-        >
-          <div className="reject-form">
-            <label htmlFor="rejectReason" className="reject-label">
-              Vui lòng nhập lý do từ chối kế hoạch:{" "}
-              <span className="reject-plan-name">
-                "{selectedPlan.planName}"
-              </span>
-            </label>
-            <textarea
-              id="rejectReason"
-              className="reject-textarea"
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Nhập lý do cụ thể, rõ ràng để người lập kế hoạch dễ dàng điều chỉnh..."
-            />
-          </div>
-          <div className="modal-footer modal-footer-actions">
-            <button
-              className="modal-btn btn-secondary"
-              onClick={handleCloseModal}
-            >
-              Hủy
-            </button>
-            <button
-              className="modal-btn btn-reject"
-              onClick={handleSubmitRejection}
-              disabled={!rejectReason.trim()}
-            >
-              Xác nhận từ chối
-            </button>
-          </div>
-        </Modal>
-      )}
-
-
-      {/* 3. Modal Từ chối */}
-      {modalStep === 3 && selectedPlan && (
-        <Modal
-          title="Lý do Từ chối Kế hoạch"
-          onClose={handleCloseModal}
-          width={500}
-        >
-          <div className="reject-form">
-            <label htmlFor="rejectReason">
-              Vui lòng nhập lý do từ chối kế hoạch: "
-              {selectedPlan.planName}"
-            </label>
-            <textarea
-              id="rejectReason"
-              className="reject-textarea"
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Nhập lý do..."
-            />
-          </div>
-          <div className="modal-footer">
-            <button
-              className="modal-btn btn-secondary"
-              onClick={handleCloseModal}
-            >
-              Hủy
-            </button>
-            <button
-              className="modal-btn btn-reject"
-              onClick={handleSubmitRejection}
-              disabled={!rejectReason.trim()}
-            >
-              Xác nhận từ chối
-            </button>
           </div>
         </Modal>
       )}
