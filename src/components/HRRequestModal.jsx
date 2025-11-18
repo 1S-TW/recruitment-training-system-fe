@@ -65,7 +65,7 @@ export default function HRRequestModal({
       case "COMPLETED":
         return "Đã hoàn thành";
       case "CANCELED":
-        return "Bị từ chối"; // label trạng thái bị hủy
+        return "Bị từ chối"; // label ngoài list
       default:
         return status || "Không rõ";
     }
@@ -79,30 +79,51 @@ export default function HRRequestModal({
   const isApproved = status === "APPROVED";
   const isCanceled = status === "CANCELED";
 
-  // 🔍 Tách chuỗi "Người từ chối kế hoạch: X. Lý do: Y" thành 2 phần
+  // 🔍 Parse rejectReason cho cả 2 trường hợp:
+  //  - "Người từ chối kế hoạch: ..."
+  //  - "Người từ chối nhu cầu: ..."
   const parsedReject = useMemo(() => {
     const raw = request?.rejectReason || "";
-    if (!raw) return { by: "", reason: "" };
+    if (!raw) return { by: "", reason: "", source: "" };
 
-    const nameLabel = "Người từ chối kế hoạch:";
     const reasonLabel = "Lý do:";
+    const patterns = [
+      {
+        nameLabel: "Người từ chối kế hoạch:",
+        source: "Kế hoạch tuyển dụng",
+      },
+      {
+        nameLabel: "Người từ chối nhu cầu:",
+        source: "Nhu cầu tuyển dụng",
+      },
+    ];
 
     let by = "";
     let reason = raw.trim();
+    let source = "";
+
+    const matched = patterns.find((p) => raw.includes(p.nameLabel));
+
+    if (!matched) {
+      // trường hợp cũ: chỉ có mỗi lý do, không meta
+      return { by: "", reason, source: "" };
+    }
+
+    source = matched.source;
 
     const reasonIdx = raw.indexOf(reasonLabel);
     if (reasonIdx !== -1) {
       reason = raw.slice(reasonIdx + reasonLabel.length).trim();
     }
 
-    const nameIdx = raw.indexOf(nameLabel);
+    const nameIdx = raw.indexOf(matched.nameLabel);
     if (nameIdx !== -1) {
       const endIdx = reasonIdx === -1 ? raw.length : reasonIdx;
-      const namePart = raw.slice(nameIdx + nameLabel.length, endIdx);
+      const namePart = raw.slice(nameIdx + matched.nameLabel.length, endIdx);
       by = namePart.replace(/[.\s]+$/g, "").trim();
     }
 
-    return { by, reason };
+    return { by, reason, source };
   }, [request?.rejectReason]);
 
   const readErrorMessage = async (res) => {
@@ -116,18 +137,49 @@ export default function HRRequestModal({
   };
 
   // =============== PHÊ DUYỆT =================
-  // =============== PHÊ DUYỆT =================
-const handleApprove = () => {
-  if (!request || !isNew) return;
+  const handleApprove = async () => {
+    if (!request || !isNew) return;
 
-  // ❌ Không gọi API approve ở đây nữa
-  // ✅ Chỉ đóng modal và điều hướng sang trang kế hoạch
-  onClose();
-  navigate(`/recruitment/plan?requestId=${request.requestId}`);
-};
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const url = `http://localhost:8080/api/hr-request/${
+        request.requestId
+      }/approve?note=${encodeURIComponent(note || "")}`;
 
+      const res = await fetch(url, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
+      if (!res.ok) {
+        const msg = await readErrorMessage(res);
+        if (res.status === 401)
+          alert("⚠️ Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        else if (res.status === 403)
+          alert("⚠️ Bạn không có quyền phê duyệt yêu cầu này.");
+        else if (res.status === 409) alert(`⚠️ Không thể phê duyệt: ${msg}`);
+        else if (res.status === 400)
+          alert(`⚠️ Dữ liệu không hợp lệ: ${msg}`);
+        else alert(`⚠️ Lỗi khi phê duyệt yêu cầu: ${msg}`);
+        onActionError?.(msg);
+        return;
+      }
 
+      onActionSuccess?.();
+      onClose();
+      navigate(`/recruitment/plan?requestId=${request.requestId}`);
+    } catch (err) {
+      const msg = err?.message || "";
+      alert(`⚠️ Lỗi mạng khi phê duyệt yêu cầu: ${msg}`);
+      onActionError?.(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // =============== BẮT ĐẦU TỪ CHỐI (mở bước 2) =================
   const handleStartReject = () => {
@@ -254,7 +306,7 @@ const handleApprove = () => {
                 </div>
               </div>
 
-              {/* ✅ nếu đã bị từ chối thì hiển thị LÝ DO TỪ CHỐI (gộp 1 block) */}
+              {/* ✅ Nếu đã bị từ chối thì hiển thị meta + lý do */}
               {isCanceled &&
                 (parsedReject.by ||
                   parsedReject.reason ||
@@ -264,30 +316,28 @@ const handleApprove = () => {
                       <h4>Lý do từ chối</h4>
                     </div>
 
-                    {/* Nếu rejectReason đến từ KẾ HOẠCH TUYỂN DỤNG */}
-                    {parsedReject.by && (
-                      <>
-                        <div className="reject-meta-row">
-                          <span className="reject-meta-label">
-                            Bị từ chối tại:
-                          </span>
-                          <span className="reject-meta-name">
-                            Kế hoạch tuyển dụng
-                          </span>
-                        </div>
-
-                        <div className="reject-meta-row">
-                          <span className="reject-meta-label">
-                            Người từ chối kế hoạch:
-                          </span>
-                          <span className="reject-meta-name">
-                            {parsedReject.by}
-                          </span>
-                        </div>
-                      </>
+                    {parsedReject.source && (
+                      <div className="reject-meta-row">
+                        <span className="reject-meta-label">Bị từ chối tại:</span>
+                        <span className="reject-meta-name">
+                          {parsedReject.source}
+                        </span>
+                      </div>
                     )}
 
-                    {/* Lý do chi tiết */}
+                    {parsedReject.by && (
+                      <div className="reject-meta-row">
+                        <span className="reject-meta-label">
+                          {parsedReject.source === "Kế hoạch tuyển dụng"
+                            ? "Người từ chối kế hoạch:"
+                            : "Người từ chối nhu cầu:"}
+                        </span>
+                        <span className="reject-meta-name">
+                          {parsedReject.by}
+                        </span>
+                      </div>
+                    )}
+
                     <div className="reject-reason-text">
                       {parsedReject.reason || request.rejectReason}
                     </div>
