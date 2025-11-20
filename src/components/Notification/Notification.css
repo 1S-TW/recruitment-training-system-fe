@@ -1,4 +1,4 @@
-
+/* Đây là cái "toast" 2-3 giây */
 .notification-toast {
   position: fixed;
   top: 20px;
@@ -7,25 +7,22 @@
   border-radius: 6px;
   color: white;
   font-weight: 600;
-  z-index: 1056; 
+  z-index: 1000;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   animation: slideIn 0.3s ease-out;
 }
 
-/* Trạng thái thành công */
 .notification-toast.success {
   background-color: #28a745; /* Màu xanh lá */
 }
 
-/* Trạng thái lỗi */
 .notification-toast.error {
   background-color: #dc3545; /* Màu đỏ */
 }
 
-/* Hiệu ứng trượt vào */
 @keyframes slideIn {
   from {
-    transform: translateX(110%);
+    transform: translateX(100%);
     opacity: 0;
   }
   to {

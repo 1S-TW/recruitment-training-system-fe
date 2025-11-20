@@ -1,33 +1,79 @@
-import React from "react";
-import { Eye, Edit2 } from "lucide-react";
-import "../styles/plan.css"; // dùng chung plan.css để tooltip & hiệu ứng đồng bộ
+// src/components/ActionButtons.jsx
+import { Eye, Pencil, CheckCircle2, XCircle } from "lucide-react";
 
-const ActionButtons = ({ onView, onEdit }) => {
+export default function ActionButtons({
+  onView,
+  onEdit,
+  onApprove,
+  onReject,
+  canAct = false, // chỉ NEW = true
+}) {
+  const common = "btn-action";
+  const dis = !canAct ? " disabled" : "";
+
+  // chặn click khi disabled (vẫn cho hover hiện tooltip)
+  const guard = (fn) => (e) => {
+    if (!canAct) {
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      return;
+    }
+    fn?.(e);
+  };
+
   return (
     <div className="btn-group">
-      <div className="btn-action-wrapper">
+      {/* Xem: luôn cho phép */}
+      <span className="btn-action-wrapper">
         <button
-          className="btn-action btn-view"
+          type="button"
+          className={`${common} btn-view`}
           onClick={onView}
-          data-tooltip="Xem chi tiết"
+          title="Xem chi tiết"
         >
-          <Eye size={40} />
+          <Eye size={18} />
         </button>
-        <span className="action-tooltip">Xem chi tiết</span>
-      </div>
+        <span className="action-tooltip">Xem</span>
+      </span>
 
-      <div className="btn-action-wrapper">
+      {/* Sửa: chỉ NEW */}
+      <span className="btn-action-wrapper">
         <button
-          className="btn-action btn-edit"
-          onClick={onEdit}
-          data-tooltip="Chỉnh sửa"
+          type="button"
+          className={`${common} btn-edit${dis}`}
+          onClick={guard(onEdit)}
+          title={canAct ? "Chỉnh sửa" : "Chỉ trạng thái NEW mới được sửa"}
         >
-          <Edit2 size={40} />
+          <Pencil size={18} />
         </button>
         <span className="action-tooltip">Chỉnh sửa</span>
-      </div>
+      </span>
+
+      {/* Từ chối: chỉ NEW */}
+      <span className="btn-action-wrapper">
+        <button
+          type="button"
+          className={`${common} btn-reject${dis}`}
+          onClick={guard(onReject)}
+          title={canAct ? "Từ chối" : "Chỉ trạng thái NEW mới được thao tác"}
+        >
+          <XCircle size={18} />
+        </button>
+        <span className="action-tooltip">Từ chối</span>
+      </span>
+
+      {/* Phê duyệt & Khởi tạo: chỉ NEW */}
+      <span className="btn-action-wrapper">
+        <button
+          type="button"
+          className={`${common} btn-approve${dis}`}
+          onClick={guard(onApprove)}
+          title={canAct ? "Phê duyệt & Khởi tạo" : "Chỉ trạng thái NEW mới được thao tác"}
+        >
+          <CheckCircle2 size={18} />
+        </button>
+        <span className="action-tooltip">Phê duyệt & Khởi tạo</span>
+      </span>
     </div>
   );
-};
-
-export default ActionButtons;
+}

@@ -1,51 +1,95 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-// --- Components ---
-import ProtectedRoute from '../components/ProtectedRoute';
+// src/routes/AppRoutes.jsx
+import React from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
-// --- Pages ---
-import Login from '../pages/Login';
-import Register from '../pages/Register';
-import ForgotPassword from '../pages/ForgotPassword';
-import HomePage from '../pages/HomePage';
-import HRRequestPage from '../pages/HRRequestPage';
-import RecruitmentPlanPage from '../pages/RecruitmentPlanPage';
-import VerifyEmail from '../pages/VerifyEmail';
-import ResetPassword from '../pages/ResetPassword';
-import ForbiddenPage from '../pages/ForbiddenPage';
+// ✅ ProtectedRoute ở cùng thư mục routes
+import ProtectedRoute from "./ProtectedRoute";
 
-// --- Admin Pages ---
-import UserManagement from '../pages/admin/UserManagement';
+import LoginPage from "../pages/LoginPage";
+import Register from "../pages/Register";
+import ForgotPassword from "../pages/ForgotPassword";
+import HomePage from "../pages/HomePage";
+import HrRequestPage from "../pages/HrRequestPage";
+import RecruitmentPlanPage from "../pages/RecruitmentPlanPage";
+import VerifyEmail from "../pages/VerifyEmail";
+import ResetPassword from "../pages/ResetPassword";
+import ForbiddenPage from "../pages/ForbiddenPage";
+
+// 👇 page quản lý ứng viên
+import CandidateManagementPage from "../pages/CandidateManagementPage";
+
+// 👇 CHỈ THÊM DÒNG NÀY: page Quản lý đào tạo
+import TrainingManagementPage from "../pages/TrainingManagementPage";
 
 /**
- * "GuestRoute" ngăn user đã đăng nhập xem lại trang Login/Register
+ * Route dành cho khách (chưa login).
+ * Nếu đã đăng nhập thì redirect ra ngoài (về trang chính).
  */
 const GuestRoute = ({ children }) => {
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated } = useAuth();
+
   if (isAuthenticated) {
-    // Nếu đã đăng nhập, tự động điều hướng
-    return <Navigate to={isAdmin ? "/admin" : "/forbidden"} replace />;
+    // Đã đăng nhập thì đẩy về trang home
+    return <Navigate to="/" replace />;
   }
+
   return children;
 };
 
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* ========================================= */}
-      {/* == CÁC ROUTE CÔNG KHAI (KHÁCH) == */}
-      {/* ========================================= */}
-      <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
-      <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
-      <Route path="/forgot-password" element={<GuestRoute><ForgotPassword /></GuestRoute>} />
-      <Route path="/verify" element={<GuestRoute><VerifyEmail /></GuestRoute>} />
-      <Route path="/reset-password" element={<GuestRoute><ResetPassword /></GuestRoute>} />
+      {/* ======================= */}
+      {/*   ROUTE DÀNH CHO KHÁCH  */}
+      {/* ======================= */}
+      <Route
+        path="/login"
+        element={
+          <GuestRoute>
+            <LoginPage />
+          </GuestRoute>
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          <GuestRoute>
+            <Register />
+          </GuestRoute>
+        }
+      />
+      <Route
+        path="/forgot-password"
+        element={
+          <GuestRoute>
+            <ForgotPassword />
+          </GuestRoute>
+        }
+      />
+      <Route
+        path="/verify"
+        element={
+          <GuestRoute>
+            <VerifyEmail />
+          </GuestRoute>
+        }
+      />
+      <Route
+        path="/reset-password"
+        element={
+          <GuestRoute>
+            <ResetPassword />
+          </GuestRoute>
+        }
+      />
       <Route path="/forbidden" element={<ForbiddenPage />} />
 
-      {/* ========================================= */}
-      {/* == CÁC ROUTE ĐƯỢC BẢO VỆ (USER) == */}
-      {/* ========================================= */}
+      {/* ======================= */}
+      {/*   ROUTE CẦN ĐĂNG NHẬP   */}
+      {/* ======================= */}
+
+      {/* Trang Dashboard/Home */}
       <Route
         path="/"
         element={
@@ -55,17 +99,27 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Trang Nhu cầu nhân sự */}
+      {/* 👇 CHỈ THÊM BLOCK NÀY: ĐÀO TẠO */}
       <Route
-        path="/recruitment/needs"
+        path="/training"
         element={
           <ProtectedRoute>
-            <HRRequestPage />
+            <TrainingManagementPage />
           </ProtectedRoute>
         }
       />
 
-      {/* Trang Kế hoạch tuyển dụng */}
+      {/* Nhu cầu tuyển dụng (HR Request) */}
+      <Route
+        path="/recruitment/needs"
+        element={
+          <ProtectedRoute>
+            <HrRequestPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Kế hoạch tuyển dụng */}
       <Route
         path="/recruitment/plan"
         element={
@@ -75,25 +129,19 @@ const AppRoutes = () => {
         }
       />
 
-      {/* ========================================= */}
-      {/* == CÁC ROUTE CỦA ADMIN (ĐƯỢC BẢO VỆ) == */}
-      {/* ========================================= */}
+      {/* 👇 ROUTE MỚI: QUẢN LÝ ỨNG VIÊN */}
       <Route
-        path="/admin"
+        path="/recruitment/candidates"
         element={
-          <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
-            <UserManagement/>
+          <ProtectedRoute>
+            <CandidateManagementPage />
           </ProtectedRoute>
         }
-      >
-        {/* URL: /admin (Trang chủ Admin, mặc định là Quản lý User) */}
-        <Route index element={<Navigate to="user-management" replace />} />
-        <Route path="user-management" element={<UserManagement />} />
-      </Route>
+      />
 
-      {/* ========================================= */}
-      {/* == ROUTE MẶC ĐỊNH (NẾU GÕ SAI) == */}
-      {/* ========================================= */}
+      {/* ======================= */}
+      {/*   ROUTE MẶC ĐỊNH        */}
+      {/* ======================= */}
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNotification } from '../../contexts/NotificationContext';
-import './Notification.css';
+import './Notification.css'; // Sẽ tạo ở dưới
 
 const Notification = () => {
     const { notification } = useNotification();

@@ -1,15 +1,43 @@
+// src/pages/RecruitmentPlanPage.jsx
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import axios from "axios";
 import Layout from "../components/Layout";
 import Pagination from "../components/Pagination";
-import ActionButtons from "../components/ActionButton";
-import "../styles/plan.css";
+import ActionButtons from "../components/ActionButtons.jsx";
+import AddPlanModal from "../components/AddPlanModal";
 import DatePicker from "../components/DatePicker";
-import { UserCheck } from "lucide-react";
+import Modal from "../components/Modal";
+import "../styles/plan.css";
+
+const formatDate = (dateString) => {
+  if (!dateString) return "—";
+  return new Date(dateString).toLocaleDateString("vi-VN");
+};
+
+const getStatusLabel = (status) => {
+  switch (status) {
+    case "NEW":
+      return "Mới tạo";
+    case "CONFIRMED":
+      return "Đã xác nhận";
+    case "REJECTED":
+      return "Bị từ chối";
+    case "PENDING":
+      return "Đã gửi đi";
+    case "IN_PROGRESS":
+      return "Đang xử lý";
+    case "COMPLETED":
+      return "Hoàn thành";
+    case "CANCELED":
+      return "Đã hủy";
+    default:
+      return status || "Không rõ";
+  }
+};
 
 const RecruitmentPlanPage = () => {
   const [selectedDate, setSelectedDate] = useState(null);
-  const [showCalendar, setShowCalendar] = useState(false);
   const [plans, setPlans] = useState([]);
   const [filteredPlans, setFilteredPlans] = useState([]);
   const [searchName, setSearchName] = useState("");
@@ -18,149 +46,402 @@ const RecruitmentPlanPage = () => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  // === Fetch data ===
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  const [openAddModal, setOpenAddModal] = useState(false);
+  const [techSummary, setTechSummary] = useState([]);
+  const [requestTitle, setRequestTitle] = useState("");
+  const [modalMode, setModalMode] = useState("select");
+  const [requestOptions, setRequestOptions] = useState([]);
+
+  const [form, setForm] = useState({
+    requestId: undefined,
+    planName: "",
+    status: "NEW",
+    recruitmentDeadline: "",
+    deliveryDeadline: "",
+    note: "",
+  });
+
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [modalStep, setModalStep] = useState(0); 
+  const [rejectReason, setRejectReason] = useState("");
+
+  const location = useLocation();
+  const token = localStorage.getItem("token");
+  const axiosAuth = axios.create({
+    baseURL: "http://localhost:8080",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  const loadPlans = async () => {
+    try {
+      setLoading(true);
+      const res = await axiosAuth.get("/api/recruitment-plans");
+      setPlans(res.data);
+      setFilteredPlans(res.data);
+      setError(null);
+    } catch {
+      setError("❌ Không thể tải danh sách kế hoạch tuyển dụng");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const token = localStorage.getItem("token");
     if (!token) {
       setError("⚠️ Bạn chưa đăng nhập hoặc token đã hết hạn");
       setLoading(false);
       return;
     }
-
-    axios
-      .get("http://localhost:8080/api/recruitment-plans", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => {
-        setPlans(res.data);
-        setFilteredPlans(res.data);
-        setError(null);
-      })
-      .catch(() => setError("❌ Không thể tải danh sách kế hoạch tuyển dụng"))
-      .finally(() => setLoading(false));
+    loadPlans();
   }, []);
 
- // === Lọc dữ liệu ===
-useEffect(() => {
-  let filtered = [...plans];
-
-  // 🔍 Lọc theo tên
-  if (searchName.trim()) {
-    filtered = filtered.filter((p) =>
-      p.planName?.toLowerCase().includes(searchName.toLowerCase())
-    );
-  }
-
-  // ⚙️ Lọc theo trạng thái
-  if (statusFilter) {
-    filtered = filtered.filter((p) => p.status === statusFilter);
-  }
-
-if (selectedDate) {
-  const createdFilter = new Date(selectedDate);
-  const filterMode = selectedDate.filterMode || "day";
-  const selectedDay = createdFilter.getDate();
-  const selectedMonth = selectedDate.displayMonth ?? createdFilter.getMonth();
-  const selectedYear = selectedDate.displayYear ?? createdFilter.getFullYear();
-
-  filtered = filtered.filter((p) => {
-    const created = new Date(p.createdAt);
-
-    if (filterMode === "day") {
-      return (
-        created.getDate() === selectedDay &&
-        created.getMonth() === selectedMonth &&
-        created.getFullYear() === selectedYear
-      );
-    }
-
-    if (filterMode === "month") {
-      return (
-        created.getMonth() === selectedMonth &&
-        created.getFullYear() === selectedYear
-      );
-    }
-
-    if (filterMode === "year") {
-      return created.getFullYear() === selectedYear;
-    }
-
-    return true;``
-  });
-}
-  setFilteredPlans(filtered);
-  setCurrentPage(1);
-}, [searchName, statusFilter, selectedDate, plans]);
-
-
-  // === Lưu gợi ý tìm kiếm ===
+  // Mở AddPlan từ URL ?requestId=...
   useEffect(() => {
-    if (searchName.trim()) {
-      let recentNames = JSON.parse(localStorage.getItem("recentNames") || "[]");
-      if (!recentNames.includes(searchName.trim())) {
-        recentNames = [searchName.trim(), ...recentNames.slice(0, 9)];
-        localStorage.setItem("recentNames", JSON.stringify(recentNames));
-      }
-    }
-  }, [searchName]);
+    const params = new URLSearchParams(location.search);
+    const requestId = params.get("requestId");
+    if (!requestId) return;
 
-  // === Phân trang ===
+    (async () => {
+      try {
+        const res = await axiosAuth.get(
+          `/api/hr-request/${requestId}/plan-defaults`
+        );
+        const d = res.data;
+        setForm({
+          requestId: d.requestId,
+          planName: "",
+          status: d.status || "NEW",
+          recruitmentDeadline: d.recruitmentDeadline || "",
+          deliveryDeadline: d.deliveryDeadline || "",
+          note: d.note || "",
+        });
+        setRequestTitle(d.suggestedPlanName || d.requestTitle || "");
+        setTechSummary(d.techQuantities || []);
+        setModalMode("locked");
+        setOpenAddModal(true);
+      } catch {
+        setModalMode("locked");
+      }
+    })();
+  }, [location.search]);
+
+  useEffect(() => {
+    let filtered = [...plans];
+    if (searchName.trim()) {
+      filtered = filtered.filter((p) =>
+        (p.planName || "").toLowerCase().includes(searchName.toLowerCase())
+      );
+    }
+    if (statusFilter) {
+      filtered = filtered.filter((p) => p.status === statusFilter);
+    }
+    if (selectedDate) {
+      const m = selectedDate.getMonth();
+      const y = selectedDate.getFullYear();
+      filtered = filtered.filter((p) => {
+        const created = new Date(p.createdAt);
+        return created.getMonth() === m && created.getFullYear() === y;
+      });
+    }
+    setFilteredPlans(filtered);
+    setCurrentPage(1);
+  }, [searchName, statusFilter, selectedDate, plans]);
+
   const totalPages = Math.ceil(filteredPlans.length / itemsPerPage) || 1;
   const indexOfLast = currentPage * itemsPerPage;
   const indexOfFirst = indexOfLast - itemsPerPage;
   const currentPlans = filteredPlans.slice(indexOfFirst, indexOfLast);
 
- 
-// === Đổi số hiển thị ===
-const handleChangeItemsPerPage = (e) => {
-  const newValue = Number(e.target.value);
-  setItemsPerPage(newValue);
-  setCurrentPage(1);
-};
+  const handleChangeItemsPerPage = (e) => {
+    setItemsPerPage(Number(e.target.value));
+    setCurrentPage(1);
+  };
 
- 
-// === Đổi trang ===
-const handlePageChange = (page) => {
-  if (page < 1 || page > totalPages) return;
-  setCurrentPage(page);
-};
+  const handlePageChange = (p) => {
+    if (p < 1 || p > totalPages) return;
+    setIsAnimating(true);
+    setTimeout(() => {
+      setCurrentPage(p);
+      setIsAnimating(false);
+    }, 180);
+  };
+
+  const openEmptyAddModal = async () => {
+    setForm({
+      requestId: undefined,
+      planName: "",
+      status: "NEW",
+      recruitmentDeadline: "",
+      deliveryDeadline: "",
+      note: "",
+    });
+    setTechSummary([]);
+    setRequestTitle("");
+    setModalMode("select");
+
+    try {
+      const res = await axiosAuth.get("/api/hr-request");
+      const opts = (res.data || [])
+        .filter((r) => String(r.status || "").toUpperCase() === "NEW")
+        .map((r) => ({ id: r.requestId, title: r.requestTitle }))
+        .sort((a, b) => a.title.localeCompare(b.title));
+      setRequestOptions(opts);
+    } catch {
+      setRequestOptions([]);
+    }
+    setOpenAddModal(true);
+  };
+
+  const handlePickRequest = async (id) => {
+    if (!id) {
+      setForm((f) => ({
+        ...f,
+        requestId: undefined,
+        recruitmentDeadline: "",
+        deliveryDeadline: "",
+      }));
+      setTechSummary([]);
+      setRequestTitle("");
+      return;
+    }
+    try {
+      const res = await axiosAuth.get(`/api/hr-request/${id}/plan-defaults`);
+      const d = res.data;
+      setForm({
+        requestId: d.requestId,
+        planName: "",
+        status: d.status || "NEW",
+        recruitmentDeadline: d.recruitmentDeadline || "",
+        deliveryDeadline: d.deliveryDeadline || "",
+        note: d.note || "",
+      });
+      setRequestTitle(d.suggestedPlanName || d.requestTitle || "");
+      setTechSummary(d.techQuantities || []);
+    } catch {
+      setForm((f) => ({
+        ...f,
+        requestId: undefined,
+        recruitmentDeadline: "",
+        deliveryDeadline: "",
+      }));
+      setTechSummary([]);
+      setRequestTitle("");
+    }
+  };
+
+  // ====== TẠO KẾ HOẠCH ======
+  const submitPlan = async () => {
+    try {
+      if (!form.requestId) {
+        alert("⚠️ Vui lòng chọn nhu cầu trước khi tạo kế hoạch.");
+        return;
+      }
+      if (!form.planName || !form.recruitmentDeadline || !form.deliveryDeadline) {
+        alert("⚠️ Vui lòng nhập tên kế hoạch và thời hạn.");
+        return;
+      }
+
+      await axiosAuth.post("/api/recruitment-plans", form);
+      try {
+        await axiosAuth.put(`/api/hr-request/${form.requestId}/approve?note=`);
+      } catch (err) {
+        console.error("Không thể cập nhật trạng thái nhu cầu:", err);
+      }
+
+      window.dispatchEvent(new Event("hr:requests:changed"));
+      setOpenAddModal(false);
+      await loadPlans();
+    } catch (e) {
+      const msg =
+        e?.response?.data?.message || e?.message || "Lỗi không xác định";
+      alert(`⚠️ Không thể tạo kế hoạch: ${msg}`);
+    }
+  };
+
+  const handleViewDetails = (plan) => {
+    setSelectedPlan(plan);
+    setModalStep(1);
+  };
+
+  const handleApprove = async () => {
+    if (!selectedPlan) return;
+    const planId = selectedPlan.recruitmentPlanId;
+
+    try {
+      const res = await axiosAuth.put(
+        `/api/recruitment-plans/${planId}/confirm`
+      );
+      const updated = res.data;
+
+      setPlans((prev) =>
+        prev.map((p) => (p.recruitmentPlanId === planId ? updated : p))
+      );
+      setFilteredPlans((prev) =>
+        prev.map((p) => (p.recruitmentPlanId === planId ? updated : p))
+      );
+      setSelectedPlan(updated);
+
+      window.dispatchEvent(new Event("hr:requests:changed"));
+    } catch (error) {
+      console.error("Lỗi khi phê duyệt kế hoạch:", error);
+    }
+  };
+
+  const handleStartReject = () => {
+    setModalStep(3);
+    setRejectReason("");
+  };
+
+  const handleCloseModal = () => {
+    setModalStep(0);
+    setSelectedPlan(null);
+    setRejectReason("");
+  };
+
+  const handleSubmitRejection = async () => {
+    if (!selectedPlan) return;
+    const planId = selectedPlan.recruitmentPlanId;
+
+    if (!planId || !rejectReason.trim()) {
+      alert("Lý do từ chối không được để trống.");
+      return;
+    }
+
+    try {
+      const res = await axiosAuth.post(
+        `/api/recruitment-plans/${planId}/reject`,
+        { rejectionReason: rejectReason }
+      );
+
+      const updated = res.data;
+
+      setPlans((prev) =>
+        prev.map((p) => (p.recruitmentPlanId === planId ? updated : p))
+      );
+      setFilteredPlans((prev) =>
+        prev.map((p) => (p.recruitmentPlanId === planId ? updated : p))
+      );
+      setSelectedPlan(updated);
+
+      window.dispatchEvent(new Event("hr:requests:changed"));
+
+      handleCloseModal();
+    } catch (error) {
+      console.error("Lỗi khi từ chối:", error);
+    }
+  };
+
+  const renderPlanDetails = (plan, showStatus = false) => {
+    if (!plan) return null;
+
+    const request = plan.request;
+    if (!request) {
+      return (
+        <p className="error-text">
+          Lỗi: Kế hoạch này thiếu thông tin nhu cầu (request).
+        </p>
+      );
+    }
+
+    const techRows = request.quantityCandidates || [];
+
+    return (
+      <div className="detail-list">
+        <div className="detail-item">
+          <span className="detail-label">Tên nhu cầu:</span>
+          <span className="detail-value">{request.requestTitle}</span>
+        </div>
+        <div className="detail-item">
+          <span className="detail-label">Tên kế hoạch:</span>
+          <span className="detail-value">{plan.planName}</span>
+        </div>
+
+        <table className="tech-table">
+          <thead>
+            <tr>
+              <th>Công nghệ</th>
+              <th className="text-center">Đầu ra (SL)</th>
+              <th className="text-center">Đầu vào (SL)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {techRows.length > 0 ? (
+              techRows.map((qc) => (
+                <tr key={qc.technology.id}>
+                  <td>{qc.technology.name}</td>
+                  <td className="text-center">{qc.soLuong}</td>
+                  <td className="text-center">{qc.soLuong * 2}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="3" className="text-center">
+                  Không có thông tin công nghệ.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+
+        <div className="detail-item">
+          <span className="detail-label">Thời hạn tuyển dụng:</span>
+          <span className="detail-value">
+            {formatDate(plan.recruitmentDeadline)}
+          </span>
+        </div>
+        <div className="detail-item">
+          <span className="detail-label">Thời hạn bàn giao:</span>
+          <span className="detail-value">
+            {formatDate(plan.deliveryDeadline)}
+          </span>
+        </div>
+
+        {showStatus && (
+          <div className="detail-item">
+            <span className="detail-label">Trạng thái:</span>
+            <span className="detail-value status-confirmed">
+              {getStatusLabel(plan.status)}
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <Layout>
+      {/* Breadcrumb */}
       <div className="breadcrumb-container fade-slide">
         <div className="breadcrumb-left">
-          <div className="breadcrumb-icon-wrapper">
-            <UserCheck size={18} strokeWidth={2} />
-          </div>
+          <span className="breadcrumb-icon">💼</span>
           <span className="breadcrumb-item">Tuyển dụng</span>
-          <span className="breadcrumb-separator">›</span>
+          <span className="breadcrumb-separator">&gt;</span>
           <span className="breadcrumb-current">Kế hoạch tuyển dụng</span>
         </div>
-
-          <div className="breadcrumb-right">
-            <div className="mini-pagination">
-              <label className="mini-pagination-label">Hiển thị:</label>
-              <select
-                value={itemsPerPage}
-                onChange={handleChangeItemsPerPage}
-                className="mini-pagination-select smooth-dropdown"
-              >
-                <option value={10}>10</option>
-                <option value={15}>15</option>
-                <option value={20}>20</option>
-              </select>
-            </div>
+        <div className="breadcrumb-right">
+          <div className="mini-pagination">
+            <label className="mini-pagination-label">Hiển thị:</label>
+            <select
+              value={itemsPerPage}
+              onChange={handleChangeItemsPerPage}
+              className="mini-pagination-select smooth-dropdown"
+            >
+              <option value={10}>10</option>
+              <option value={15}>15</option>
+              <option value={20}>20</option>
+            </select>
           </div>
         </div>
+      </div>
 
-
-      {/* === Content === */}
+      {/* Nội dung chính */}
       <div className="recruitment-page fade-slide">
         <div className="title-row">
           <h2 className="page-title-small">Kế hoạch tuyển dụng</h2>
 
-          {/* === Thanh lọc === */}
           <div className="filter-bar">
-            {/* 🔍 Tìm theo tên có icon & gợi ý */}
             <div className="filter-item search-wrapper">
               <div className="search-input-container">
                 <input
@@ -171,24 +452,17 @@ const handlePageChange = (page) => {
                   onChange={(e) => setSearchName(e.target.value)}
                   list="recent-names"
                 />
-               <span className="filter-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="7" cy="7" r="5" />
-                  <line x1="11" y1="11" x2="15" y2="15" />
-                </svg>
-              </span>
-
+                <span className="filter-icon"> 🔍</span>
                 <datalist id="recent-names">
-                  {(JSON.parse(localStorage.getItem("recentNames") || "[]")).map(
-                    (name, i) => (
-                      <option key={i} value={name} />
-                    )
-                  )}
+                  {(
+                    JSON.parse(localStorage.getItem("recentNames") || "[]")
+                  ).map((name, i) => (
+                    <option key={i} value={name} />
+                  ))}
                 </datalist>
               </div>
             </div>
 
-            {/* ⚙️ Trạng thái */}
             <div className="filter-item">
               <select
                 className="filter-select smooth-dropdown"
@@ -196,64 +470,38 @@ const handlePageChange = (page) => {
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="">Trạng thái</option>
-                <option value="PENDING">Đang chờ</option>
-                <option value="IN_PROGRESS">Đang xử lý</option>
-                <option value="COMPLETED">Hoàn thành</option>
-                <option value="CANCELED">Đã hủy</option>
+                <option value="NEW">Mới tạo</option>
+                <option value="CONFIRMED">Đã xác nhận</option>
+                <option value="REJECTED">Bị từ chối</option>
               </select>
             </div>
 
-            {/* 📅 Chọn ngày từ lịch */}
             <div className="filter-item">
               <DatePicker
                 selectedDate={selectedDate}
-                onDateChange={(date) => setSelectedDate(date)}
+                onDateChange={setSelectedDate}
               />
             </div>
-            <div className="filter-item clear-filters-wrapper">
-              <button
-                className="clear-filters-btn modern-reset"
-                onClick={(e) => {
-                  const btn = e.currentTarget.querySelector(".icon-refresh");
-                  btn.classList.add("spin-click");
-                  setTimeout(() => btn.classList.remove("spin-click"), 600);
 
-                  setSearchName("");
-                  setStatusFilter("");
-                  setSelectedDate(null); // hoặc setDateFilter("") nếu bạn chưa dùng selectedDate
-                }}
-              >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              className="icon-refresh"
-            >
-              <path
-                d="M21 12a9 9 0 1 1-3-6.7M21 8v4h-4"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-                <span>Xóa tất cả bộ lọc</span>
-              </button>
-            </div>
-            {/* ➕ Nút thêm kế hoạch */}
             <div className="filter-item add-btn-wrapper">
               <button
                 className="add-plan-btn modern-add"
-                onClick={() => console.log("Thêm kế hoạch tuyển dụng")}
+                onClick={openEmptyAddModal}
               >
                 ＋ Thêm kế hoạch tuyển dụng
               </button>
             </div>
           </div>
         </div>
-        {/* === Bảng === */}
 
-       <div className="table-container">
+        {/* ✅ ĐÃ XÓA NÚT "Xóa tất cả bộ lọc" Ở ĐÂY */}
+
+        {/* Bảng */}
+        <div
+          className={`table-container ${
+            isAnimating ? "fade-out" : "fade-in"
+          }`}
+        >
           {loading ? (
             <p className="loading-text">Đang tải dữ liệu...</p>
           ) : error ? (
@@ -283,17 +531,12 @@ const handlePageChange = (page) => {
                       <td>{indexOfFirst + index + 1}</td>
                       <td>{plan.planName}</td>
                       <td>
-                        {plan.createdAt
-                          ? new Date(plan.createdAt).toLocaleDateString()
-                          : "—"}
+                        {plan.createdAt ? formatDate(plan.createdAt) : "—"}
                       </td>
                       <td>
-                        <span className="status-badge">{{
-                            PENDING: "Đang chờ",
-                            IN_PROGRESS: "Đang xử lý",
-                            COMPLETED: "Hoàn thành",
-                            CANCELED: "Đã hủy"
-                          }[plan.status] || "Không rõ"}</span>
+                        <span className="status-badge">
+                          {getStatusLabel(plan.status)}
+                        </span>
                       </td>
                       <td>
                         {plan.request?.createdBy?.fullName ||
@@ -302,12 +545,8 @@ const handlePageChange = (page) => {
                       </td>
                       <td className="actions-cell text-center">
                         <ActionButtons
-                          onView={() =>
-                            console.log("Xem", plan.recruitmentPlanId)
-                          }
-                          onEdit={() =>
-                            console.log("Chỉnh sửa", plan.recruitmentPlanId)
-                          }
+                          onView={() => handleViewDetails(plan)}
+                          onEdit={() => {}}
                         />
                       </td>
                     </tr>
@@ -318,13 +557,113 @@ const handlePageChange = (page) => {
           )}
         </div>
 
-        {/* === Phân trang === */}
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={handlePageChange}
         />
       </div>
+
+      {/* Modal tạo kế hoạch */}
+      <AddPlanModal
+        open={openAddModal}
+        onClose={() => setOpenAddModal(false)}
+        form={form}
+        onChange={setForm}
+        onSubmit={submitPlan}
+        techSummary={techSummary}
+        requestTitle={requestTitle}
+        mode={modalMode}
+        requestOptions={requestOptions}
+        onPickRequest={handlePickRequest}
+      />
+
+      {/* Modal Xem/Sửa/Từ chối (giữ nguyên) */}
+      {modalStep === 1 && selectedPlan && (
+        <Modal
+          title="Chi tiết Kế hoạch tuyển dụng"
+          onClose={handleCloseModal}
+          width={640}
+        >
+          {renderPlanDetails(selectedPlan, false)}
+
+          {selectedPlan.status === "NEW" ? (
+            <div className="modal-footer modal-footer-actions">
+              <button
+                className="modal-btn btn-reject"
+                onClick={handleStartReject}
+              >
+                Từ chối
+              </button>
+              <button
+                className="modal-btn btn-approve btn-approve-green"
+                onClick={handleApprove}
+              >
+                Phê duyệt
+              </button>
+            </div>
+          ) : selectedPlan.status === "CANCELED" ||
+            selectedPlan.status === "REJECTED" ? (
+            <div className="rejection-card">
+              <p className="rejection-title">
+                LÝ DO KẾ HOẠCH BỊ{" "}
+                {selectedPlan.status === "CANCELED" ? "HỦY" : "TỪ CHỐI"}:
+              </p>
+              <p className="rejection-reason-text">
+                {selectedPlan.note || "Không có lý do cụ thể được ghi lại."}
+              </p>
+              <div className="modal-footer justify-end" />
+            </div>
+          ) : (
+            <div className="modal-footer justify-center only-view-footer">
+              <p className="only-view-text">
+                Kế hoạch đang ở trạng thái "
+                {getStatusLabel(selectedPlan.status)}". Chỉ có thể xem.
+              </p>
+            </div>
+          )}
+        </Modal>
+      )}
+
+      {/* Modal Reject Reason */}
+      {modalStep === 3 && selectedPlan && (
+        <Modal
+          title="Lý do Từ chối Kế hoạch"
+          onClose={handleCloseModal}
+          width={520}
+        >
+          <div className="reject-form">
+            <label htmlFor="rejectReason" className="reject-label">
+              Vui lòng nhập lý do từ chối kế hoạch:{" "}
+              <span className="reject-plan-name">
+                "{selectedPlan.planName}"
+              </span>
+            </label>
+            <textarea
+              id="rejectReason"
+              className="reject-textarea"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Nhập lý do cụ thể..."
+            />
+          </div>
+          <div className="modal-footer modal-footer-actions">
+            <button
+              className="modal-btn btn-secondary"
+              onClick={handleCloseModal}
+            >
+              Hủy
+            </button>
+            <button
+              className="modal-btn btn-reject"
+              onClick={handleSubmitRejection}
+              disabled={!rejectReason.trim()}
+            >
+              Xác nhận từ chối
+            </button>
+          </div>
+        </Modal>
+      )}
     </Layout>
   );
 };

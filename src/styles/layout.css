@@ -176,51 +176,37 @@
     .h1{ font-size: 2rem; font-weight: 900; margin: 0; }
     .lead{ font-size: 1rem; color: var(--muted); margin: .5rem 0 0 0; }
 
-    .backdrop{ 
-  position:fixed; 
-  inset:0; 
-  background:rgba(0,0,0,.5); 
-  z-index:50; 
+    
+    /* === SUBMENU UI NÂNG CẤP === */
+
+.nav__submenu {
+  margin-left: 1.5rem;
+  margin-top: 0.25rem;
+  display: grid;
+  gap: 0.25rem;
+  border-left: 2px solid var(--border);
+  padding-left: 0.75rem;
 }
-.modal{ 
-  position:fixed; 
-  top:50%; 
-  left:50%; 
-  transform:translate(-50%,-50%);
-  background: var(--panel); 
-  border-radius:1rem; 
-  box-shadow:0 40px 120px var(--ring);
-  padding:1.5rem; 
-  width:24rem; 
-  z-index:60; 
+
+.nav__item--sub {
+  padding: 0.55rem 0.75rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  border-radius: 0.5rem;
+}
+
+.nav__item--sub:hover {
+  background: var(--elev-1);
   color: var(--text);
 }
-.modal__title{ 
-  font-weight:800; 
-  font-size:1.125rem; 
-  margin-bottom:.5rem; 
-}
-.modal__text{ 
-  color: var(--muted); 
-  margin-bottom:1rem; 
+
+.nav__arrow {
+  margin-left: auto;
+  transition: transform 0.25s ease;
+  opacity: 0.7;
+  font-size: 0.7rem;
 }
 
-/* Đây là CSS cho các nút "Hủy" và "Lưu" */
-.btn{ 
-  padding:.625rem 1rem; 
-  border-radius:.625rem; 
-  border:1px solid var(--border);
-  background: var(--elev-1); 
-  color: var(--text); 
-  cursor:pointer; 
-}
-.btn:hover{ 
-  box-shadow:0 2px 10px var(--ring); 
-}
-
-/* Nút "Lưu Thay đổi" (variant="primary") sẽ dùng style này */
-.btn--primary{ 
-  background: var(--accent-bg); 
-  color: var(--accent-text); 
-  border-color:transparent; 
+.nav__arrow--open {
+  transform: rotate(180deg);
 }

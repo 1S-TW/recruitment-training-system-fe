@@ -1,15 +1,36 @@
-import React, { useState } from "react";
+// src/pages/HrRequestPage.jsx
+import React, { useState, useEffect } from "react";
 import useHrRequests from "../hooks/useHrRequests";
 import Layout from "../components/Layout";
-import ActionButtons from "../components/ActionButtons";
+import ActionButtons from "../components/ActionButtons.jsx";
 import Pagination from "../components/Pagination";
-import { UserCheck } from "lucide-react";
+import CreateRequestModal from "../components/CreateRequestModal.jsx";
+import HRRequestModal from "../components/HRRequestModal.jsx";
+
 import "../styles/request.css";
+import "../styles/toast.css";
+
+// Map mã trạng thái -> label tiếng Việt
+const getStatusLabel = (status) => {
+  switch (String(status || "").toUpperCase()) {
+    case "NEW":
+      return "Đã gửi";
+    case "PENDING":
+      return "Đang chờ";
+    case "IN_PROGRESS":
+      return "Đang tiến hành";
+    case "COMPLETED":
+      return "Đã hoàn thành";
+    case "CANCELED":
+      return "Bị từ chối";
+    default:
+      return status || "Không rõ";
+  }
+};
 
 export default function HRRequestPage() {
-  const { requests, loading, error } = useHrRequests();
+  const { requests, loading, error, refetch } = useHrRequests();
 
-  // --- State phân trang & filter ---
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -17,22 +38,48 @@ export default function HRRequestPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
 
-  // --- Filter dữ liệu theo tên, trạng thái, ngày ---
-  const filteredRequests = requests.filter((req) => {
-    const matchesName = req.requestTitle
+  const [showModal, setShowModal] = useState(false);
+  const [editData, setEditData] = useState(null);
+
+  const [selectedRequest, setSelectedRequest] = useState(null);
+
+  const [toast, setToast] = useState(null);
+  const showToast = (msg, type = "success") => {
+    setToast({ msg, type });
+    window.clearTimeout(showToast._t);
+    showToast._t = window.setTimeout(() => setToast(null), 2500);
+  };
+
+  const isActionable = (status) =>
+    String(status || "").toUpperCase() === "NEW";
+
+  const filteredRequests = (requests || []).filter((req) => {
+    const matchesName = (req.requestTitle || "")
       .toLowerCase()
       .includes(searchName.toLowerCase());
-    const matchesStatus = statusFilter ? req.status === statusFilter : true;
-    const matchesDate = dateFilter
-      ? new Date(req.createdAt).toISOString().split("T")[0] === dateFilter
+
+    const matchesStatus = statusFilter
+      ? String(req.status || "").toUpperCase() === statusFilter
       : true;
+
+    const matchesDate = dateFilter
+      ? req.createdAt &&
+      new Date(req.createdAt).toISOString().split("T")[0] === dateFilter
+      : true;
+
     return matchesName && matchesStatus && matchesDate;
   });
 
-  const totalPages = Math.ceil(filteredRequests.length / itemsPerPage) || 1;
+  const filteredSorted = [...filteredRequests].sort((a, b) => {
+    const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return db - da;
+  });
+
+  const totalPages = Math.ceil(filteredSorted.length / itemsPerPage) || 1;
   const indexOfLast = currentPage * itemsPerPage;
   const indexOfFirst = indexOfLast - itemsPerPage;
-  const currentRequests = filteredRequests.slice(indexOfFirst, indexOfLast);
+  const currentRequests = filteredSorted.slice(indexOfFirst, indexOfLast);
 
   const handleChangeItemsPerPage = (e) => {
     setItemsPerPage(Number(e.target.value));
@@ -48,9 +95,48 @@ export default function HRRequestPage() {
     }, 180);
   };
 
+  const openCreate = () => {
+    setEditData(null);
+    setShowModal(true);
+  };
+
+  const openEdit = (req) => {
+    setEditData({
+      requestId: req.requestId,
+      requestTitle: req.requestTitle || "",
+      expectedDeliveryDate: req.expectedDeliveryDate || "",
+      note: req.note || "",
+      techQuantities: req.techQuantities || [],
+      status: req.status,
+    });
+    setShowModal(true);
+  };
+
+  // Logic nháy tooltip khi không được sửa (vẫn giữ nguyên logic nhưng selector sẽ tự tìm đúng tooltip con)
+  const flashEditTooltip = (btnWrapperEl) => {
+    const tip = btnWrapperEl?.querySelector(".action-tooltip");
+    if (!tip) return;
+    const original = tip.textContent;
+    tip.textContent = "Chỉ trạng thái ĐÃ GỬI (NEW) mới được sửa";
+    tip.style.opacity = "1";
+    tip.style.transform = "translateX(-50%) scale(1)";
+    setTimeout(() => {
+      tip.textContent = original;
+      tip.removeAttribute("style");
+    }, 1200);
+  };
+
+  useEffect(() => {
+    const handler = () => {
+      refetch?.();
+      setCurrentPage(1);
+    };
+    window.addEventListener("hr:requests:changed", handler);
+    return () => window.removeEventListener("hr:requests:changed", handler);
+  }, [refetch]);
+
   return (
     <Layout>
-      {/* === Breadcrumb === */}
       <div className="breadcrumb-container fade-slide">
         <div className="breadcrumb-left">
           <div className="breadcrumb-icon-wrapper">
@@ -77,42 +163,23 @@ export default function HRRequestPage() {
         </div>
       </div>
 
-      {/* === CONTENT === */}
       <div className="recruitment-page fade-slide">
         <div className="title-row">
           <h2 className="page-title-small">Nhu cầu nhân sự </h2>
 
           {/* === Thanh lọc === */}
           <div className="filter-bar">
-            {/* 🔍 Tìm theo tên có icon & gợi ý */}
-            <div className="filter-item search-wrapper">
-              <div className="search-input-container">
-                <input
-                  type="text"
-                  className="filter-input search-input"
-                  placeholder="Tìm theo tên..."
-                  value={searchName}
-                  onChange={(e) => setSearchName(e.target.value)}
-                  list="recent-names"
-                />
-               <span className="filter-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="7" cy="7" r="5" />
-                  <line x1="11" y1="11" x2="15" y2="15" />
-                </svg>
-              </span>
-
-                <datalist id="recent-names">
-                  {(JSON.parse(localStorage.getItem("recentNames") || "[]")).map(
-                    (name, i) => (
-                      <option key={i} value={name} />
-                    )
-                  )}
-                </datalist>
-              </div>
+            <div className="filter-item">
+              <input
+                type="text"
+                className="filter-input"
+                placeholder="Tìm theo tên..."
+                value={searchName}
+                onChange={(e) => setSearchName(e.target.value)}
+              />
+              <span className="filter-icon">🔍</span>
             </div>
 
-            {/* ⚙️ Trạng thái */}
             <div className="filter-item">
               <select
                 className="filter-select smooth-dropdown"
@@ -120,118 +187,147 @@ export default function HRRequestPage() {
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="">Trạng thái</option>
-                <option value="PENDING">Đang chờ</option>
-                <option value="IN_PROGRESS">Đang xử lý</option>
-                <option value="COMPLETED">Hoàn thành</option>
-                <option value="CANCELED">Đã hủy</option>
+                <option value="NEW">Đã gửi</option>
+                <option value="IN_PROGRESS">Đang tiến hành</option>
+                <option value="COMPLETED">Đã hoàn thành</option>
+                <option value="CANCELED">Bị từ chối</option>
               </select>
             </div>
 
-            <div className="filter-item clear-filters-wrapper">
-              <button
-                className="clear-filters-btn modern-reset"
-                onClick={(e) => {
-                  const btn = e.currentTarget.querySelector(".icon-refresh");
-                  btn.classList.add("spin-click");
-                  setTimeout(() => btn.classList.remove("spin-click"), 600);
-
-                  setSearchName("");
-                  setStatusFilter("");
-                  setSelectedDate(null); // hoặc setDateFilter("") nếu bạn chưa dùng selectedDate
-                }}
-              >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              className="icon-refresh"
-            >
-              <path
-                d="M21 12a9 9 0 1 1-3-6.7M21 8v4h-4"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+            <div className="filter-item">
+              <input
+                type="date"
+                className="filter-input"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
               />
-            </svg>
-                <span>Xóa tất cả bộ lọc</span>
-              </button>
             </div>
 
-
-            {/* ➕ Nút thêm kế hoạch */}
-            <div className="filter-item add-btn-wrapper">
-              <button
-                className="add-plan-btn modern-add"
-                onClick={() => console.log("Thêm nhu cầu nhân sự")}
-              >
-                ＋ Thêm nhu cầu nhân sự
-              </button>
-            </div>
+            <button className="add-plan-btn clean" onClick={openCreate}>
+              ＋ Thêm nhu cầu tuyển dụng
+            </button>
           </div>
         </div>
 
-        <div className={`table-container table-fade ${isAnimating ? "fade-out" : "fade-in"}`}>
-          {loading && <p className="loading-text">Đang tải dữ liệu...</p>}
+        <div
+          className={`table-container table-fade ${isAnimating ? "fade-out" : "fade-in"
+            }`}
+        >
+          {loading ? (
+            <p className="loading-text">Đang tải dữ liệu...</p>
+          ) : error ? (
+            <p className="text-center text-error">{error}</p>
+          ) : filteredSorted.length === 0 ? (
+            <p className="text-center">Không có dữ liệu</p>
+          ) : (
+            <table className="styled-table">
+              <thead>
+                <tr>
+                  <th>STT</th>
+                  <th>Tên nhu cầu</th>
+                  <th>Ngày tạo</th>
+                  <th>Trạng thái</th>
+                  <th>Người gửi</th>
+                  <th>Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentRequests.map((req, index) => {
+                  const canEdit = isActionable(req.status);
+                  const rowAttrs = {
+                    "data-status": req.status || "",
+                    "data-editable": canEdit ? "true" : "false",
+                  };
 
-          <table className="styled-table">
-            <thead>
-              <tr>
-                <th>STT</th>
-                <th>Tên nhu cầu</th>
-                <th>Ngày tạo</th>
-                <th>Trạng thái</th>
-                <th>Người gửi</th>
-                <th>Hành động</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="text-center">
-                    Đang tải dữ liệu...
-                  </td>
-                </tr>
-              ) : filteredRequests.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="text-center">
-                    Không có dữ liệu
-                  </td>
-                </tr>
-              ) : (
-                currentRequests.map((req, index) => (
-                  <tr key={req.requestId || index}>
-                    <td>{indexOfFirst + index + 1}</td>
-                    <td>{req.requestTitle}</td>
-                    <td>{req.createdAt ? new Date(req.createdAt).toLocaleDateString() : "—"}</td>
-                    <td><span className="status-badge">{{
-                      NEW: "Đang chờ",
-                      IN_PROGRESS: "Đang xử lý",
-                      COMPLETED: "Hoàn thành",
-                      CANCELED: "Đã hủy"
-                    }[req.status] || "Không rõ"}
-                    </span></td>
-                    <td>{req.createdByName || "Không rõ"}</td>
-                    <td className="actions-cell text-center">
-                      <ActionButtons
-                        onView={() => console.log("Xem", req.requestId)}
-                        onEdit={() => console.log("Chỉnh sửa", req.requestId)}
-                      />
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                  return (
+                    <tr key={req.requestId || index} {...rowAttrs}>
+                      <td>{indexOfFirst + index + 1}</td>
+                      <td>{req.requestTitle}</td>
+                      <td>
+                        {req.createdAt
+                          ? new Date(req.createdAt).toLocaleDateString()
+                          : "—"}
+                      </td>
+                      <td>
+                        <span className="status-badge">
+                          {getStatusLabel(req.status)}
+                        </span>
+                      </td>
+                      <td>{req.createdByName || "Không rõ"}</td>
+
+                      {/* ✅ SỬA TẠI ĐÂY: Xóa thẻ div bọc thừa để fix tooltip */}
+                      <td className="actions-cell text-center">
+                        <ActionButtons
+                          onView={() => setSelectedRequest(req)}
+                          onEdit={(e) => {
+                            if (!canEdit) {
+                              e?.preventDefault?.();
+                              // Tìm tooltip bên trong ActionButtons để flash
+                              const wrapper = e?.currentTarget?.closest(".btn-action-wrapper")
+                                || e?.target?.closest(".btn-action-wrapper");
+                              flashEditTooltip(wrapper);
+                              return;
+                            }
+                            openEdit(req);
+                          }}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
 
-        {/* === Pagination === */}
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={handlePageChange}
         />
       </div>
+
+      <CreateRequestModal
+        isOpen={showModal}
+        onClose={() => {
+          setShowModal(false);
+          setEditData(null);
+        }}
+        onSuccess={(msgFromBE) => {
+          refetch?.();
+          setCurrentPage(1);
+          setShowModal(false);
+          setEditData(null);
+          showToast(
+            msgFromBE ||
+            (editData ? "Cập nhật thành công!" : "Tạo mới thành công!"),
+            "success"
+          );
+        }}
+        initialData={editData}
+      />
+
+      <HRRequestModal
+        isOpen={!!selectedRequest}
+        onClose={() => setSelectedRequest(null)}
+        request={selectedRequest}
+        onActionSuccess={() => {
+          refetch?.();
+          setSelectedRequest(null);
+          showToast("Thực hiện thành công!", "success");
+        }}
+        onActionError={(msg) => showToast(msg || "Có lỗi xảy ra", "error")}
+      />
+
+      {toast && (
+        <div
+          className={`toast-container ${toast.type === "success" ? "toast-success" : "toast-error"
+            }`}
+          role="status"
+        >
+          {toast.msg}
+        </div>
+      )}
     </Layout>
   );
 }
