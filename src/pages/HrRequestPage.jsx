@@ -27,6 +27,23 @@ const getStatusLabel = (status) => {
       return status || "Không rõ";
   }
 };
+// Map mã trạng thái -> className để tô màu badge
+const getStatusClass = (status) => {
+  switch (String(status || "").toUpperCase()) {
+    case "NEW":
+      return "status-new";
+    case "IN_PROGRESS":
+      return "status-inprogress";
+    case "COMPLETED":
+      return "status-completed";
+    case "CANCELED":
+      return "status-canceled";
+    case "PENDING":
+      return "status-pending";
+    default:
+      return "status-unknown";
+  }
+};
 
 export default function HRRequestPage() {
   const { requests, loading, error, refetch } = useHrRequests();
@@ -246,7 +263,7 @@ export default function HRRequestPage() {
                           : "—"}
                       </td>
                       <td>
-                        <span className="status-badge">
+                        <span className={`status-badge ${getStatusClass(req.status)}`}>
                           {getStatusLabel(req.status)}
                         </span>
                       </td>

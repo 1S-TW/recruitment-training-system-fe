@@ -250,6 +250,30 @@
     width: 100px;
 }
 
+
+.styled-table th:nth-child(5),
+.styled-table td:nth-child(5) {
+    text-align: center;
+    width: 160px;
+}
+.styled-table th:nth-child(6),
+.styled-table td:nth-child(6) {
+    text-align: center;
+    width: 100px;
+}
+
+
+.styled-table th:nth-child(5),
+.styled-table td:nth-child(5) {
+    text-align: center;
+    width: 160px;
+}
+.styled-table th:nth-child(6),
+.styled-table td:nth-child(6) {
+    text-align: center;
+    width: 100px;
+}
+
 /* --- STATUS BADGE --- */
 .status-badge {
     display: inline-block;
@@ -261,8 +285,44 @@
     border: 1px solid #e2e8f0;
     background: #f8fafc;
     color: #475569;
+    letter-spacing: 0.2px;
 }
 
+.status-badge.status-new {
+    background: #ecfdf3;
+    border-color: #bbf7d0;
+    color: #166534;
+}
+
+.status-badge.status-inprogress {
+    background: #fef9c3;
+    border-color: #facc15;
+    color: #92400e;
+}
+
+.status-badge.status-completed {
+    background: #e0f2fe;
+    border-color: #7dd3fc;
+    color: #075985;
+}
+
+.status-badge.status-canceled {
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: #b91c1c;
+}
+
+.status-badge.status-pending {
+    background: #f5f3ff;
+    border-color: #ddd6fe;
+    color: #5b21b6;
+}
+
+.status-badge.status-unknown {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    color: #475569;
+}
 /* --- ACTION BUTTONS --- */
 .btn-group {
     display: flex;
@@ -338,7 +398,36 @@
     font-size: 0.9rem;
     animation: fadeSlideIn 0.25s ease-in-out;
 }
+.title-input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
 
+.title-prefix-input {
+    flex: 1;
+    min-width: 240px;
+    font-weight: 600;
+}
+
+.title-month-chip {
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #e0f2fe, #dbeafe);
+    color: #0f172a;
+    border: 1px solid #bfdbfe;
+    font-weight: 700;
+    font-size: 0.93rem;
+    white-space: nowrap;
+    text-transform: capitalize;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+}
+.theme-dark .title-month-chip {
+    background: linear-gradient(135deg, #0b1223, #111827);
+    color: #e0f2fe;
+    border-color: #1d4ed8;
+}
 .page-numbers {
     display: flex;
     align-items: center;
@@ -543,6 +632,36 @@
     font-size: 0.9375rem;
     height: 44px;
     transition: all 0.2s;
+}
+.title-input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.title-prefix-input {
+    flex: 1;
+    min-width: 240px;
+    font-weight: 600;
+}
+
+.title-month-chip {
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #e0f2fe, #dbeafe);
+    color: #0f172a;
+    border: 1px solid #bfdbfe;
+    font-weight: 700;
+    font-size: 0.93rem;
+    white-space: nowrap;
+    text-transform: capitalize;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+}
+.theme-dark .title-month-chip {
+    background: linear-gradient(135deg, #0b1223, #111827);
+    color: #e0f2fe;
+    border-color: #1d4ed8;
 }
 .theme-dark .form-group input,
 .theme-dark .form-group select,
@@ -928,3 +1047,60 @@ tr[data-editable="false"] .btn-action-wrapper:hover .action-tooltip {
 .theme-dark .btn-add-tech-custom:hover {
     color: #FFFFFF;
 }
+
+/* Hàng input: "Nhu cầu nhân sự" + input + tháng */
+.title-input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: nowrap;
+}
+
+/* Text "Nhu cầu nhân sự" bên trái – chữ thường */
+.title-static {
+    font-weight: 400;
+    color: #111827;
+    white-space: nowrap;
+}
+
+/* Ô người dùng nhập */
+.title-main-input {
+    flex: 1;
+    min-width: 220px;
+    height: 44px;
+    padding: 0.75rem 0.85rem;
+    border-radius: 10px;
+    border: 1px solid #D1D5DB;
+    font-size: 0.9375rem;
+    color: #111827;
+    background: #FFFFFF;
+    transition: all 0.2s;
+}
+
+.title-main-input:focus {
+    outline: none;
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+.theme-dark .title-main-input {
+    background: #111318;
+    color: #F3F4F6;
+    border-color: #374151;
+}
+
+/* Text tháng bên phải – CHỈ LÀ CHỮ THƯỜNG, KHÔNG ĐẬM, KHÔNG NỀN */
+.title-month-text {
+    margin-left: 8px;
+    white-space: nowrap;
+    font-weight: 400;      /* không in đậm */
+    font-size: 0.9rem;     
+    color: #111827;        /* không làm mờ/xám */
+}
+
+.theme-dark .title-month-text {
+    color: #E5E7EB;
+}
+
+/* Nếu trước đó có .month-display thì có thể xoá,
+   hoặc để lại nhưng không dùng class này nữa */
