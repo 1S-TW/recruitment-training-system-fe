@@ -105,6 +105,81 @@ export default function HRRequestModal({
     return { by, reason };
   }, [request?.rejectReason]);
 
+ const progressSteps = useMemo(() => {
+   const createdBy = request?.createdByName || "Không rõ";
+   const createdAt = request?.createdAt
+     ? new Date(request.createdAt).toLocaleString("vi-VN")
+     : "";
+   const steps = [
+     {
+       key: "request",
+       title: "Khởi tạo nhu cầu",
+       status: "success",
+       actor: createdBy,
+       detail: createdAt ? `Tạo bởi ${createdBy} • ${createdAt}` : `Tạo bởi ${createdBy}`,
+     },
+     {
+       key: "plan",
+       title: "Kế hoạch tuyển dụng",
+       status: "pending",
+       actor: "Chưa thực hiện",
+       detail: "Chờ duyệt nhu cầu để lập kế hoạch",
+     },
+     {
+       key: "candidate",
+       title: "Quản lý ứng viên",
+       status: "pending",
+       actor: "Chưa thực hiện",
+       detail: "Chờ có kế hoạch tuyển dụng",
+     },
+     {
+       key: "training",
+       title: "Đào tạo",
+       status: "pending",
+       actor: "Chưa thực hiện",
+       detail: "Chờ ứng viên đạt yêu cầu",
+     },
+   ];
+   if (statusRaw === "IN_PROGRESS") {
+     steps[1] = {
+       ...steps[1],
+       status: "success",
+       actor: createdBy,
+       detail: "Kế hoạch đang triển khai",
+     };
+   } else if (statusRaw === "COMPLETED") {
+     steps.forEach((s, idx) => {
+       steps[idx] = {
+         ...s,
+         status: "success",
+         actor: idx === 0 ? createdBy : "Đã hoàn thành",
+         detail: idx === 0 ? s.detail : "Giai đoạn đã hoàn tất",
+       };
+     });
+   } else if (statusRaw === "CANCELED") {
+     const reasonLower = (parsedReject.reason || "").toLowerCase();
+     let rejectIndex = 0;
+     if (reasonLower.includes("kế hoạch")) rejectIndex = 1;
+     else if (reasonLower.includes("ứng viên")) rejectIndex = 2;
+     else if (reasonLower.includes("đào tạo")) rejectIndex = 3;
+     steps.forEach((s, idx) => {
+       if (idx < rejectIndex) {
+         steps[idx] = { ...s, status: "success" };
+       } else if (idx === rejectIndex) {
+         steps[idx] = {
+           ...s,
+           status: "rejected",
+           actor: parsedReject.by || "Không rõ",
+           detail: parsedReject.reason || "Không rõ lý do",
+         };
+       } else {
+         steps[idx] = { ...s, status: "pending" };
+       }
+     });
+   }
+   return steps;
+ }, [request?.createdAt, request?.createdByName, statusRaw, parsedReject]);
+
   const readErrorMessage = async (res) => {
     const text = await res.text();
     try {
@@ -285,6 +360,33 @@ export default function HRRequestModal({
                   <span className="info-value">{statusLabel}</span>
                 </div>
               </div>
+              <div className="section-block progress-block">
+<div className="section-header">
+<h4>Quy trình thực hiện</h4>
+<span className="section-sub">Tuân theo thứ tự bước (có thể xem người thực hiện và lý do)</span>
+</div>
+<div className="hr-progress">
+                 {progressSteps.map((step, idx) => (
+<React.Fragment key={step.key}>
+<div className={`hr-step hr-step-${step.status}`}>
+<div className="hr-step-icon" aria-hidden>
+                         {step.status === "success" && "✓"}
+                         {step.status === "pending" && "…"}
+                         {step.status === "rejected" && "✕"}
+</div>
+<div className="hr-step-body">
+<div className="hr-step-title">{step.title}</div>
+<div className="hr-step-meta">
+<span className="hr-step-actor">Người thực hiện: {step.actor}</span>
+                           {step.detail && <span className="hr-step-detail">{step.detail}</span>}
+</div>
+</div>
+</div>
+                     {idx < progressSteps.length - 1 && <div className="hr-step-connector" aria-hidden />}
+</React.Fragment>
+                 ))}
+</div>
+</div>
 
               {/* nếu đã bị từ chối thì hiển thị LÝ DO TỪ CHỐI (từ Kế hoạch) */}
               {isCanceled &&

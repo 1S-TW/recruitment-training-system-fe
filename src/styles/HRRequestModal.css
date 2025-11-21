@@ -374,3 +374,128 @@
   cursor: not-allowed;
   resize: none;
 }
+
+
+.progress-block {
+ background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+ border-color: #e0e7ff;
+}
+.hr-progress {
+ display: grid;
+ grid-template-columns: repeat(4, minmax(0, 1fr));
+ gap: 8px;
+ align-items: center;
+}
+.hr-step {
+ display: flex;
+ align-items: flex-start;
+ gap: 10px;
+ background: #ffffff;
+ border: 1px solid #e5e7eb;
+ border-radius: 12px;
+ padding: 10px 12px;
+ min-height: 92px;
+ box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+.hr-step-icon {
+ width: 28px;
+ height: 28px;
+ border-radius: 8px;
+ display: inline-flex;
+ align-items: center;
+ justify-content: center;
+ font-weight: 700;
+ font-size: 1rem;
+}
+.hr-step-body {
+ display: flex;
+ flex-direction: column;
+ gap: 4px;
+}
+.hr-step-title {
+ font-size: 0.95rem;
+ font-weight: 700;
+ color: #0f172a;
+}
+.hr-step-meta {
+ display: flex;
+ flex-direction: column;
+ gap: 2px;
+ font-size: 0.82rem;
+ color: #475569;
+}
+.hr-step-actor {
+ font-weight: 600;
+}
+.hr-step-detail {
+ color: #1f2937;
+}
+.hr-step-connector {
+ height: 3px;
+ background: linear-gradient(90deg, rgba(148, 163, 184, 0.2), rgba(148, 163, 184, 0.6));
+ border-radius: 999px;
+}
+.hr-step-success {
+ border-color: #bbf7d0;
+ background: linear-gradient(135deg, #ecfdf3 0%, #dcfce7 100%);
+}
+.hr-step-success .hr-step-icon {
+ background: #22c55e;
+ color: #f8fafc;
+}
+.hr-step-success .hr-step-title {
+ color: #166534;
+}
+.hr-step-pending {
+ border-color: #e2e8f0;
+ background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+.hr-step-pending .hr-step-icon {
+ background: #cbd5e1;
+ color: #0f172a;
+}
+.hr-step-pending .hr-step-title {
+ color: #1e293b;
+}
+.hr-step-rejected {
+ border-color: #fecdd3;
+ background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+}
+.hr-step-rejected .hr-step-icon {
+ background: #ef4444;
+ color: #fff1f2;
+}
+.hr-step-rejected .hr-step-title {
+ color: #991b1b;
+}
+@media (max-width: 960px) {
+ .hr-progress {
+   grid-template-columns: repeat(2, minmax(0, 1fr));
+ }
+}
+@media (max-width: 640px) {
+ .hr-progress {
+   grid-template-columns: 1fr;
+ }
+ .hr-step {
+   min-height: unset;
+ }
+ .hr-step-connector {
+   display: none;
+ }
+}
+
+
+.status-in_progress {
+ background: #fef9c3;
+ color: #92400e;
+}
+.status-completed {
+ background: #dcfce7;
+ color: #15803d;
+}
+
+.status-pending {
+ background: #e5e7eb;
+ color: #4b5563;
+}

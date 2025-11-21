@@ -276,41 +276,46 @@
 
 /* --- STATUS BADGE --- */
 .status-badge {
-    display: inline-block;
-    padding: 4px 9px;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    border: 1px solid #e2e8f0;
-    background: #f8fafc;
-    color: #475569;
-    letter-spacing: 0.2px;
+   display: inline-block;
+   padding: 4px 9px;
+   border-radius: 6px;
+   font-size: 0.75rem;
+   font-weight: 600;
+   text-transform: uppercase;
+   border: 1px solid #e2e8f0;
+   background: #f8fafc;
+   color: #475569;
+   letter-spacing: 0.2px;
 }
-
-/* NEW = ĐÃ GỬI = XANH NƯỚC BIỂN */
 .status-badge.status-new {
-   background: #e0f2fe;      /* nền xanh nhạt */
-   border-color: #7dd3fc;    /* viền xanh nhạt */
-   color: #075985;           /* chữ xanh đậm */
+   background: #dbeafe;
+   border-color: #93c5fd;
+   color: #1d4ed8;
 }
-/* IN_PROGRESS = ĐANG TIẾN HÀNH = VÀNG (giữ nguyên cũng được) */
 .status-badge.status-inprogress {
    background: #fef9c3;
    border-color: #facc15;
    color: #92400e;
 }
-/* COMPLETED = ĐÃ HOÀN THÀNH = XANH LÁ */
 .status-badge.status-completed {
-   background: #ecfdf3;
-   border-color: #bbf7d0;
+   background: #dcfce7;
+   border-color: #86efac;
    color: #166534;
 }
-/* CANCELED = BỊ TỪ CHỐI = ĐỎ (đang đúng rồi, giữ nguyên) */
 .status-badge.status-canceled {
    background: #fee2e2;
    border-color: #fca5a5;
    color: #b91c1c;
+}
+.status-badge.status-pending {
+   background: #e5e7eb;
+   border-color: #cbd5e1;
+   color: #374151;
+}
+.status-badge.status-unknown {
+   background: #f8fafc;
+   border-color: #e2e8f0;
+   color: #475569;
 }
 /* --- ACTION BUTTONS --- */
 .btn-group {
@@ -388,35 +393,34 @@
     animation: fadeSlideIn 0.25s ease-in-out;
 }
 .title-input-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
+   display: flex;
+   align-items: center;
+   gap: 10px;
+   flex-wrap: wrap;
 }
-
 .title-prefix-input {
-    flex: 1;
-    min-width: 240px;
-    font-weight: 600;
+   flex: 1;
+   min-width: 240px;
+   font-weight: 600;
 }
-
 .title-month-chip {
-    padding: 0.75rem 1rem;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #e0f2fe, #dbeafe);
-    color: #0f172a;
-    border: 1px solid #bfdbfe;
-    font-weight: 700;
-    font-size: 0.93rem;
-    white-space: nowrap;
-    text-transform: capitalize;
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+   padding: 0.75rem 1rem;
+   border-radius: 10px;
+   background: linear-gradient(135deg, #e0f2fe, #dbeafe);
+   color: #0f172a;
+   border: 1px solid #bfdbfe;
+   font-weight: 700;
+   font-size: 0.93rem;
+   white-space: nowrap;
+   text-transform: capitalize;
+   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
 }
 .theme-dark .title-month-chip {
-    background: linear-gradient(135deg, #0b1223, #111827);
-    color: #e0f2fe;
-    border-color: #1d4ed8;
+   background: linear-gradient(135deg, #0b1223, #111827);
+   color: #e0f2fe;
+   border-color: #1d4ed8;
 }
+.theme-dark .fo
 .page-numbers {
     display: flex;
     align-items: center;
@@ -1093,3 +1097,241 @@ tr[data-editable="false"] .btn-action-wrapper:hover .action-tooltip {
 
 /* Nếu trước đó có .month-display thì có thể xoá,
    hoặc để lại nhưng không dùng class này nữa */
+
+
+ /* Progress timeline */
+
+.progress-block {
+
+  background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+
+  border-color: #e0e7ff;
+
+}
+
+.hr-progress {
+
+  position: relative;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: stretch;
+
+  gap: 10px;
+
+  padding-left: 6px;
+
+}
+
+.hr-progress::before {
+
+  content: "";
+
+  position: absolute;
+
+  left: 15px;
+
+  top: 8px;
+
+  bottom: 8px;
+
+  width: 2px;
+
+  background: linear-gradient(180deg, rgba(148, 163, 184, 0.25), rgba(148, 163, 184, 0.55));
+
+  border-radius: 999px;
+
+}
+
+.hr-step {
+
+  position: relative;
+
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 10px;
+
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 12px;
+
+  padding: 10px 12px 10px 48px;
+
+  min-height: unset;
+
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+
+}
+
+.hr-step-icon {
+
+  position: absolute;
+
+  left: 8px;
+
+  top: 12px;
+
+  width: 28px;
+
+  height: 28px;
+
+  border-radius: 8px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-weight: 700;
+
+  font-size: 1rem;
+
+}
+
+.hr-step-body {
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 3px;
+
+}
+
+.hr-step-title {
+
+  font-size: 0.94rem;
+
+  font-weight: 700;
+
+  color: #0f172a;
+
+}
+
+.hr-step-meta {
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 2px;
+
+  font-size: 0.82rem;
+
+  color: #475569;
+
+  line-height: 1.35;
+
+}
+
+.hr-step-actor {
+
+  font-weight: 600;
+
+}
+
+.hr-step-detail {
+
+  color: #1f2937;
+
+}
+
+.hr-step-connector {
+
+  display: none;
+
+}
+
+.hr-step-success {
+
+  border-color: #bbf7d0;
+
+  background: linear-gradient(135deg, #ecfdf3 0%, #dcfce7 100%);
+
+}
+
+.hr-step-success .hr-step-icon {
+
+  background: #22c55e;
+
+  color: #f8fafc;
+
+}
+
+.hr-step-success .hr-step-title {
+
+  color: #166534;
+
+}
+
+.hr-step-pending {
+
+  border-color: #e2e8f0;
+
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+
+}
+
+.hr-step-pending .hr-step-icon {
+
+  background: #cbd5e1;
+
+  color: #0f172a;
+
+}
+
+.hr-step-pending .hr-step-title {
+
+  color: #1e293b;
+
+}
+
+.hr-step-rejected {
+
+  border-color: #fecdd3;
+
+  background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+
+}
+
+.hr-step-rejected .hr-step-icon {
+
+  background: #ef4444;
+
+  color: #fff1f2;
+
+}
+
+.hr-step-rejected .hr-step-title {
+
+  color: #991b1b;
+
+}
+
+@media (max-width: 960px) {
+
+  .hr-step {
+
+    min-height: unset;
+
+  }
+
+}
+
+@media (max-width: 640px) {
+
+  .hr-step-connector {
+
+    display: none;
+
+  }
+
+}
+ 
