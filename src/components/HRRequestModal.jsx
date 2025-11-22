@@ -119,39 +119,71 @@ export default function HRRequestModal({
 
     return { by, reason };
   }, [request?.rejectReason]);
+  const normalizeText = (text = "") =>
+    text
+      .toString()
+      .toUpperCase()
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .replace(/[\s_]+/g, "")
+      .trim();
 
-  const progressSteps = useMemo(() => {
+    const progressSteps = useMemo(() => {
     const createdBy = request?.createdByName || "Không rõ";
-     const requestTitle = request?.requestTitle || "nhu cầu";
-    const requestLabel = `nhu cầu "${requestTitle}"`;
+
     const approverName =
-      request?.approvedByName || request?.updatedByName || "Người phê duyệt";
+      request?.approvedByName ||
+      request?.requestApprovedByName ||
+      request?.updatedByName ||
+      ""; // không default HR nữa
+
+    const performerName = request?.updatedByName;
+
+    const requestTitle = request?.requestTitle || "";
+    const requestLabel = requestTitle
+      ? `nhu cầu "${requestTitle}"`
+      : "nhu cầu";
+
     const planName =
       request?.planName ||
       request?.plan?.planName ||
+      request?.plan?.name ||
       request?.recruitmentPlanName ||
       request?.planTitle ||
+      request?.plan?.title ||
       "";
+
     const planLabel = planName
       ? `kế hoạch "${planName}"`
       : "kế hoạch tuyển dụng";
-    const planStatus = (request?.planStatus || request?.plan?.status || "")
-      .toString()
-      .toUpperCase();
+
+    const planStatusRaw = request?.planStatus || request?.plan?.status || "";
+    const planStatus = normalizeText(planStatusRaw);
+
     const planCreator =
       request?.planCreatedByName ||
+      request?.planCreatorName ||
       request?.plan?.createdByName ||
+      request?.plan?.creatorName ||
+      request?.plan?.creator?.fullName ||
+      request?.plan?.creator?.name ||
+      performerName ||
       approverName ||
       createdBy ||
       "Chưa thực hiện";
+
     const planApprover =
       request?.planApprovedByName ||
+      request?.planApproverName ||
       request?.plan?.approvedByName ||
+      request?.plan?.approverName ||
+      request?.plan?.approver?.fullName ||
+      request?.plan?.approver?.name ||
+      performerName ||
       approverName;
-    const createdAt = request?.createdAt
-      ? new Date(request.createdAt).toLocaleString("vi-VN")
-      : "";
 
+    // mô tả khởi tạo nhu cầu: KHÔNG còn thời gian đằng sau
+    const createdRequestDetail = `Khởi tạo ${requestLabel}`;
 
     const steps = [
       {
@@ -159,9 +191,7 @@ export default function HRRequestModal({
         title: "Khởi tạo nhu cầu",
         status: "success",
         actor: createdBy,
-        detail: createdAt
-          ? `Tạo bởi ${createdBy} • ${createdAt}`
-          : `Tạo bởi ${createdBy}`,
+        detail: createdRequestDetail,
       },
       {
         key: "approve-request",
@@ -200,26 +230,26 @@ export default function HRRequestModal({
       },
     ];
 
+    // ====== XỬ LÝ THEO TRẠNG THÁI REQUEST ======
     if (statusRaw === "APPROVED") {
+      // chỉ đánh dấu PHÊ DUYỆT NHU CẦU
       steps[1] = {
         ...steps[1],
         status: "success",
-        actor: approverName,
-        detail: `Phê duyệt ${requestLabel} bởi ${approverName}`,
+        actor: approverName || "Người phê duyệt",
+        detail: `Phê duyệt ${requestLabel}`,
       };
     } else if (statusRaw === "IN_PROGRESS") {
+      // request đã được phê duyệt
       steps[1] = {
         ...steps[1],
         status: "success",
-        actor: approverName,
-        detail: `Phê duyệt ${requestLabel} bởi ${approverName}`,
+        actor: approverName || "Người phê duyệt",
+        detail: `Phê duyệt ${requestLabel}`,
       };
-      steps[2] = {
-        ...steps[2],
-        status: "success",
-        actor: planCreator,
-        detail: `${planLabel.charAt(0).toUpperCase()}${planLabel.slice(1)} đã được khởi tạo`,
-      };
+      // KHÔNG đụng vào steps[2] ở đây nữa
+      // để tí nữa block trạng thái kế hoạch xử lý luôn,
+      // tránh sinh ra 1 bước "Khởi tạo kế hoạch" dư
     } else if (statusRaw === "COMPLETED") {
       steps.forEach((s, idx) => {
         steps[idx] = {
@@ -235,23 +265,23 @@ export default function HRRequestModal({
         .trim();
       let rejectIndex = 1;
 
-      if (reasonLower.includes("phê duyệt nhu cầu") || reasonLower.includes("nhu cầu")) {
+      if (
+        reasonLower.includes("phê duyệt nhu cầu") ||
+        reasonLower.includes("nhu cầu")
+      ) {
         rejectIndex = 1;
       } else if (reasonLower.includes("khởi tạo kế hoạch")) {
         rejectIndex = 2;
-      } else if (reasonLower.includes("phê duyệt kế hoạch") || reasonLower.includes("kế hoạch")) {
+      } else if (
+        reasonLower.includes("phê duyệt kế hoạch") ||
+        reasonLower.includes("kế hoạch")
+      ) {
         rejectIndex = 3;
       } else if (reasonLower.includes("ứng viên")) {
         rejectIndex = 4;
       } else if (reasonLower.includes("đào tạo")) {
         rejectIndex = 5;
       }
-       const rejectActor =
-        parsedReject.by ||
-        request?.updatedByName ||
-        request?.approvedByName ||
-        request?.createdByName ||
-        "Không rõ";
 
       steps.forEach((s, idx) => {
         if (idx < rejectIndex) {
@@ -262,46 +292,68 @@ export default function HRRequestModal({
             status: "rejected",
             actor: parsedReject.by || "Không rõ",
             detail:
-              parsedReject.reason || request?.rejectReason || "Không rõ lý do",
+              parsedReject.reason ||
+              request?.rejectReason ||
+              "Không rõ lý do",
             rejectReason:
-              parsedReject.reason || request?.rejectReason || "Không rõ lý do",
+              parsedReject.reason ||
+              request?.rejectReason ||
+              "Không rõ lý do",
           };
         } else {
           steps[idx] = { ...s, status: "pending" };
         }
       });
     }
-     // Nếu đã có trạng thái kế hoạch riêng, ghi đè bước khởi tạo/phê duyệt kế hoạch
-    if (statusRaw !== "CANCELED" && planStatus) {
-      const isPlanApproved = ["CONFIRMED", "APPROVED", "IN_PROGRESS", "COMPLETED"].includes(
-        planStatus
-      );
-      const isPlanRejected = ["REJECTED", "CANCELED"].includes(planStatus);
 
+    // ====== TRẠNG THÁI KẾ HOẠCH (GHI ĐÈ BƯỚC 3 & 4) ======
+    if (statusRaw !== "CANCELED" && (planStatus || planCreator || planApprover)) {
+      const isPlanApproved =
+        ["CONFIRMED", "APPROVED", "INPROGRESS", "COMPLETED"].includes(
+          planStatus
+        ) ||
+        planStatus.includes("XACNHAN") ||
+        planStatus.includes("DUYET");
+
+      const isPlanRejected =
+        ["REJECTED", "CANCELED"].includes(planStatus) ||
+        planStatus.includes("TUCHOI") ||
+        planStatus.includes("HUY");
+
+      const hasPlanApprover = !!planApprover;
+
+      // CHỈ 1 bước "Khởi tạo kế hoạch" – bước thứ 3
       steps[2] = {
         ...steps[2],
         status: "success",
         actor: planCreator,
-        detail: `${planLabel.charAt(0).toUpperCase()}${planLabel.slice(1)} đã được khởi tạo`,
+        detail: `Khởi tạo ${planLabel}`,
       };
 
-      if (isPlanApproved) {
+      if (isPlanApproved || hasPlanApprover) {
+        // Bước "Phê duyệt kế hoạch" – bước thứ 4
         steps[3] = {
           ...steps[3],
           status: "success",
-          actor: planApprover || planCreator,
-          detail: `${planLabel.charAt(0).toUpperCase()}${planLabel.slice(1)} đã được phê duyệt`,
+          actor: planApprover || planCreator || "Người phê duyệt kế hoạch",
+          detail: `Phê duyệt ${planLabel}`,
         };
       } else if (isPlanRejected) {
+        const rejectActor =
+          parsedReject.by || planApprover || planCreator || "Không rõ";
+
         steps[3] = {
           ...steps[3],
           status: "rejected",
-          actor: planApprover || planCreator || "Không rõ",
           actor: rejectActor,
-            detail:
-              parsedReject.reason || request?.rejectReason || "Không rõ lý do",
-            rejectReason:
-              parsedReject.reason || request?.rejectReason || "Không rõ lý do",
+          detail:
+            parsedReject.reason ||
+            request?.rejectReason ||
+            "Không rõ lý do",
+          rejectReason:
+            parsedReject.reason ||
+            request?.rejectReason ||
+            "Không rõ lý do",
         };
       } else {
         steps[3] = {
@@ -318,22 +370,35 @@ export default function HRRequestModal({
     request?.createdAt,
     request?.createdByName,
     request?.approvedByName,
+    request?.requestApprovedByName,
     request?.updatedByName,
     request?.requestTitle,
     request?.rejectReason,
     request?.planName,
     request?.plan?.planName,
+    request?.plan?.name,
     request?.recruitmentPlanName,
     request?.planTitle,
+    request?.plan?.title,
     request?.planStatus,
     request?.plan?.status,
     request?.planCreatedByName,
+    request?.planCreatorName,
     request?.plan?.createdByName,
+    request?.plan?.creatorName,
+    request?.plan?.creator?.fullName,
+    request?.plan?.creator?.name,
+    request?.plan?.approverName,
     request?.planApprovedByName,
+    request?.planApproverName,
     request?.plan?.approvedByName,
+    request?.plan?.approverName,
+    request?.plan?.approver?.fullName,
+    request?.plan?.approver?.name,
     statusRaw,
     parsedReject,
   ]);
+
 
   const readErrorMessage = async (res) => {
     const text = await res.text();
