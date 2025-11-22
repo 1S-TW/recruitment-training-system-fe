@@ -1,7 +1,7 @@
 import Header from "./Header.jsx";
 import Sidebar from "./Sidebar.jsx";
 
-export default function Layout({ children }) {
+function Layout({ children }) {
   return (
     <div className="app">
       <Sidebar />
@@ -12,3 +12,5 @@ export default function Layout({ children }) {
     </div>
   );
 }
+
+export default Layout; // ✅ BẮT BUỘC CÓ DÒNG NÀY

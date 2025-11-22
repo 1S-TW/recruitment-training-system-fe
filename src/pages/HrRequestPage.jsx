@@ -156,20 +156,22 @@ export default function HRRequestPage() {
     <Layout>
       <div className="breadcrumb-container fade-slide">
         <div className="breadcrumb-left">
-          <span className="breadcrumb-icon">💼</span>
+          <div className="breadcrumb-icon-wrapper">
+            <UserCheck size={18} strokeWidth={2} />
+          </div>
           <span className="breadcrumb-item">Tuyển dụng</span>
-          <span className="breadcrumb-separator">&gt;</span>
-          <span className="breadcrumb-current">Nhu cầu tuyển dụng</span>
+          <span className="breadcrumb-separator">›</span>
+          <span className="breadcrumb-current">Nhu cầu nhân sự</span>
         </div>
 
         <div className="breadcrumb-right">
           <div className="mini-pagination">
             <label className="mini-pagination-label">Hiển thị:</label>
-            <select
-              value={itemsPerPage}
-              onChange={handleChangeItemsPerPage}
-              className="mini-pagination-select"
-            >
+              <select
+                value={itemsPerPage}
+                onChange={handleChangeItemsPerPage}
+                className="mini-pagination-select smooth-dropdown"
+              >
               <option value={10}>10</option>
               <option value={15}>15</option>
               <option value={20}>20</option>
@@ -180,8 +182,9 @@ export default function HRRequestPage() {
 
       <div className="recruitment-page fade-slide">
         <div className="title-row">
-          <h2 className="page-title-small">Nhu cầu tuyển dụng</h2>
+          <h2 className="page-title-small">Nhu cầu nhân sự </h2>
 
+          {/* === Thanh lọc === */}
           <div className="filter-bar">
             <div className="filter-item">
               <input
@@ -196,7 +199,7 @@ export default function HRRequestPage() {
 
             <div className="filter-item">
               <select
-                className="filter-select"
+                className="filter-select smooth-dropdown"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >

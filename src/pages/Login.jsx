@@ -14,7 +14,7 @@ const Login = () => {
   const navigate = useNavigate();
   const auth = useAuth(); // Lấy context
 
-  // --- HÀM BỊ THIẾU LÀ ĐÂY ---Yêu cầu nhân sự đã được tạo thành công
+  // --- HÀM BỊ THIẾU LÀ ĐÂY ---
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };

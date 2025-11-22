@@ -1,10 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, BookOpen, Users } from "lucide-react";
+import { LayoutDashboard, BookOpen, Users, UserCog } from "lucide-react";
 import { useState, useEffect } from "react";
 
 const menu = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: BookOpen, label: "Đào tạo", path: "/training" },
+  { icon: UserCog , label: "Người dùng", path: "/admin" },
+  //{ icon: BookOpen, label: "Đào tạo", path: "/training" },
   {
     icon: Users,
     label: "Tuyển dụng",

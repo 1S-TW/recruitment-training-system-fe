@@ -31,7 +31,7 @@
     font-weight: 600;
 }
 
-/* --- MINI PAGINATION (HIỂN THỊ) --- */
+/* === MINI PAGINATION (HIỂN THỊ) === */
 .mini-pagination {
     display: flex;
     align-items: center;
@@ -58,6 +58,7 @@
     color: #0f172a;
 }
 
+/* === HIỂN THỊ SELECT (mượt và xóa màu) === */
 .mini-pagination-select {
     border: none;
     background: #f8fafc;
@@ -78,14 +79,32 @@
     padding-right: 24px;
 }
 
+
+/* Khi focus hoặc hover */
 .mini-pagination-select:hover,
 .mini-pagination-select:focus {
     background: #e0f2fe;
     border-color: #bae6fd;
     outline: none;
 }
+/* === FADE-IN CHO MENU DROPDOWN === */
+.mini-pagination-select option {
+  background-color: #ffffff; /* ✅ không màu nền khi mở */
+  color: #111827;
+  animation: fadeInDropdown 0.3s ease-in-out;
+}
 
-/* --- TITLE + FILTER --- */
+@keyframes fadeInDropdown {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+/* === TITLE + FILTER BAR === */
 .title-row {
     display: flex;
     flex-direction: column;
@@ -99,7 +118,6 @@
     color: #0f172a;
 }
 
-/* --- FILTER BAR --- */
 .filter-bar {
     display: flex;
     align-items: center;
@@ -118,6 +136,7 @@
     align-items: center;
 }
 
+/* === DROPDOWN TÌM KIẾM (TÊN + TRẠNG THÁI) === */
 .filter-input,
 .filter-select,
 .filter-date,
@@ -179,7 +198,7 @@
     transform: translateY(-1px);
 }
 
-/* --- TABLE --- */
+/* === TABLE === */
 .table-container {
     background: #ffffff;
     border-radius: 10px;
@@ -221,7 +240,7 @@
     transition: background 0.2s ease;
 }
 
-/* --- CỘT CĂN CHỈNH --- */
+/* Column alignments */
 .styled-table th:nth-child(1),
 .styled-table td:nth-child(1) {
     text-align: center;
@@ -319,12 +338,10 @@
     align-items: center;
     gap: 8px;
 }
-
 .btn-action-wrapper {
     position: relative;
     display: inline-block;
 }
-
 .btn-action {
     width: 28px;
     height: 28px;
@@ -338,21 +355,24 @@
     align-items: center;
     justify-content: center;
 }
-
+.btn-action svg {
+  width: 20px !important;
+  height: 20px !important;
+  flex-shrink: 0;
+}
 .btn-view {
     color: #0284c7;
 }
 .btn-edit {
     color: #eab308;
 }
-
 .btn-action:hover {
     background: rgba(241, 245, 249, 0.85);
     transform: scale(1.15) translateY(-2px);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
-/* --- TOOLTIP (mờ nhẹ, fade-in mượt) --- */
+/* Tooltip (fade-in smooth, blur light) */
 .action-tooltip {
     position: absolute;
     bottom: 130%;
@@ -377,7 +397,7 @@
     transform: translateX(-50%) scale(1);
 }
 
-/* --- PAGINATION --- */
+/* === PAGINATION === */
 .clean-pagination {
     display: flex;
     justify-content: center;
@@ -422,7 +442,6 @@
     align-items: center;
     gap: 4px;
 }
-
 .nav-btn,
 .btn-page-number {
     width: 26px;
@@ -439,14 +458,12 @@
     justify-content: center;
     padding: 0;
 }
-
 .nav-btn:hover,
 .btn-page-number:hover {
     background-color: #f8fafc;
     border-color: #cbd5e1;
     transform: translateY(-1px);
 }
-
 .btn-page-number.active-page {
     background-color: #0284c7;
     color: #fff;
@@ -454,7 +471,6 @@
     transform: scale(1.05);
     box-shadow: 0 1px 3px rgba(2, 132, 199, 0.25);
 }
-
 .nav-btn:disabled,
 .btn-page-number:disabled {
     opacity: 0.5;

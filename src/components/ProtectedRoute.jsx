@@ -1,9 +1,9 @@
-import React, { useContext } from "react";
+// src/components/ProtectedRoute.jsx
+import React from "react";
 import { Navigate } from "react-router-dom";
-import { AuthContext } from "../contexts/AuthContext";
 
 function ProtectedRoute({ children }) {
-  const { token } = useContext(AuthContext);
+  const token = localStorage.getItem("token");
 
   if (!token) {
     console.log("⛔ Không có token, redirect về /login");
