@@ -310,9 +310,10 @@ const RecruitmentPlanPage = () => {
     }
 
     try {
+      const formattedReason = `Kế hoạch tuyển dụng: ${rejectReason.trim()}`;
       const res = await axiosAuth.post(
         `/api/recruitment-plans/${planId}/reject`,
-        { rejectionReason: rejectReason }
+        { rejectionReason: formattedReason }
       );
 
       const updated = res.data;

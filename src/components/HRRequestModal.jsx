@@ -53,6 +53,8 @@ export default function HRRequestModal({
     }));
   }, [request?.techQuantities, techDict]);
 
+  
+
   const createdAtText = useMemo(() => {
     if (!request?.createdAt) return "—";
     return new Date(request.createdAt).toLocaleString("vi-VN");
@@ -66,7 +68,6 @@ export default function HRRequestModal({
   const totalCandidates = useMemo(() => {
     return techRows.reduce((sum, row) => sum + (row.quantity || 0), 0);
   }, [techRows]);
-
   // Map mã trạng thái -> label tiếng Việt
   const getStatusLabel = (status) => {
     switch (String(status || "").toUpperCase()) {
@@ -124,6 +125,8 @@ export default function HRRequestModal({
     const createdAt = request?.createdAt
       ? new Date(request.createdAt).toLocaleString("vi-VN")
       : "";
+    const approverName =
+      request?.approvedByName || request?.updatedByName || "Người phê duyệt";
 
     const steps = [
       {
@@ -136,18 +139,32 @@ export default function HRRequestModal({
           : `Tạo bởi ${createdBy}`,
       },
       {
-        key: "plan",
-        title: "Kế hoạch tuyển dụng",
+        key: "approve-request",
+        title: "Phê duyệt nhu cầu",
         status: "pending",
         actor: "Chưa thực hiện",
-        detail: "Chờ duyệt nhu cầu để lập kế hoạch",
+        detail: "Chờ phê duyệt sau khi khởi tạo",
+      },
+      {
+        key: "plan-create",
+        title: "Khởi tạo kế hoạch",
+        status: "pending",
+        actor: "Chưa thực hiện",
+        detail: "Chờ nhu cầu được phê duyệt để lập kế hoạch",
+      },
+      {
+        key: "plan-approve",
+        title: "Phê duyệt kế hoạch",
+        status: "pending",
+        actor: "Chưa thực hiện",
+        detail: "Chờ duyệt kế hoạch để triển khai tuyển dụng",
       },
       {
         key: "candidate",
         title: "Quản lý ứng viên",
         status: "pending",
         actor: "Chưa thực hiện",
-        detail: "Chờ có kế hoạch tuyển dụng",
+        detail: "Chờ kế hoạch được duyệt",
       },
       {
         key: "training",
@@ -158,12 +175,31 @@ export default function HRRequestModal({
       },
     ];
 
-    if (statusRaw === "IN_PROGRESS") {
+    if (statusRaw === "APPROVED") {
       steps[1] = {
         ...steps[1],
         status: "success",
+        actor: approverName,
+        detail: `Phê duyệt bởi ${approverName}`,
+      };
+    } else if (statusRaw === "IN_PROGRESS") {
+      steps[1] = {
+        ...steps[1],
+        status: "success",
+        actor: approverName,
+        detail: `Phê duyệt bởi ${approverName}`,
+      };
+      steps[2] = {
+        ...steps[2],
+        status: "success",
         actor: createdBy,
-        detail: "Kế hoạch đang triển khai",
+        detail: "Kế hoạch đã được khởi tạo",
+      };
+      steps[3] = {
+        ...steps[3],
+        status: "success",
+        actor: approverName,
+        detail: "Kế hoạch đã được phê duyệt",
       };
     } else if (statusRaw === "COMPLETED") {
       steps.forEach((s, idx) => {
@@ -175,11 +211,22 @@ export default function HRRequestModal({
         };
       });
     } else if (statusRaw === "CANCELED") {
-      const reasonLower = (parsedReject.reason || "").toLowerCase();
-      let rejectIndex = 0;
-      if (reasonLower.includes("kế hoạch")) rejectIndex = 1;
-      else if (reasonLower.includes("ứng viên")) rejectIndex = 2;
-      else if (reasonLower.includes("đào tạo")) rejectIndex = 3;
+      const reasonLower = (parsedReject.reason || request?.rejectReason || "")
+        .toLowerCase()
+        .trim();
+      let rejectIndex = 1;
+
+      if (reasonLower.includes("phê duyệt nhu cầu") || reasonLower.includes("nhu cầu")) {
+        rejectIndex = 1;
+      } else if (reasonLower.includes("khởi tạo kế hoạch")) {
+        rejectIndex = 2;
+      } else if (reasonLower.includes("phê duyệt kế hoạch") || reasonLower.includes("kế hoạch")) {
+        rejectIndex = 3;
+      } else if (reasonLower.includes("ứng viên")) {
+        rejectIndex = 4;
+      } else if (reasonLower.includes("đào tạo")) {
+        rejectIndex = 5;
+      }
 
       steps.forEach((s, idx) => {
         if (idx < rejectIndex) {
@@ -189,7 +236,7 @@ export default function HRRequestModal({
             ...s,
             status: "rejected",
             actor: parsedReject.by || "Không rõ",
-            detail: parsedReject.reason || "Không rõ lý do",
+            detail: parsedReject.reason || request?.rejectReason || "Không rõ lý do",
           };
         } else {
           steps[idx] = { ...s, status: "pending" };
@@ -198,7 +245,15 @@ export default function HRRequestModal({
     }
 
     return steps;
-  }, [request?.createdAt, request?.createdByName, statusRaw, parsedReject]);
+  }, [
+    request?.createdAt,
+    request?.createdByName,
+    request?.approvedByName,
+    request?.updatedByName,
+    request?.rejectReason,
+    statusRaw,
+    parsedReject,
+  ]);
 
   const readErrorMessage = async (res) => {
     const text = await res.text();
