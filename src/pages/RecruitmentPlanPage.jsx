@@ -36,6 +36,28 @@ const getStatusLabel = (status) => {
   }
 };
 
+// 🔹 TÍNH TÊN "NGƯỜI GỬI" CHO TỪNG KẾ HOẠCH
+// - Ưu tiên: người từ chối kế hoạch (rejectedByName) nếu trạng thái REJECTED/CANCELED
+// - Còn lại: người tạo nhu cầu (request.createdBy.fullName / createdByName)
+const getSenderName = (plan) => {
+  if (!plan) return "Không rõ";
+
+  const status = (plan.status || "").toUpperCase();
+
+  const createdByName =
+    plan.request?.createdBy?.fullName ||
+    plan.request?.createdByName ||
+    "";
+
+  const rejectedByName = plan.rejectedByName || "";
+
+  if (status === "REJECTED" || status === "CANCELED") {
+    return rejectedByName || createdByName || "Không rõ";
+  }
+
+  return createdByName || "Không rõ";
+};
+
 const RecruitmentPlanPage = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [plans, setPlans] = useState([]);
@@ -64,7 +86,7 @@ const RecruitmentPlanPage = () => {
   });
 
   const [selectedPlan, setSelectedPlan] = useState(null);
-  const [modalStep, setModalStep] = useState(0); 
+  const [modalStep, setModalStep] = useState(0);
   const [rejectReason, setRejectReason] = useState("");
 
   const location = useLocation();
@@ -495,8 +517,6 @@ const RecruitmentPlanPage = () => {
           </div>
         </div>
 
-        {/* ✅ ĐÃ XÓA NÚT "Xóa tất cả bộ lọc" Ở ĐÂY */}
-
         {/* Bảng */}
         <div
           className={`table-container ${
@@ -539,11 +559,8 @@ const RecruitmentPlanPage = () => {
                           {getStatusLabel(plan.status)}
                         </span>
                       </td>
-                      <td>
-                        {plan.request?.createdBy?.fullName ||
-                          plan.request?.createdBy?.username ||
-                          "Không rõ"}
-                      </td>
+                      {/* 🔹 CỘT NGƯỜI GỬI – ĐÃ SỬA DÙNG getSenderName */}
+                      <td>{getSenderName(plan)}</td>
                       <td className="actions-cell text-center">
                         <ActionButtons
                           onView={() => handleViewDetails(plan)}
@@ -579,7 +596,7 @@ const RecruitmentPlanPage = () => {
         onPickRequest={handlePickRequest}
       />
 
-      {/* Modal Xem/Sửa/Từ chối (giữ nguyên) */}
+      {/* Modal Xem/Sửa/Từ chối */}
       {modalStep === 1 && selectedPlan && (
         <Modal
           title="Chi tiết Kế hoạch tuyển dụng"

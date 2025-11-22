@@ -19,6 +19,9 @@ export default function HRRequestModal({
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
 
+  // 🔹 Meta kế hoạch: lấy từ API /api/recruitment-plans
+  const [planMeta, setPlanMeta] = useState(null);
+
   const navigate = useNavigate();
 
   // tải danh mục công nghệ để map id -> name
@@ -36,6 +39,47 @@ export default function HRRequestModal({
       })
       .catch(() => setTechDict({}));
   }, [isOpen]);
+
+  // 🔹 Khi mở modal, load thông tin kế hoạch gắn với requestId (nếu có)
+  useEffect(() => {
+    if (!isOpen || !request?.requestId) {
+      setPlanMeta(null);
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    fetch("http://localhost:8080/api/recruitment-plans", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then((plans) => {
+        const matched =
+          (plans || []).find(
+            (p) => p.request && p.request.requestId === request.requestId
+          ) || null;
+
+        if (!matched) {
+          setPlanMeta(null);
+          return;
+        }
+
+        const createdByName =
+          matched.request?.createdBy?.fullName ||
+          matched.request?.createdBy?.email ||
+          request.createdByName ||
+          "";
+
+        setPlanMeta({
+          status: matched.status || "",
+          planName: matched.planName || "",
+          createdByName,
+        });
+      })
+      .catch(() => setPlanMeta(null));
+  }, [isOpen, request?.requestId]);
 
   useEffect(() => {
     if (isOpen && request) {
@@ -93,12 +137,13 @@ export default function HRRequestModal({
   const isApproved = status === "APPROVED";
   const isCanceled = status === "CANCELED";
 
-  // tách chuỗi "Người từ chối kế hoạch: X. Lý do: Y"
+  // tách chuỗi "Người từ chối kế hoạch/nhu cầu: X. Lý do: Y"
   const parsedReject = useMemo(() => {
     const raw = request?.rejectReason || "";
     if (!raw) return { by: "", reason: "" };
 
-    const nameLabel = "Người từ chối kế hoạch:";
+    const nameLabel1 = "Người từ chối kế hoạch:";
+    const nameLabel2 = "Người từ chối nhu cầu:";
     const reasonLabel = "Lý do:";
 
     let by = "";
@@ -109,10 +154,20 @@ export default function HRRequestModal({
       reason = raw.slice(reasonIdx + reasonLabel.length).trim();
     }
 
-    const nameIdx = raw.indexOf(nameLabel);
+    const nameIdx =
+      raw.indexOf(nameLabel1) !== -1
+        ? raw.indexOf(nameLabel1)
+        : raw.indexOf(nameLabel2);
+
     if (nameIdx !== -1) {
       const endIdx = reasonIdx === -1 ? raw.length : reasonIdx;
-      const namePart = raw.slice(nameIdx + nameLabel.length, endIdx);
+      const namePart = raw.slice(
+        nameIdx +
+          (raw.indexOf(nameLabel1) !== -1
+            ? nameLabel1.length
+            : nameLabel2.length),
+        endIdx
+      );
       by = namePart.replace(/[.\s]+$/g, "").trim();
     }
 
@@ -123,34 +178,19 @@ export default function HRRequestModal({
     const createdBy = request?.createdByName || "Không rõ";
     const requestTitle = request?.requestTitle || "nhu cầu";
     const requestLabel = `nhu cầu "${requestTitle}"`;
+
     const approverName =
       request?.approvedByName || request?.updatedByName || "Người phê duyệt";
 
-    const planName =
-      request?.planName ||
-      request?.plan?.planName ||
-      request?.recruitmentPlanName ||
-      request?.planTitle ||
-      "";
+    // 🔹 Lấy thông tin kế hoạch từ planMeta
+    const planName = planMeta?.planName || "";
     const planLabel = planName
       ? `kế hoạch "${planName}"`
       : "kế hoạch tuyển dụng";
 
-    const planStatus = (request?.planStatus || request?.plan?.status || "")
-      .toString()
-      .toUpperCase();
-
-    const planCreator =
-      request?.planCreatedByName ||
-      request?.plan?.createdByName ||
-      approverName ||
-      createdBy ||
-      "Chưa thực hiện";
-
-    const planApprover =
-      request?.planApprovedByName ||
-      request?.plan?.approvedByName ||
-      approverName;
+    const planStatus = (planMeta?.status || "").toUpperCase();
+    const planCreator = planMeta?.createdByName || createdBy;
+    const planApprover = approverName || planCreator;
 
     const createdAt = request?.createdAt
       ? new Date(request.createdAt).toLocaleString("vi-VN")
@@ -227,11 +267,9 @@ export default function HRRequestModal({
         )} đã được khởi tạo`,
       };
     } else if (statusRaw === "COMPLETED") {
-      // ❗ Sửa tại đây: chỉ đánh hoàn thành tới PHÊ DUYỆT KẾ HOẠCH,
-      // "Quản lý ứng viên" và "Đào tạo" vẫn để Đang chờ
+      // ✅ Đánh hoàn thành tới PHÊ DUYỆT KẾ HOẠCH
       steps.forEach((s, idx) => {
         if (idx <= 3) {
-          // 0: khởi tạo, 1: duyệt nhu cầu, 2: tạo KH, 3: duyệt KH
           steps[idx] = {
             ...s,
             status: "success",
@@ -239,7 +277,6 @@ export default function HRRequestModal({
             detail: idx === 0 ? s.detail : "Giai đoạn đã hoàn tất",
           };
         } else if (idx === 4) {
-          // Quản lý ứng viên
           steps[idx] = {
             ...s,
             status: "pending",
@@ -247,7 +284,6 @@ export default function HRRequestModal({
             detail: "Chờ triển khai quản lý ứng viên",
           };
         } else if (idx === 5) {
-          // Đào tạo
           steps[idx] = {
             ...s,
             status: "pending",
@@ -317,7 +353,7 @@ export default function HRRequestModal({
 
       const isPlanRejected = ["REJECTED", "CANCELED"].includes(planStatus);
 
-      // Nếu đã có kế hoạch thì coi như NHU CẦU ĐÃ ĐƯỢC PHÊ DUYỆT
+      // Có kế hoạch => coi như nhu cầu đã được phê duyệt
       if (steps[1].status !== "success") {
         steps[1] = {
           ...steps[1],
@@ -342,7 +378,7 @@ export default function HRRequestModal({
         steps[3] = {
           ...steps[3],
           status: "success",
-          actor: planApprover || planCreator,
+          actor: planApprover,
           detail: `${planLabel.charAt(0).toUpperCase()}${planLabel.slice(
             1
           )} đã được phê duyệt`,
@@ -351,7 +387,7 @@ export default function HRRequestModal({
         steps[3] = {
           ...steps[3],
           status: "rejected",
-          actor: planApprover || planCreator || "Không rõ",
+          actor: planApprover || "Không rõ",
           detail:
             parsedReject.reason ||
             request?.rejectReason ||
@@ -379,18 +415,9 @@ export default function HRRequestModal({
     request?.updatedByName,
     request?.requestTitle,
     request?.rejectReason,
-    request?.planName,
-    request?.plan?.planName,
-    request?.recruitmentPlanName,
-    request?.planTitle,
-    request?.planStatus,
-    request?.plan?.status,
-    request?.planCreatedByName,
-    request?.plan?.createdByName,
-    request?.planApprovedByName,
-    request?.plan?.approvedByName,
     statusRaw,
     parsedReject,
+    planMeta,
   ]);
 
   const readErrorMessage = async (res) => {
@@ -751,4 +778,3 @@ export default function HRRequestModal({
     </>
   );
 }
-  
