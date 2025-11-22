@@ -697,6 +697,21 @@
   color: #4b5563;
   margin-bottom: 4px;
 }
+.timeline-reject-reason {
+  margin-top: 6px;
+  color: #4b5563;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.reject-label-inline {
+  font-weight: 500;
+  margin-right: 6px;
+}
+
+.reject-text-inline {
+  word-break: break-word;
+}
 
 .timeline-meta {
   font-size: 0.85rem;

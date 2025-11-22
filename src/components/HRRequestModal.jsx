@@ -122,11 +122,36 @@ export default function HRRequestModal({
 
   const progressSteps = useMemo(() => {
     const createdBy = request?.createdByName || "Không rõ";
+     const requestTitle = request?.requestTitle || "nhu cầu";
+    const requestLabel = `nhu cầu "${requestTitle}"`;
+    const approverName =
+      request?.approvedByName || request?.updatedByName || "Người phê duyệt";
+    const planName =
+      request?.planName ||
+      request?.plan?.planName ||
+      request?.recruitmentPlanName ||
+      request?.planTitle ||
+      "";
+    const planLabel = planName
+      ? `kế hoạch "${planName}"`
+      : "kế hoạch tuyển dụng";
+    const planStatus = (request?.planStatus || request?.plan?.status || "")
+      .toString()
+      .toUpperCase();
+    const planCreator =
+      request?.planCreatedByName ||
+      request?.plan?.createdByName ||
+      approverName ||
+      createdBy ||
+      "Chưa thực hiện";
+    const planApprover =
+      request?.planApprovedByName ||
+      request?.plan?.approvedByName ||
+      approverName;
     const createdAt = request?.createdAt
       ? new Date(request.createdAt).toLocaleString("vi-VN")
       : "";
-    const approverName =
-      request?.approvedByName || request?.updatedByName || "Người phê duyệt";
+
 
     const steps = [
       {
@@ -143,21 +168,21 @@ export default function HRRequestModal({
         title: "Phê duyệt nhu cầu",
         status: "pending",
         actor: "Chưa thực hiện",
-        detail: "Chờ phê duyệt sau khi khởi tạo",
+        detail: `Chờ phê duyệt ${requestLabel}`,
       },
       {
         key: "plan-create",
         title: "Khởi tạo kế hoạch",
         status: "pending",
         actor: "Chưa thực hiện",
-        detail: "Chờ nhu cầu được phê duyệt để lập kế hoạch",
+        detail: `Chờ ${requestLabel} được phê duyệt để lập kế hoạch mới`,
       },
       {
         key: "plan-approve",
         title: "Phê duyệt kế hoạch",
         status: "pending",
         actor: "Chưa thực hiện",
-        detail: "Chờ duyệt kế hoạch để triển khai tuyển dụng",
+        detail: `Chờ phê duyệt ${planLabel} để triển khai tuyển dụng`,
       },
       {
         key: "candidate",
@@ -180,26 +205,20 @@ export default function HRRequestModal({
         ...steps[1],
         status: "success",
         actor: approverName,
-        detail: `Phê duyệt bởi ${approverName}`,
+        detail: `Phê duyệt ${requestLabel} bởi ${approverName}`,
       };
     } else if (statusRaw === "IN_PROGRESS") {
       steps[1] = {
         ...steps[1],
         status: "success",
         actor: approverName,
-        detail: `Phê duyệt bởi ${approverName}`,
+        detail: `Phê duyệt ${requestLabel} bởi ${approverName}`,
       };
       steps[2] = {
         ...steps[2],
         status: "success",
-        actor: createdBy,
-        detail: "Kế hoạch đã được khởi tạo",
-      };
-      steps[3] = {
-        ...steps[3],
-        status: "success",
-        actor: approverName,
-        detail: "Kế hoạch đã được phê duyệt",
+        actor: planCreator,
+        detail: `${planLabel.charAt(0).toUpperCase()}${planLabel.slice(1)} đã được khởi tạo`,
       };
     } else if (statusRaw === "COMPLETED") {
       steps.forEach((s, idx) => {
@@ -227,6 +246,12 @@ export default function HRRequestModal({
       } else if (reasonLower.includes("đào tạo")) {
         rejectIndex = 5;
       }
+       const rejectActor =
+        parsedReject.by ||
+        request?.updatedByName ||
+        request?.approvedByName ||
+        request?.createdByName ||
+        "Không rõ";
 
       steps.forEach((s, idx) => {
         if (idx < rejectIndex) {
@@ -236,12 +261,56 @@ export default function HRRequestModal({
             ...s,
             status: "rejected",
             actor: parsedReject.by || "Không rõ",
-            detail: parsedReject.reason || request?.rejectReason || "Không rõ lý do",
+            detail:
+              parsedReject.reason || request?.rejectReason || "Không rõ lý do",
+            rejectReason:
+              parsedReject.reason || request?.rejectReason || "Không rõ lý do",
           };
         } else {
           steps[idx] = { ...s, status: "pending" };
         }
       });
+    }
+     // Nếu đã có trạng thái kế hoạch riêng, ghi đè bước khởi tạo/phê duyệt kế hoạch
+    if (statusRaw !== "CANCELED" && planStatus) {
+      const isPlanApproved = ["CONFIRMED", "APPROVED", "IN_PROGRESS", "COMPLETED"].includes(
+        planStatus
+      );
+      const isPlanRejected = ["REJECTED", "CANCELED"].includes(planStatus);
+
+      steps[2] = {
+        ...steps[2],
+        status: "success",
+        actor: planCreator,
+        detail: `${planLabel.charAt(0).toUpperCase()}${planLabel.slice(1)} đã được khởi tạo`,
+      };
+
+      if (isPlanApproved) {
+        steps[3] = {
+          ...steps[3],
+          status: "success",
+          actor: planApprover || planCreator,
+          detail: `${planLabel.charAt(0).toUpperCase()}${planLabel.slice(1)} đã được phê duyệt`,
+        };
+      } else if (isPlanRejected) {
+        steps[3] = {
+          ...steps[3],
+          status: "rejected",
+          actor: planApprover || planCreator || "Không rõ",
+          actor: rejectActor,
+            detail:
+              parsedReject.reason || request?.rejectReason || "Không rõ lý do",
+            rejectReason:
+              parsedReject.reason || request?.rejectReason || "Không rõ lý do",
+        };
+      } else {
+        steps[3] = {
+          ...steps[3],
+          status: steps[3].status === "success" ? steps[3].status : "pending",
+          actor: steps[3].actor || "Chưa thực hiện",
+          detail: `Chờ phê duyệt ${planLabel}`,
+        };
+      }
     }
 
     return steps;
@@ -250,7 +319,18 @@ export default function HRRequestModal({
     request?.createdByName,
     request?.approvedByName,
     request?.updatedByName,
+    request?.requestTitle,
     request?.rejectReason,
+    request?.planName,
+    request?.plan?.planName,
+    request?.recruitmentPlanName,
+    request?.planTitle,
+    request?.planStatus,
+    request?.plan?.status,
+    request?.planCreatedByName,
+    request?.plan?.createdByName,
+    request?.planApprovedByName,
+    request?.plan?.approvedByName,
     statusRaw,
     parsedReject,
   ]);
@@ -485,6 +565,15 @@ export default function HRRequestModal({
                             </span>
                           </div>
                           <div className="timeline-desc">{step.detail}</div>
+                          {step.status === "rejected" && (
+                            <div className="timeline-reject-reason">
+                              <span className="reject-label-inline">Lý do:</span>
+                              <span className="reject-text-inline">
+                                {step.rejectReason || step.detail ||
+                                  "Không rõ lý do"}
+                              </span>
+                            </div>
+                          )}
                           <div className="timeline-meta">
                             Người thực hiện: {step.actor}
                           </div>
@@ -495,43 +584,7 @@ export default function HRRequestModal({
                 </div>
               </div>
 
-              {/* nếu đã bị từ chối thì hiển thị LÝ DO TỪ CHỐI (từ Kế hoạch) */}
-              {isCanceled &&
-                (parsedReject.by ||
-                  parsedReject.reason ||
-                  request.rejectReason) && (
-                  <div className="section-block">
-                    <div className="section-header">
-                      <h4>Lý do từ chối</h4>
-                    </div>
-
-                    {parsedReject.by && (
-                      <>
-                        <div className="reject-meta-row">
-                          <span className="reject-meta-label">
-                            Bị từ chối tại:
-                          </span>
-                          <span className="reject-meta-name">
-                            Kế hoạch tuyển dụng
-                          </span>
-                        </div>
-
-                        <div className="reject-meta-row">
-                          <span className="reject-meta-label">
-                            Người từ chối kế hoạch:
-                          </span>
-                          <span className="reject-meta-name">
-                            {parsedReject.by}
-                          </span>
-                        </div>
-                      </>
-                    )}
-
-                    <div className="reject-reason-text">
-                      {parsedReject.reason || request.rejectReason}
-                    </div>
-                  </div>
-                )}
+              
 
               {/* Ghi chú: chỉ hiển thị khi THỰC SỰ có ghi chú, và chỉ đọc */}
               {hasNote && (
