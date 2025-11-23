@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 
 const menu = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: UserCog , label: "Người dùng", path: "/admin" },
-  //{ icon: BookOpen, label: "Đào tạo", path: "/training" },
+  //{ icon: UserCog , label: "Người dùng", path: "/admin" },
+  { icon: BookOpen, label: "Đào tạo", path: "/training" },
   {
     icon: Users,
     label: "Tuyển dụng",

@@ -6,6 +6,7 @@ import ActionButtons from "../components/ActionButtons.jsx";
 import Pagination from "../components/Pagination";
 import CreateRequestModal from "../components/CreateRequestModal.jsx";
 import HRRequestModal from "../components/HRRequestModal.jsx";
+import { UserCheck } from "lucide-react";
 
 import "../styles/request.css";
 import "../styles/toast.css";
