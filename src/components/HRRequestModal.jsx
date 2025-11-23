@@ -20,6 +20,7 @@ export default function HRRequestModal({
   const [rejectReason, setRejectReason] = useState("");
 
   // 🔹 Meta kế hoạch: lấy từ API /api/recruitment-plans
+  //    (đã bổ sung: recruitmentPlanId, inputRequired, candidateCount)
   const [planMeta, setPlanMeta] = useState(null);
 
   const navigate = useNavigate();
@@ -41,6 +42,7 @@ export default function HRRequestModal({
   }, [isOpen]);
 
   // 🔹 Khi mở modal, load thông tin kế hoạch gắn với requestId (nếu có)
+  //    + tính tổng NV đầu vào (soLuong * 2)
   useEffect(() => {
     if (!isOpen || !request?.requestId) {
       setPlanMeta(null);
@@ -72,14 +74,63 @@ export default function HRRequestModal({
           request.createdByName ||
           "";
 
+        // Tính tổng NV đầu vào (soLuong * 2) từ quantityCandidates
+        const quantityList = matched.request?.quantityCandidates || [];
+        const inputRequired = quantityList.reduce(
+          (sum, qc) => sum + (qc.soLuong || 0) * 2,
+          0
+        );
+
         setPlanMeta({
           status: matched.status || "",
           planName: matched.planName || "",
           createdByName,
+          recruitmentPlanId: matched.recruitmentPlanId,
+          inputRequired,
+          candidateCount: 0, // sẽ được cập nhật ở effect bên dưới
         });
       })
       .catch(() => setPlanMeta(null));
   }, [isOpen, request?.requestId]);
+
+  // 🔹 Sau khi đã có recruitmentPlanId, gọi tiếp API ứng viên để biết
+  //    đã tuyển được bao nhiêu (candidateCount)
+  useEffect(() => {
+    if (!isOpen || !planMeta?.recruitmentPlanId) return;
+
+    const token = localStorage.getItem("token");
+    fetch(
+      `http://localhost:8080/api/candidates?planId=${planMeta.recruitmentPlanId}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    )
+      .then((res) => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then((list) => {
+        const count = Array.isArray(list) ? list.length : 0;
+        setPlanMeta((prev) =>
+          prev
+            ? {
+                ...prev,
+                candidateCount: count,
+              }
+            : prev
+        );
+      })
+      .catch(() => {
+        setPlanMeta((prev) =>
+          prev
+            ? {
+                ...prev,
+                candidateCount: 0,
+              }
+            : prev
+        );
+      });
+  }, [isOpen, planMeta?.recruitmentPlanId]);
 
   useEffect(() => {
     if (isOpen && request) {
@@ -404,6 +455,40 @@ export default function HRRequestModal({
           actor: steps[3].actor || "Chưa thực hiện",
           detail: `Chờ phê duyệt ${planLabel}`,
         };
+      }
+
+      // ===== 2.1. CẬP NHẬT BƯỚC "QUẢN LÝ ỨNG VIÊN" THEO SỐ LƯỢNG ĐẦU VÀO =====
+      const inputRequired = planMeta?.inputRequired || 0; // NV đầu vào (soLuong * 2)
+      const candidateCount =
+        planMeta?.candidateCount != null ? planMeta.candidateCount : 0;
+
+      if (inputRequired > 0) {
+        const baseActor =
+          steps[4].actor && steps[4].actor !== "Chưa thực hiện"
+            ? steps[4].actor
+            : planCreator;
+
+        if (candidateCount >= inputRequired) {
+          // ✅ Đã tuyển đủ: chuyển sang ĐÃ HOÀN THÀNH
+          steps[4] = {
+            ...steps[4],
+            status: "success",
+            actor: baseActor,
+            detail: `Đã tuyển đủ ${candidateCount}/${inputRequired} ứng viên theo kế hoạch`,
+          };
+        } else {
+          // ❗ Chưa đủ: để xám & hiển thị "x/y"
+          const text =
+            candidateCount > 0
+              ? `Đã tuyển ${candidateCount}/${inputRequired} ứng viên theo kế hoạch`
+              : `Chờ tuyển dụng ứng viên (0/${inputRequired})`;
+          steps[4] = {
+            ...steps[4],
+            status: "pending",
+            actor: baseActor,
+            detail: text,
+          };
+        }
       }
     }
 

@@ -9,7 +9,9 @@ import "../styles/AddCandidateModal.css"; // Dùng CSS mới
  * - isOpen (boolean): Hiển thị modal
  * - onClose (function): Hàm đóng modal
  * - onSuccess (function): Hàm callback khi tạo thành công, trả về (newCandidate)
- * - planOptions (Array<{id, name}>): Danh sách plan đã duyệt
+ * - planOptions (Array): Danh sách plan đã duyệt
+ *     + Có thể là dạng { id, name }
+ *     + Hoặc dạng { recruitmentPlanId, planName }
  */
 export default function AddCandidateModal({
   isOpen,
@@ -49,7 +51,17 @@ export default function AddCandidateModal({
   // --- Validate Form (Client-side) ---
   const validateForm = () => {
     const newErrors = {};
-    const { phoneNumber, interviewDate, planId } = formData;
+    const { fullName, email, phoneNumber, interviewDate, planId } = formData;
+
+    // Full name
+    if (!fullName.trim()) {
+      newErrors.fullName = "Họ và tên không được để trống.";
+    }
+
+    // Email (để BE check định dạng kỹ hơn, ở FE check cơ bản)
+    if (!email.trim()) {
+      newErrors.email = "Email không được để trống.";
+    }
 
     // 1. Validate SĐT (chuẩn VN 10 số, bắt đầu bằng 0)
     const phoneRegex = /^0[0-9]{9}$/;
@@ -58,7 +70,10 @@ export default function AddCandidateModal({
     }
 
     // 2. Validate Ngày phỏng vấn (phải ở tương lai)
-    if (interviewDate) {
+    if (!interviewDate) {
+      newErrors.interviewDate =
+        "Thời gian hẹn phỏng vấn không được để trống.";
+    } else {
       const selectedTime = new Date(interviewDate).getTime();
       const now = new Date().getTime();
       if (selectedTime <= now) {
@@ -69,14 +84,14 @@ export default function AddCandidateModal({
 
     // 3. Validate Plan
     if (!planId) {
-      newErrors.planId = "Vui lòng chọn kế hoạch tuyển dụng.";
+      newErrors.planId = "Kế hoạch tuyển dụng không được để trống.";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // --- Xử lý Submit (Logic API đặt ở đây) ---
+  // --- Xử lý Submit ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setApiError(null);
@@ -87,9 +102,14 @@ export default function AddCandidateModal({
 
     setLoading(true);
     try {
-      // Gọi API (giống cách làm của team bạn)
+      // Chuyển planId thành number cho chắc ăn
+      const payload = {
+        ...formData,
+        planId: formData.planId ? Number(formData.planId) : null,
+      };
+
       // BE API: POST /api/candidates/create
-      const response = await api.post("/candidates/create", formData);
+      const response = await api.post("/candidates/create", payload);
 
       // BE trả về CandidateListDto của ứng viên vừa tạo
       onSuccess(response.data);
@@ -101,9 +121,27 @@ export default function AddCandidateModal({
         err.response?.data?.message ||
         "Lỗi khi tạo ứng viên";
       setApiError(msg);
+      console.error("Lỗi khi tạo ứng viên:", err);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Hàm chuẩn hoá plan: hỗ trợ cả 2 kiểu field (id/name vs recruitmentPlanId/planName)
+  const normalizePlan = (raw) => {
+    const id =
+      raw.id ??
+      raw.recruitmentPlanId ??
+      raw.planId ??
+      null;
+
+    const name =
+      raw.name ??
+      raw.planName ??
+      raw.title ??
+      "Kế hoạch không tên";
+
+    return { id, name };
   };
 
   if (!isOpen) return null;
@@ -112,14 +150,14 @@ export default function AddCandidateModal({
     <>
       {/* Nền mờ (dùng style của request.css/plan.css) */}
       <div className="modal-backdrop" onClick={onClose} />
-      
-      {/* Nội dung Modal (dùng style của request.css/plan.css) */}
+
+      {/* Nội dung Modal */}
       <div
-        className="modal-content" // Dùng style chung từ plan.css
-        style={{ maxWidth: "700px" }} // Style giống form ảnh
+        className="modal-content"
+        style={{ maxWidth: "700px" }}
         role="dialog"
       >
-        {/* Header (dùng style của request.css/plan.css) */}
+        {/* Header */}
         <div className="modal-header">
           <h3 className="modal-title">Thông tin ứng viên</h3>
           <button className="modal-close-btn" onClick={onClose}>
@@ -129,9 +167,9 @@ export default function AddCandidateModal({
 
         {/* Form */}
         <form onSubmit={handleSubmit}>
-          {/* Body (dùng style của AddCandidateModal.css) */}
+          {/* Body */}
           <div className="modal-body candidate-form-grid">
-            {/* Hiển thị lỗi API */}
+            {/* Lỗi API */}
             {apiError && <div className="api-error-box">{apiError}</div>}
 
             {/* Cột 1 */}
@@ -191,18 +229,21 @@ export default function AddCandidateModal({
                   name="planId"
                   value={formData.planId}
                   onChange={handleChange}
-                  // Dùng style chung (input-style)
-                  className={`input-style ${errors.planId ? "input-error" : ""
-                    }`}
+                  className={`input-style ${
+                    errors.planId ? "input-error" : ""
+                  }`}
                   required
                 >
                   <option value="">— Chọn kế hoạch đã duyệt —</option>
-                  {/* planOptions được truyền từ cha */}
-                  {planOptions.map((plan) => (
-                    <option key={plan.id} value={plan.id}>
-                      {plan.name}
-                    </option>
-                  ))}
+                  {planOptions.map((raw) => {
+                    const plan = normalizePlan(raw);
+                    if (!plan.id) return null; // tránh option rác
+                    return (
+                      <option key={plan.id} value={plan.id}>
+                        {plan.name}
+                      </option>
+                    );
+                  })}
                 </select>
                 {errors.planId && (
                   <span className="error-message">{errors.planId}</span>
@@ -211,11 +252,11 @@ export default function AddCandidateModal({
             </div>
           </div>
 
-          {/* Footer (Nút bấm) (dùng style của request.css/plan.css) */}
+          {/* Footer */}
           <div className="modal-footer justify-end">
             <button
               type="button"
-              className="modal-btn btn-secondary" // Style nút Hủy (xám)
+              className="modal-btn btn-secondary"
               onClick={onClose}
               disabled={loading}
             >
@@ -223,7 +264,7 @@ export default function AddCandidateModal({
             </button>
             <button
               type="submit"
-              className="modal-btn btn-add-candidate" // Style nút Thêm (xanh lá)
+              className="modal-btn btn-add-candidate"
               disabled={loading}
             >
               {loading ? "Đang thêm..." : "Thêm"}
