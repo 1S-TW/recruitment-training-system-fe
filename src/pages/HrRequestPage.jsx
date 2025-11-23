@@ -15,6 +15,8 @@ const getStatusLabel = (status) => {
   switch (String(status || "").toUpperCase()) {
     case "NEW":
       return "Đã gửi";
+    case "PENDING":
+      return "Đang chờ";
     case "IN_PROGRESS":
       return "Đang tiến hành";
     case "COMPLETED":

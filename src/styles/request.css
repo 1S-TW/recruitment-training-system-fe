@@ -276,41 +276,46 @@
 
 /* --- STATUS BADGE --- */
 .status-badge {
-    display: inline-block;
-    padding: 4px 9px;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    border: 1px solid #e2e8f0;
-    background: #f8fafc;
-    color: #475569;
-    letter-spacing: 0.2px;
+   display: inline-block;
+   padding: 4px 9px;
+   border-radius: 6px;
+   font-size: 0.75rem;
+   font-weight: 600;
+   text-transform: uppercase;
+   border: 1px solid #e2e8f0;
+   background: #f8fafc;
+   color: #475569;
+   letter-spacing: 0.2px;
 }
-
-/* NEW = ĐÃ GỬI = XANH NƯỚC BIỂN */
 .status-badge.status-new {
-   background: #e0f2fe;      /* nền xanh nhạt */
-   border-color: #7dd3fc;    /* viền xanh nhạt */
-   color: #075985;           /* chữ xanh đậm */
+   background: #dbeafe;
+   border-color: #93c5fd;
+   color: #1d4ed8;
 }
-/* IN_PROGRESS = ĐANG TIẾN HÀNH = VÀNG (giữ nguyên cũng được) */
 .status-badge.status-inprogress {
    background: #fef9c3;
    border-color: #facc15;
    color: #92400e;
 }
-/* COMPLETED = ĐÃ HOÀN THÀNH = XANH LÁ */
 .status-badge.status-completed {
-   background: #ecfdf3;
-   border-color: #bbf7d0;
+   background: #dcfce7;
+   border-color: #86efac;
    color: #166534;
 }
-/* CANCELED = BỊ TỪ CHỐI = ĐỎ (đang đúng rồi, giữ nguyên) */
 .status-badge.status-canceled {
    background: #fee2e2;
    border-color: #fca5a5;
    color: #b91c1c;
+}
+.status-badge.status-pending {
+   background: #e5e7eb;
+   border-color: #cbd5e1;
+   color: #374151;
+}
+.status-badge.status-unknown {
+   background: #f8fafc;
+   border-color: #e2e8f0;
+   color: #475569;
 }
 /* --- ACTION BUTTONS --- */
 .btn-group {
@@ -388,35 +393,34 @@
     animation: fadeSlideIn 0.25s ease-in-out;
 }
 .title-input-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
+   display: flex;
+   align-items: center;
+   gap: 10px;
+   flex-wrap: wrap;
 }
-
 .title-prefix-input {
-    flex: 1;
-    min-width: 240px;
-    font-weight: 600;
+   flex: 1;
+   min-width: 240px;
+   font-weight: 600;
 }
-
 .title-month-chip {
-    padding: 0.75rem 1rem;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #e0f2fe, #dbeafe);
-    color: #0f172a;
-    border: 1px solid #bfdbfe;
-    font-weight: 700;
-    font-size: 0.93rem;
-    white-space: nowrap;
-    text-transform: capitalize;
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+   padding: 0.75rem 1rem;
+   border-radius: 10px;
+   background: linear-gradient(135deg, #e0f2fe, #dbeafe);
+   color: #0f172a;
+   border: 1px solid #bfdbfe;
+   font-weight: 700;
+   font-size: 0.93rem;
+   white-space: nowrap;
+   text-transform: capitalize;
+   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
 }
 .theme-dark .title-month-chip {
-    background: linear-gradient(135deg, #0b1223, #111827);
-    color: #e0f2fe;
-    border-color: #1d4ed8;
+   background: linear-gradient(135deg, #0b1223, #111827);
+   color: #e0f2fe;
+   border-color: #1d4ed8;
 }
+.theme-dark .fo
 .page-numbers {
     display: flex;
     align-items: center;
@@ -1093,3 +1097,172 @@ tr[data-editable="false"] .btn-action-wrapper:hover .action-tooltip {
 
 /* Nếu trước đó có .month-display thì có thể xoá,
    hoặc để lại nhưng không dùng class này nữa */
+
+
+ /* Progress timeline */
+
+.progress-block {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 10px 4px 6px;
+}
+
+.process-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.process-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.process-sub {
+  font-size: 0.8rem;
+  color: #6b7280;
+  text-align: right;
+  line-height: 1.4;
+}
+
+.process-timeline {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.timeline-item {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  column-gap: 12px;
+  position: relative;
+  padding-left: 4px;
+}
+
+.timeline-marker {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  height: 100%;
+}
+
+.timeline-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: #eef2ff;
+  color: #4338ca;
+  border: 2px solid #c7d2fe;
+}
+
+.timeline-connector {
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  bottom: -14px;
+  background: linear-gradient(180deg, #e5e7eb 0%, #d1d5db 100%);
+}
+
+.timeline-content {
+  padding: 4px 0 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.timeline-item:last-child .timeline-content {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.timeline-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.timeline-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #111827;
+}
+
+.timeline-badge {
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.timeline-desc {
+  font-size: 0.9rem;
+  color: #4b5563;
+  margin-bottom: 4px;
+}
+
+.timeline-meta {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.timeline-success .timeline-icon {
+  background: #22c55e;
+  border-color: #16a34a;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(34, 197, 94, 0.25);
+}
+
+.timeline-success .timeline-badge {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.timeline-pending .timeline-icon {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #6b7280;
+}
+
+.timeline-pending .timeline-badge {
+  background: #f3f4f6;
+  color: #374151;
+  border-color: #e5e7eb;
+}
+
+.timeline-rejected .timeline-icon {
+  background: #ef4444;
+  border-color: #dc2626;
+  color: #fff1f2;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);
+}
+
+.timeline-rejected .timeline-badge {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fecdd3;
+}
+
+@media (max-width: 540px) {
+  .timeline-title-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .timeline-badge {
+    margin-top: 4px;
+  }
+}
