@@ -5,10 +5,10 @@ import api from "../services/api";
 import Layout from "../components/Layout";
 import Pagination from "../components/Pagination";
 import ActionButtons from "../components/ActionButtons.jsx";
+import EditTrainingModal from "../components/EditTrainingModal"; // <-- import modal
 
-import "../styles/request.css";
 import "../styles/toast.css";
-import "../styles/CandidateManagementPage.css";
+import "../styles/training.css";
 
 export default function TrainingManagementPage() {
   const [trainings, setTrainings] = useState([]);
@@ -21,6 +21,10 @@ export default function TrainingManagementPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [internStatusFilter, setInternStatusFilter] = useState("");
+
+  // --- STATE MODAL ---
+  const [editingTraining, setEditingTraining] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const [toast, setToast] = useState(null);
   const showToast = (msg, type = "success") => {
@@ -48,7 +52,6 @@ export default function TrainingManagementPage() {
     fetchTrainings();
   }, []);
 
-  // ------ FILTER + SORT ------
   const filteredTrainings = useMemo(
     () =>
       (trainings || []).filter((t) => {
@@ -58,11 +61,7 @@ export default function TrainingManagementPage() {
           const name = (t.traineeName || t.fullName || t.name || "").toLowerCase();
           const email = (t.email || "").toLowerCase();
           const phone = (t.phoneNumber || t.phone || "").toLowerCase();
-          if (
-            !name.includes(keyword) &&
-            !email.includes(keyword) &&
-            !phone.includes(keyword)
-          ) {
+          if (!name.includes(keyword) && !email.includes(keyword) && !phone.includes(keyword)) {
             return false;
           }
         }
@@ -112,8 +111,16 @@ export default function TrainingManagementPage() {
   };
 
   const handleEditTraining = (training) => {
-    console.log("Sửa đào tạo:", training);
-    showToast("Mở form cập nhật đào tạo (TODO)", "success");
+    setEditingTraining(training);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveTraining = (updatedTraining) => {
+    setTrainings((prev) =>
+      prev.map((t) => (t.id === updatedTraining.id ? updatedTraining : t))
+    );
+    showToast("Cập nhật điểm thành công!");
+    setIsEditModalOpen(false);
   };
 
   const formatDate = (value) => {
@@ -150,7 +157,7 @@ export default function TrainingManagementPage() {
       </div>
 
       {/* NỘI DUNG CHÍNH */}
-      <div className="recruitment-page fade-slide">
+      <div className="training-page fade-slide">
         <div className="title-row">
           <h2 className="page-title-small">Quản lý đào tạo</h2>
 
@@ -180,20 +187,15 @@ export default function TrainingManagementPage() {
               >
                 <option value="">Trạng thái thực tập...</option>
                 <option value="Đang thực tập">Đang thực tập</option>
-                <option value="Đã kết thúc">Đã kết thúc</option>
-                <option value="Tạm dừng">Tạm dừng</option>
-                <option value="Chưa bắt đầu">Chưa bắt đầu</option>
+                <option value="Đã hoàn thành">Đã hoàn thành </option>
+                <option value="Đã dừng thực tập">Đã dừng thực tập</option>
               </select>
             </div>
           </div>
         </div>
 
         {/* BẢNG DỮ LIỆU */}
-        <div
-          className={`table-container table-fade ${
-            isAnimating ? "fade-out" : "fade-in"
-          }`}
-        >
+        <div className={`table-container table-fade ${isAnimating ? "fade-out" : "fade-in"}`}>
           {loading ? (
             <p className="loading-text">Đang tải dữ liệu...</p>
           ) : error ? (
@@ -202,55 +204,31 @@ export default function TrainingManagementPage() {
             <table className="styled-table training-table">
               <thead>
                 <tr>
-                  <th style={{ width: "60px", textAlign: "center" }}>STT</th>
-                  <th style={{ minWidth: "180px" }}>Tên</th>
-                  <th style={{ textAlign: "center", whiteSpace: "nowrap" }}>
-                    Bắt đầu
+                  <th>STT</th>
+                  <th>Tên</th>
+                  <th>Bắt đầu</th>
+                  <th>Số ngày TT</th>
+                  {/* CỘT MÔN HỌC DẠNG SCROLL */}
+                  <th className="subject-col">
+                    <div className="subject-header-row">
+                      {(currentTrainings[0]?.scores || []).map((s, i) => (
+                        <div key={i} className="subject-header-cell">
+                          {s.courseName}
+                        </div>
+                      ))}
+
+                      {(currentTrainings[0]?.scores?.length ?? 0) === 0 && (
+                        <div className="subject-header-cell">Chưa có môn</div>
+                      )}
+                    </div>
                   </th>
-                  <th style={{ textAlign: "center", whiteSpace: "nowrap" }}>
-                    Số ngày TT
-                  </th>
-                  {/* Vùng Môn học – bên trong hiển thị 3 môn + scroll */}
-                  <th
-                    style={{
-                      textAlign: "center",
-                      whiteSpace: "nowrap",
-                      minWidth: "280px",
-                    }}
-                  >
-                    Môn học
-                  </th>
-                  <th style={{ textAlign: "center", whiteSpace: "nowrap" }}>
-                    Tổng kết
-                  </th>
-                  <th
-                    style={{
-                      textAlign: "center",
-                      whiteSpace: "normal",
-                      minWidth: "130px",
-                    }}
-                  >
-                    Đánh giá trên team
-                  </th>
-                  <th
-                    style={{
-                      textAlign: "center",
-                      whiteSpace: "normal",
-                      minWidth: "110px",
-                    }}
-                  >
-                    Trạng thái
-                  </th>
-                  <th
-                    style={{
-                      textAlign: "center",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    Hành động
-                  </th>
+                  <th>Tổng kết</th>
+                  <th>Đánh giá trên team</th>
+                  <th>Trạng thái</th>
+                  <th>Hành động</th>
                 </tr>
               </thead>
+
               <tbody>
                 {currentTrainings.length === 0 ? (
                   <tr>
@@ -261,87 +239,45 @@ export default function TrainingManagementPage() {
                 ) : (
                   currentTrainings.map((t, index) => {
                     const stt = indexOfFirst + index + 1;
-
-                    const name =
-                      t.traineeName || t.fullName || t.name || "NA";
-                    const startDate =
-                      t.startDate ||
-                      t.beginDate ||
-                      t.trainingStartDate ||
-                      null;
-                    const internDays =
-                      t.trainingDays ??
-                      t.soNgayThucTap ??
-                      t.soNgayTT ??
-                      "NA";
-
-                    const subject1 =
-                      t.subject1Score ?? t.monHoc1 ?? t.subject1 ?? "NA";
-                    const subject2 =
-                      t.subject2Score ?? t.monHoc2 ?? t.subject2 ?? "NA";
-                    const subject3 =
-                      t.subject3Score ?? t.monHoc3 ?? t.subject3 ?? "NA";
-                    const subject4 =
-                      t.subject4Score ?? t.monHoc4 ?? t.subject4 ?? "NA";
-                    const subject5 =
-                      t.subject5Score ?? t.monHoc5 ?? t.subject5 ?? "NA";
-                    const subject6 =
-                      t.subject6Score ?? t.monHoc6 ?? t.subject6 ?? "NA";
-
+                    const name = t.traineeName || t.fullName || t.name || "NA";
+                    const startDate = t.startDate || t.beginDate || t.trainingStartDate || null;
+                    const internDays = t.trainingDays ?? t.soNgayThucTap ?? t.soNgayTT ?? "NA";
                     const finalScore = t.finalScore ?? t.tongKet ?? "NA";
-                    const teamEval =
-                      t.teamEvaluation ?? t.danhGiaTeam ?? "NA";
+                    const teamEval = t.teamEvaluation ?? t.danhGiaTeam ?? "NA";
                     const internStatus = t.internStatus || t.status || "NA";
 
                     return (
                       <tr key={t.internId || t.trainingId || t.id || stt}>
-                        <td style={{ textAlign: "center" }}>{stt}</td>
+                        <td>{stt}</td>
                         <td>{name}</td>
-                        <td style={{ textAlign: "center" }}>
-                          {formatDate(startDate)}
-                        </td>
-                        <td style={{ textAlign: "center" }}>{internDays}</td>
+                        <td>{formatDate(startDate)}</td>
+                        <td>{internDays}</td>
 
-                        {/* Ô MÔN HỌC – 3 môn hiển thị, kéo để xem 4–6 */}
-                        <td style={{ padding: "4px 6px" }}>
-                          <div className="subject-scroll">
-                            <table className="subject-table">
-                              <thead>
-                                <tr>
-                                  <th>Môn 1</th>
-                                  <th>Môn 2</th>
-                                  <th>Môn 3</th>
-                                  <th>Môn 4</th>
-                                  <th>Môn 5</th>
-                                  <th>Môn 6</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                <tr>
-                                  <td>{subject1}</td>
-                                  <td>{subject2}</td>
-                                  <td>{subject3}</td>
-                                  <td>{subject4}</td>
-                                  <td>{subject5}</td>
-                                  <td>{subject6}</td>
-                                </tr>
-                              </tbody>
-                            </table>
+                        <td className="subject-col">
+                          <div className="subject-body-row">
+                            {(t.scores || []).map((s, i) => (
+                              <div key={i} className="subject-body-cell">
+                                {s.totalScore != null ? Number(s.totalScore).toFixed(2) : "NA"}
+                              </div>
+                            ))}
+
+                            {(t.scores?.length ?? 0) === 0 && (
+                              <div className="subject-body-cell">NA</div>
+                            )}
                           </div>
                         </td>
-
-                        <td style={{ textAlign: "center" }}>{finalScore}</td>
-                        <td style={{ textAlign: "center" }}>{teamEval}</td>
-                        <td style={{ textAlign: "center" }}>{internStatus}</td>
+                        <td>{t.summaryResult != null ? Number(t.summaryResult).toFixed(2) : "NA"}</td>
+                        <td>{t.teamReview != null ? Number(t.teamReview).toFixed(1) : "NA"}</td>
+                        <td>
+                          {t.internStatus || "Đang thực tập"}
+                        </td>
                         <td className="actions-cell text-center">
                           <div className="btn-action-wrapper">
                             <ActionButtons
                               onView={() => handleViewTraining(t)}
                               onEdit={() => handleEditTraining(t)}
                             />
-                            <div className="action-tooltip">
-                              Xem / Cập nhật đào tạo
-                            </div>
+                            <div className="action-tooltip">Xem / Cập nhật đào tạo</div>
                           </div>
                         </td>
                       </tr>
@@ -353,20 +289,21 @@ export default function TrainingManagementPage() {
           )}
         </div>
 
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-        />
+        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
       </div>
 
+      {/* MODAL CHỈNH SỬA ĐIỂM */}
+      {isEditModalOpen && editingTraining && (
+        <EditTrainingModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          trainingData={editingTraining}
+          onSave={handleSaveTraining}
+        />
+      )}
+
       {toast && (
-        <div
-          className={`toast-container ${
-            toast.type === "success" ? "toast-success" : "toast-error"
-          }`}
-          role="status"
-        >
+        <div className={`toast-container ${toast.type === "success" ? "toast-success" : "toast-error"}`} role="status">
           {toast.msg}
         </div>
       )}
