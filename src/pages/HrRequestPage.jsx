@@ -6,6 +6,13 @@ import ActionButtons from "../components/ActionButtons.jsx";
 import Pagination from "../components/Pagination";
 import CreateRequestModal from "../components/CreateRequestModal.jsx";
 import HRRequestModal from "../components/HRRequestModal.jsx";
+import DatePicker from "../components/DatePicker"; // đường dẫn đúng tới file bạn vừa viết
+
+// Import icon hiện đại, tối giản
+import { HiUserGroup } from "react-icons/hi"; 
+import { FiSearch } from "react-icons/fi";
+
+
 
 import "../styles/request.css";
 import "../styles/toast.css";
@@ -45,6 +52,7 @@ const getStatusClass = (status) => {
   }
 };
 
+
 export default function HRRequestPage() {
   const { requests, loading, error, refetch } = useHrRequests();
 
@@ -53,11 +61,10 @@ export default function HRRequestPage() {
   const [isAnimating, setIsAnimating] = useState(false);
   const [searchName, setSearchName] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [dateFilter, setDateFilter] = useState("");
+ const [selectedDate, setSelectedDate] = useState(null);
 
   const [showModal, setShowModal] = useState(false);
   const [editData, setEditData] = useState(null);
-
   const [selectedRequest, setSelectedRequest] = useState(null);
 
   const [toast, setToast] = useState(null);
@@ -79,13 +86,40 @@ export default function HRRequestPage() {
       ? String(req.status || "").toUpperCase() === statusFilter
       : true;
 
-    const matchesDate = dateFilter
-      ? req.createdAt &&
-      new Date(req.createdAt).toISOString().split("T")[0] === dateFilter
-      : true;
 
-    return matchesName && matchesStatus && matchesDate;
-  });
+  let matchesDate = true;
+
+  if (selectedDate?.value) {
+    const createdFilter = new Date(selectedDate.value);
+    const filterMode = selectedDate.filterMode || "day";
+
+    const selectedDay = createdFilter.getDate();
+    const selectedMonth =
+      selectedDate.displayMonth ?? createdFilter.getMonth();
+    const selectedYear =
+      selectedDate.displayYear ?? createdFilter.getFullYear();
+
+    const created = req.createdAt ? new Date(req.createdAt) : null;
+
+    if (created) {
+      if (filterMode === "day") {
+        matchesDate =
+          created.getDate() === selectedDay &&
+          created.getMonth() === selectedMonth &&
+          created.getFullYear() === selectedYear;
+      } else if (filterMode === "month") {
+        matchesDate =
+          created.getMonth() === selectedMonth &&
+          created.getFullYear() === selectedYear;
+      } else if (filterMode === "year") {
+        matchesDate = created.getFullYear() === selectedYear;
+      }
+    }
+  }
+
+  return matchesName && matchesStatus && matchesDate;
+});
+
 
   const filteredSorted = [...filteredRequests].sort((a, b) => {
     const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -129,7 +163,6 @@ export default function HRRequestPage() {
     setShowModal(true);
   };
 
-  // Logic nháy tooltip khi không được sửa (vẫn giữ nguyên logic nhưng selector sẽ tự tìm đúng tooltip con)
   const flashEditTooltip = (btnWrapperEl) => {
     const tip = btnWrapperEl?.querySelector(".action-tooltip");
     if (!tip) return;
@@ -156,25 +189,10 @@ export default function HRRequestPage() {
     <Layout>
       <div className="breadcrumb-container fade-slide">
         <div className="breadcrumb-left">
-          <span className="breadcrumb-icon">💼</span>
+          <span className="breadcrumb-icon"><HiUserGroup /></span>
           <span className="breadcrumb-item">Tuyển dụng</span>
           <span className="breadcrumb-separator">&gt;</span>
-          <span className="breadcrumb-current">Nhu cầu tuyển dụng</span>
-        </div>
-
-        <div className="breadcrumb-right">
-          <div className="mini-pagination">
-            <label className="mini-pagination-label">Hiển thị:</label>
-            <select
-              value={itemsPerPage}
-              onChange={handleChangeItemsPerPage}
-              className="mini-pagination-select"
-            >
-              <option value={10}>10</option>
-              <option value={15}>15</option>
-              <option value={20}>20</option>
-            </select>
-          </div>
+          <span className="breadcrumb-current">Nhu cầu nhân sự</span>
         </div>
       </div>
 
@@ -191,7 +209,8 @@ export default function HRRequestPage() {
                 value={searchName}
                 onChange={(e) => setSearchName(e.target.value)}
               />
-              <span className="filter-icon">🔍</span>
+    <span className="filter-icon"><FiSearch /></span>
+
             </div>
 
             <div className="filter-item">
@@ -200,7 +219,7 @@ export default function HRRequestPage() {
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
-                <option value="">Trạng thái</option>
+                <option value="">Chọn trạng thái</option>
                 <option value="NEW">Đã gửi</option>
                 <option value="IN_PROGRESS">Đang tiến hành</option>
                 <option value="COMPLETED">Đã hoàn thành</option>
@@ -208,14 +227,14 @@ export default function HRRequestPage() {
               </select>
             </div>
 
-            <div className="filter-item">
-              <input
-                type="date"
-                className="filter-input"
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-              />
-            </div>
+        <div className="filter-item">
+  <DatePicker
+    selectedDate={selectedDate}
+    onDateChange={(payload) => {
+      setSelectedDate(payload);
+    }}
+  />
+</div>
 
             <button className="add-plan-btn clean" onClick={openCreate}>
               ＋ Thêm nhu cầu tuyển dụng
@@ -224,81 +243,100 @@ export default function HRRequestPage() {
         </div>
 
         <div
-          className={`table-container table-fade ${isAnimating ? "fade-out" : "fade-in"
-            }`}
-        >
-          {loading ? (
-            <p className="loading-text">Đang tải dữ liệu...</p>
-          ) : error ? (
-            <p className="text-center text-error">{error}</p>
-          ) : filteredSorted.length === 0 ? (
-            <p className="text-center">Không có dữ liệu</p>
-          ) : (
-            <table className="styled-table">
-              <thead>
-                <tr>
-                  <th>STT</th>
-                  <th>Tên nhu cầu</th>
-                  <th>Ngày tạo</th>
-                  <th>Trạng thái</th>
-                  <th>Người gửi</th>
-                  <th>Hành động</th>
-                </tr>
-              </thead>
-              <tbody>
-                {currentRequests.map((req, index) => {
-                  const canEdit = isActionable(req.status);
-                  const rowAttrs = {
-                    "data-status": req.status || "",
-                    "data-editable": canEdit ? "true" : "false",
-                  };
+  className={`table-container table-fade ${isAnimating ? "fade-out" : "fade-in"}`}
+>
+  {loading ? (
+    <p className="loading-text">Đang tải dữ liệu...</p>
+  ) : error ? (
+    <p className="text-center text-error">{error}</p>
+  ) : (
+    <table className="styled-table">
+      <thead>
+        <tr>
+          <th>STT</th>
+          <th>Tên nhu cầu</th>
+          <th>Ngày tạo</th>
+          <th>Trạng thái</th>
+          <th>Người gửi</th>
+          <th>Hành động</th>
+        </tr>
+      </thead>
+      <tbody>
+        {currentRequests.length === 0 ? (
+          <tr>
+            <td colSpan="6" className="text-center">Không có dữ liệu</td>
+          </tr>
+        ) : (
+          currentRequests.map((req, index) => {
+            const canEdit = isActionable(req.status);
+            const rowAttrs = {
+              "data-status": req.status || "",
+              "data-editable": canEdit ? "true" : "false",
+            };
 
-                  return (
-                    <tr key={req.requestId || index} {...rowAttrs}>
-                      <td>{indexOfFirst + index + 1}</td>
-                      <td>{req.requestTitle}</td>
-                      <td>
-                        {req.createdAt
-                          ? new Date(req.createdAt).toLocaleDateString()
-                          : "—"}
-                      </td>
-                      <td>
-                        <span className={`status-badge ${getStatusClass(req.status)}`}>
-                          {getStatusLabel(req.status)}
-                        </span>
-                      </td>
-                      <td>{req.createdByName || "Không rõ"}</td>
+            return (
+              <tr key={req.requestId || index} {...rowAttrs}>
+                <td>{indexOfFirst + index + 1}</td>
+                <td>{req.requestTitle}</td>
+                <td>
+                  {req.createdAt
+                    ? new Date(req.createdAt).toLocaleDateString("vi-VN")
+                    : "—"}
+                </td>
+                <td>
+                  <span className={`status-badge ${getStatusClass(req.status)}`}>
+                    {getStatusLabel(req.status)}
+                  </span>
+                </td>
+                <td>{req.createdByName || "Không rõ"}</td>
+                <td className="actions-cell text-center">
+                  <ActionButtons
+                    onView={() => setSelectedRequest(req)}
+                    onEdit={(e) => {
+                      if (!canEdit) {
+                        e?.preventDefault?.();
+                        const wrapper = e?.currentTarget?.closest(".btn-action-wrapper")
+                          || e?.target?.closest(".btn-action-wrapper");
+                        flashEditTooltip(wrapper);
+                        return;
+                      }
+                      openEdit(req);
+                    }}
+                  />
+                </td>
+              </tr>
+            );
+          })
+        )}
+      </tbody>
+    </table>
+  )}
+</div>
 
-                      {/* ✅ SỬA TẠI ĐÂY: Xóa thẻ div bọc thừa để fix tooltip */}
-                      <td className="actions-cell text-center">
-                        <ActionButtons
-                          onView={() => setSelectedRequest(req)}
-                          onEdit={(e) => {
-                            if (!canEdit) {
-                              e?.preventDefault?.();
-                              // Tìm tooltip bên trong ActionButtons để flash
-                              const wrapper = e?.currentTarget?.closest(".btn-action-wrapper")
-                                || e?.target?.closest(".btn-action-wrapper");
-                              flashEditTooltip(wrapper);
-                              return;
-                            }
-                            openEdit(req);
-                          }}
-                        />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
+ {filteredSorted.length > 0 && (
+  <div className="pagination-bar">
+    <Pagination
+      currentPage={currentPage}
+      totalPages={totalPages}
+      onPageChange={handlePageChange}
+    />
 
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-        />
+    <div className="mini-pagination">
+      <label className="mini-pagination-label">Hiển thị:</label>
+      <select
+        value={itemsPerPage}
+        onChange={handleChangeItemsPerPage}
+        className="mini-pagination-select"
+      >
+        <option value={10}>10</option>
+        <option value={15}>15</option>
+        <option value={20}>20</option>
+      </select>
+    </div>
+  </div>
+)}
+
+
       </div>
 
       <CreateRequestModal
