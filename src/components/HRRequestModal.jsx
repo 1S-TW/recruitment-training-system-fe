@@ -19,13 +19,12 @@ export default function HRRequestModal({
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
 
-  // 🔹 Meta kế hoạch: lấy từ API /api/recruitment-plans
-  //    (đã bổ sung: recruitmentPlanId, inputRequired, candidateCount)
+  // 🔹 Meta kế hoạch
   const [planMeta, setPlanMeta] = useState(null);
 
   const navigate = useNavigate();
 
-  // tải danh mục công nghệ để map id -> name
+  // ====== LOAD DANH MỤC CÔNG NGHỆ ======
   useEffect(() => {
     if (!isOpen) return;
     const token = localStorage.getItem("token");
@@ -41,8 +40,7 @@ export default function HRRequestModal({
       .catch(() => setTechDict({}));
   }, [isOpen]);
 
-  // 🔹 Khi mở modal, load thông tin kế hoạch gắn với requestId (nếu có)
-  //    + tính tổng NV đầu vào (soLuong * 2)
+  // ====== LOAD KẾ HOẠCH GẮN VỚI REQUEST ======
   useEffect(() => {
     if (!isOpen || !request?.requestId) {
       setPlanMeta(null);
@@ -74,10 +72,13 @@ export default function HRRequestModal({
           request.createdByName ||
           "";
 
-        // Tính tổng NV đầu vào (soLuong * 2) từ quantityCandidates
         const quantityList = matched.request?.quantityCandidates || [];
         const inputRequired = quantityList.reduce(
           (sum, qc) => sum + (qc.soLuong || 0) * 2,
+          0
+        );
+        const outputRequired = quantityList.reduce(
+          (sum, qc) => sum + (qc.soLuong || 0),
           0
         );
 
@@ -87,14 +88,16 @@ export default function HRRequestModal({
           createdByName,
           recruitmentPlanId: matched.recruitmentPlanId,
           inputRequired,
-          candidateCount: 0, // sẽ được cập nhật ở effect bên dưới
+          candidateCount: 0,
+          trainingCount: 0,
+          outputRequired,
+          handoverCount: 0,
         });
       })
       .catch(() => setPlanMeta(null));
   }, [isOpen, request?.requestId]);
 
-  // 🔹 Sau khi đã có recruitmentPlanId, gọi tiếp API ứng viên để biết
-  //    đã tuyển được bao nhiêu (candidateCount)
+  // ====== ĐẾM ỨNG VIÊN THEO PLAN ======
   useEffect(() => {
     if (!isOpen || !planMeta?.recruitmentPlanId) return;
 
@@ -132,10 +135,91 @@ export default function HRRequestModal({
       });
   }, [isOpen, planMeta?.recruitmentPlanId]);
 
+  // ====== ĐẾM TTS THAM GIA ĐÀO TẠO THEO PLAN ======
+  useEffect(() => {
+    if (!isOpen || !planMeta?.recruitmentPlanId) return;
+
+    const token = localStorage.getItem("token");
+    fetch(
+      `http://localhost:8080/api/trainings/count-by-plan?planId=${planMeta.recruitmentPlanId}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    )
+      .then((res) => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then((count) => {
+        const num =
+          typeof count === "number" ? count : Number(count ?? 0) || 0;
+        setPlanMeta((prev) =>
+          prev
+            ? {
+                ...prev,
+                trainingCount: num,
+              }
+            : prev
+        );
+      })
+      .catch(() => {
+        setPlanMeta((prev) =>
+          prev
+            ? {
+                ...prev,
+                trainingCount: 0,
+              }
+            : prev
+        );
+      });
+  }, [isOpen, planMeta?.recruitmentPlanId]);
+
+  // ====== ĐẾM TTS ĐÃ BÀN GIAO (PASS) THEO PLAN ======
+  useEffect(() => {
+    if (!isOpen || !planMeta?.recruitmentPlanId) return;
+
+    const token = localStorage.getItem("token");
+
+    fetch(
+      `http://localhost:8080/api/trainings/delivered-count-by-plan?planId=${planMeta.recruitmentPlanId}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    )
+      .then((res) => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then((count) => {
+        const num =
+          typeof count === "number" ? count : Number(count ?? 0) || 0;
+
+        setPlanMeta((prev) =>
+          prev
+            ? {
+                ...prev,
+                handoverCount: num,
+              }
+            : prev
+        );
+      })
+      .catch(() => {
+        setPlanMeta((prev) =>
+          prev
+            ? {
+                ...prev,
+                handoverCount: 0,
+              }
+            : prev
+        );
+      });
+  }, [isOpen, planMeta?.recruitmentPlanId]);
+
+  // ====== NOTE / REJECT ======
   useEffect(() => {
     if (isOpen && request) {
       setNote(request.note || "");
-      setShowRejectModal(false); // mỗi lần mở lại thì quay về bước "chi tiết"
+      setShowRejectModal(false);
       setRejectReason("");
     }
   }, [isOpen, request]);
@@ -180,8 +264,26 @@ export default function HRRequestModal({
     }
   };
 
-  const statusRaw = (request?.status || "").toUpperCase();
-  const statusLabel = getStatusLabel(request?.status);
+  // ===== STATUS TÍNH TOÁN LẠI DỰA TRÊN KẾ HOẠCH =====
+  const computedStatusRaw = useMemo(() => {
+    const base = (request?.status || "").toUpperCase();
+
+    // Nếu nhu cầu không bị từ chối và đã có planMeta + bàn giao đủ nhân sự
+    if (
+      base !== "CANCELED" &&
+      planMeta &&
+      (planMeta.outputRequired || 0) > 0 &&
+      (planMeta.handoverCount || 0) >= (planMeta.outputRequired || 0)
+    ) {
+      return "COMPLETED";
+    }
+
+    return base;
+  }, [request?.status, planMeta]);
+
+  // dùng status đã tính toán thay cho status gốc
+  const statusRaw = computedStatusRaw;
+  const statusLabel = getStatusLabel(statusRaw);
 
   const status = statusRaw;
   const isNew = status === "NEW";
@@ -225,6 +327,7 @@ export default function HRRequestModal({
     return { by, reason };
   }, [request?.rejectReason]);
 
+  // ================== BUILD TIẾN TRÌNH ==================
   const progressSteps = useMemo(() => {
     const createdBy = request?.createdByName || "Không rõ";
     const requestTitle = request?.requestTitle || "nhu cầu";
@@ -235,17 +338,11 @@ export default function HRRequestModal({
 
     // 🔹 Lấy thông tin kế hoạch từ planMeta
     const planName = planMeta?.planName || "";
-    const planLabel = planName
-      ? `kế hoạch "${planName}"`
-      : "kế hoạch tuyển dụng";
+    const planLabel = planName ? `kế hoạch "${planName}"` : "kế hoạch tuyển dụng";
 
     const planStatus = (planMeta?.status || "").toUpperCase();
     const planCreator = planMeta?.createdByName || createdBy;
     const planApprover = approverName || planCreator;
-
-    const createdAt = request?.createdAt
-      ? new Date(request.createdAt).toLocaleString("vi-VN")
-      : "";
 
     const steps = [
       {
@@ -253,9 +350,7 @@ export default function HRRequestModal({
         title: "Khởi tạo nhu cầu",
         status: "success",
         actor: createdBy,
-        detail: createdAt
-          ? `Tạo bởi ${createdBy} • ${createdAt}`
-          : `Tạo bởi ${createdBy}`,
+        detail: `Nhu cầu "${requestTitle}"`,
       },
       {
         key: "approve-request",
@@ -292,22 +387,29 @@ export default function HRRequestModal({
         actor: "Chưa thực hiện",
         detail: "Chờ ứng viên đạt yêu cầu",
       },
+      {
+        key: "handover",
+        title: "Bàn giao nhân sự",
+        status: "pending",
+        actor: "Chưa thực hiện",
+        detail: "Chờ bàn giao nhân sự",
+      },
     ];
 
-    // ===== 1. ĐỔI THEO TRẠNG THÁI CỦA NHU CẦU (HrRequest) =====
+    // ===== 1. THEO TRẠNG THÁI NHU CẦU =====
     if (statusRaw === "APPROVED") {
       steps[1] = {
         ...steps[1],
         status: "success",
         actor: approverName,
-        detail: `Phê duyệt ${requestLabel} bởi ${approverName}`,
+        detail: `Phê duyệt ${requestLabel}`,
       };
     } else if (statusRaw === "IN_PROGRESS") {
       steps[1] = {
         ...steps[1],
         status: "success",
         actor: approverName,
-        detail: `Phê duyệt ${requestLabel} bởi ${approverName}`,
+        detail: `Phê duyệt ${requestLabel}`,
       };
       steps[2] = {
         ...steps[2],
@@ -318,7 +420,7 @@ export default function HRRequestModal({
         )} đã được khởi tạo`,
       };
     } else if (statusRaw === "COMPLETED") {
-      // ✅ Đánh hoàn thành tới PHÊ DUYỆT KẾ HOẠCH
+      // trạng thái COMPLETED sẽ tiếp tục được ghi đè chi tiết bởi planMeta phía dưới
       steps.forEach((s, idx) => {
         if (idx <= 3) {
           steps[idx] = {
@@ -340,6 +442,13 @@ export default function HRRequestModal({
             status: "pending",
             actor: "Chưa thực hiện",
             detail: "Chờ triển khai đào tạo",
+          };
+        } else if (idx === 6) {
+          steps[idx] = {
+            ...s,
+            status: "pending",
+            actor: "Chưa thực hiện",
+            detail: "Chờ bàn giao nhân sự",
           };
         }
       });
@@ -365,6 +474,8 @@ export default function HRRequestModal({
         rejectIndex = 4;
       } else if (reasonLower.includes("đào tạo")) {
         rejectIndex = 5;
+      } else if (reasonLower.includes("bàn giao")) {
+        rejectIndex = 6;
       }
 
       const rejectActor =
@@ -393,7 +504,7 @@ export default function HRRequestModal({
       });
     }
 
-    // ===== 2. GHI ĐÈ THEO TRẠNG THÁI KẾ HOẠCH (RecruitmentPlan) =====
+    // ===== 2. GHI ĐÈ THEO TRẠNG THÁI KẾ HOẠCH + SỐ LƯỢNG ỨNG VIÊN / TTS =====
     if (statusRaw !== "CANCELED" && planStatus) {
       const isPlanApproved = [
         "CONFIRMED",
@@ -457,42 +568,125 @@ export default function HRRequestModal({
         };
       }
 
-      // ===== 2.1. CẬP NHẬT BƯỚC "QUẢN LÝ ỨNG VIÊN" THEO SỐ LƯỢNG ĐẦU VÀO =====
+      // ===== 2.1. QUẢN LÝ ỨNG VIÊN =====
       const inputRequired = planMeta?.inputRequired || 0; // NV đầu vào (soLuong * 2)
       const candidateCount =
         planMeta?.candidateCount != null ? planMeta.candidateCount : 0;
+      const trainingCount =
+        planMeta?.trainingCount != null ? planMeta.trainingCount : 0;
+      const outputRequired = planMeta?.outputRequired || 0; // NV đầu ra
+      const handoverCount =
+        planMeta?.handoverCount != null ? planMeta.handoverCount : 0;
 
       if (inputRequired > 0) {
-        const baseActor =
+        const baseActorCandidate =
           steps[4].actor && steps[4].actor !== "Chưa thực hiện"
             ? steps[4].actor
             : planCreator;
 
+        // ✅ PHẦN DETAIL CHO BƯỚC "QUẢN LÝ ỨNG VIÊN"
         if (candidateCount >= inputRequired) {
-          // ✅ Đã tuyển đủ: chuyển sang ĐÃ HOÀN THÀNH
           steps[4] = {
             ...steps[4],
             status: "success",
-            actor: baseActor,
-            detail: `Đã tuyển đủ ${candidateCount}/${inputRequired} ứng viên theo kế hoạch`,
+            actor: baseActorCandidate,
+            detail: `Số lượng ứng viên ứng tuyển: ${candidateCount}`,
           };
         } else {
-          // ❗ Chưa đủ: để xám & hiển thị "x/y"
           const text =
             candidateCount > 0
-              ? `Đã tuyển ${candidateCount}/${inputRequired} ứng viên theo kế hoạch`
-              : `Chờ tuyển dụng ứng viên (0/${inputRequired})`;
+              ? `Số lượng ứng viên ứng tuyển: ${candidateCount}`
+              : "Số lượng ứng viên ứng tuyển: 0";
           steps[4] = {
             ...steps[4],
             status: "pending",
-            actor: baseActor,
+            actor: baseActorCandidate,
+            detail: text,
+          };
+        }
+
+        // ===== 2.2. ĐÀO TẠO – SỐ LƯỢNG TTS =====
+        const baseActorTraining =
+          steps[5].actor && steps[5].actor !== "Chưa thực hiện"
+            ? steps[5].actor
+            : planCreator;
+
+        const prefix = "Số lượng TTS tham gia đào tạo:";
+
+        if (trainingCount >= inputRequired) {
+          steps[5] = {
+            ...steps[5],
+            status: "success",
+            actor: baseActorTraining,
+            detail: `${prefix} ${trainingCount}`,
+          };
+        } else {
+          steps[5] = {
+            ...steps[5],
+            status: "pending",
+            actor: baseActorTraining,
+            detail: `${prefix} ${trainingCount}`,
+          };
+        }
+      }
+
+      // ===== 2.3. BÀN GIAO NHÂN SỰ – THÀNH CÔNG / THẤT BẠI =====
+      if (outputRequired > 0) {
+        const baseActorHandover =
+          steps[6].actor && steps[6].actor !== "Chưa thực hiện"
+            ? steps[6].actor
+            : planCreator;
+
+        const hasRejectReason =
+          !!(parsedReject.reason || request?.rejectReason);
+        const isFailure =
+          hasRejectReason &&
+          statusRaw === "COMPLETED" &&
+          (handoverCount || 0) < outputRequired;
+
+        if (handoverCount >= outputRequired) {
+          // ✅ Bàn giao đủ số lượng yêu cầu → THÀNH CÔNG
+          steps[6] = {
+            ...steps[6],
+            status: "success",
+            actor: baseActorHandover,
+            detail: `Đã bàn giao ${handoverCount} nhân sự`,
+          };
+        } else if (isFailure) {
+          // ✅ Tất cả TTS đã chấm nhưng không đủ / không có TTS PASS → THẤT BẠI
+          const baseDetail =
+            handoverCount > 0
+              ? `Chỉ bàn giao được ${handoverCount}/${outputRequired} nhân sự`
+              : `Không bàn giao được nhân sự nào (0/${outputRequired}).`;
+
+          steps[6] = {
+            ...steps[6],
+            status: "rejected",
+            actor: baseActorHandover,
+            detail: baseDetail,
+            rejectReason:
+              parsedReject.reason ||
+              request?.rejectReason ||
+              "Không có thực tập sinh nào đạt yêu cầu để bàn giao.",
+          };
+        } else {
+          // ⏳ Chưa kết luận (đang đào tạo hoặc còn TTS chưa chấm)
+          const text =
+            handoverCount > 0
+              ? `Đã bàn giao ${handoverCount} nhân sự`
+              : "Đã bàn giao 0 nhân sự";
+          steps[6] = {
+            ...steps[6],
+            status: "pending",
+            actor: baseActorHandover,
             detail: text,
           };
         }
       }
     }
 
-    return steps;
+    // ❗ CUỐI CÙNG: loại bỏ 2 bước bạn không muốn hiển thị
+    return steps.filter((s) => s.key !== "request" && s.key !== "plan-create");
   }, [
     request?.createdAt,
     request?.createdByName,
@@ -505,6 +699,7 @@ export default function HRRequestModal({
     planMeta,
   ]);
 
+  // ================== API ERROR HELPER ==================
   const readErrorMessage = async (res) => {
     const text = await res.text();
     try {
@@ -515,7 +710,7 @@ export default function HRRequestModal({
     }
   };
 
-  // =============== PHÊ DUYỆT =================
+  // ================== PHÊ DUYỆT ==================
   const handleApprove = async () => {
     if (!request || !isNew) return;
 
@@ -560,14 +755,13 @@ export default function HRRequestModal({
     }
   };
 
-  // =============== BẮT ĐẦU TỪ CHỐI (mở bước 2) =================
+  // ================== TỪ CHỐI ==================
   const handleStartReject = () => {
     if (!request || !isNew) return;
     setRejectReason("");
     setShowRejectModal(true);
   };
 
-  // =============== GỬI LÝ DO TỪ CHỐI =================
   const handleSubmitReject = async () => {
     if (!request || !isNew) return;
     if (!rejectReason.trim()) {
@@ -618,6 +812,7 @@ export default function HRRequestModal({
     }
   };
 
+  // ================== RENDER ==================
   if (!isOpen || !request) return null;
 
   const disableActions = loading || !isNew;
@@ -709,7 +904,7 @@ export default function HRRequestModal({
                       step.status === "success"
                         ? "Đã hoàn thành"
                         : step.status === "rejected"
-                        ? "Từ chối"
+                        ? "Thất bại"
                         : "Đang chờ";
 
                     return (
@@ -767,7 +962,7 @@ export default function HRRequestModal({
                     className="note-input note-readonly"
                     value={note}
                     readOnly
-                    onFocus={(e) => e.target.blur()} // không cho focus/gõ
+                    onFocus={(e) => e.target.blur()}
                   />
                 </div>
               )}
