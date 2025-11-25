@@ -239,6 +239,21 @@ export default function HRRequestModal({
     onClose?.();
   };
 
+   const handleOpenTrainingManagement = () => {
+    if (!planMeta?.recruitmentPlanId) return;
+
+    const planId = planMeta.recruitmentPlanId;
+    const planName = planMeta.planName ? encodeURIComponent(planMeta.planName) : "";
+    const query = [`planId=${planId}`];
+
+    if (planName) {
+      query.push(`planName=${planName}`);
+    }
+
+    navigate(`/training?${query.join("&")}`);
+    onClose?.();
+  };
+
   const techRows = useMemo(() => {
     const arr = request?.techQuantities || [];
     return arr.map((t) => ({
@@ -626,7 +641,21 @@ export default function HRRequestModal({
             ? steps[5].actor
             : planCreator;
 
-        const trainingDetail = `Số lượng TTS tham gia đào tạo: ${trainingCount}`;
+        const trainingDetail = (
+          <div className="timeline-desc-stack">
+            <span>Số lượng TTS tham gia đào tạo: {trainingCount}</span>
+
+            {planMeta?.recruitmentPlanId && (
+              <button
+                type="button"
+                className="timeline-link"
+                onClick={handleOpenTrainingManagement}
+              >
+                xem kết quả đào tạo
+              </button>
+            )}
+          </div>
+        );
         steps[5] = {
           ...steps[5],
           actor: baseActorTraining,
@@ -703,6 +732,7 @@ export default function HRRequestModal({
     parsedReject,
     planMeta,
     handleOpenCandidateManagement,
+    handleOpenTrainingManagement,
   ]);
 
   // ================== API ERROR HELPER ==================

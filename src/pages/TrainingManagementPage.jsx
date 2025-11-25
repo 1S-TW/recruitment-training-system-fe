@@ -1,7 +1,7 @@
 // src/pages/TrainingManagementPage.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import api from "../services/api";
-
+import { useSearchParams } from "react-router-dom";
 import Layout from "../components/Layout";
 import Pagination from "../components/Pagination";
 import ActionButtons from "../components/ActionButtons.jsx";
@@ -15,12 +15,19 @@ export default function TrainingManagementPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const [planOptions, setPlanOptions] = useState([]);
+  const [prefilledPlan, setPrefilledPlan] = useState(null);
+
+  const [searchParams] = useSearchParams();
+
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [isAnimating, setIsAnimating] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [internStatusFilter, setInternStatusFilter] = useState("");
+
+  const [planFilter, setPlanFilter] = useState("");
 
   // --- STATE MODAL ---
   const [editingTraining, setEditingTraining] = useState(null);
@@ -50,30 +57,99 @@ export default function TrainingManagementPage() {
 
   useEffect(() => {
     fetchTrainings();
+    fetchConfirmedPlans();
   }, []);
 
+  const fetchConfirmedPlans = async () => {
+    try {
+      const res = await api.get("/recruitment-plans/approved");
+      setPlanOptions(Array.isArray(res.data) ? res.data : []);
+    } catch (e) {
+      console.error("Lỗi tải kế hoạch tuyển dụng CONFIRMED:", e);
+      setPlanOptions([]);
+    }
+  };
+
+  useEffect(() => {
+    const planId = searchParams.get("planId");
+    const planName = searchParams.get("planName");
+
+    if (planId) {
+      setPlanFilter(planId);
+      setCurrentPage(1);
+
+      if (planName) {
+        setPrefilledPlan({ id: planId, name: planName });
+      }
+    }
+  }, [searchParams]);
+
+  const normalizePlan = (raw) => {
+    const id = raw.id ?? raw.recruitmentPlanId ?? raw.planId ?? null;
+    const name = raw.name ?? raw.planName ?? raw.title ?? "Kế hoạch không tên";
+    return { id, name };
+  };
+
+  const planSelectOptions = useMemo(() => {
+    const normalized = planOptions
+      .map(normalizePlan)
+      .filter((plan) => plan.id !== null && plan.id !== undefined);
+
+    if (
+      prefilledPlan &&
+      !normalized.some((plan) => String(plan.id) === String(prefilledPlan.id))
+    ) {
+      return [...normalized, prefilledPlan];
+    }
+
+    return normalized;
+  }, [planOptions, prefilledPlan]);
+
+  // LỌC DANH SÁCH ĐÀO TẠO
   const filteredTrainings = useMemo(
     () =>
       (trainings || []).filter((t) => {
         const keyword = searchTerm.trim().toLowerCase();
 
+        // --- Lọc theo từ khóa (tên / email / sđt) ---
         if (keyword) {
-          const name = (t.traineeName || t.fullName || t.name || "").toLowerCase();
+          const name =
+            (t.traineeName || t.fullName || t.name || "").toLowerCase();
           const email = (t.email || "").toLowerCase();
           const phone = (t.phoneNumber || t.phone || "").toLowerCase();
-          if (!name.includes(keyword) && !email.includes(keyword) && !phone.includes(keyword)) {
+          if (
+            !name.includes(keyword) &&
+            !email.includes(keyword) &&
+            !phone.includes(keyword)
+          ) {
             return false;
           }
         }
 
+        // --- Lọc theo trạng thái thực tập ---
         if (internStatusFilter) {
           const st = (t.internStatus || t.status || "").toLowerCase();
           if (!st.includes(internStatusFilter.toLowerCase())) return false;
         }
 
+        // --- Lọc theo kế hoạch tuyển dụng ---
+        if (planFilter) {
+          // 🔥 LẤY ĐÚNG ID KẾ HOẠCH TỪ INTERN / DTO
+          const planId =
+            t.recruitmentPlan?.recruitmentPlanId ??
+            t.recruitmentPlanId ??
+            t.planId ??
+            t.recruitmentPlan?.id ??
+            t.plan?.id;
+
+          if (!planId || String(planId) !== String(planFilter)) {
+            return false;
+          }
+        }
+
         return true;
       }),
-    [trainings, searchTerm, internStatusFilter]
+    [trainings, searchTerm, internStatusFilter, planFilter]
   );
 
   const filteredSorted = useMemo(
@@ -115,9 +191,12 @@ export default function TrainingManagementPage() {
     setIsEditModalOpen(true);
   };
 
+  // 🔧 SỬA Ở ĐÂY: cập nhật theo internId thay vì t.id
   const handleSaveTraining = (updatedTraining) => {
     setTrainings((prev) =>
-      prev.map((t) => (t.id === updatedTraining.id ? updatedTraining : t))
+      prev.map((t) =>
+        t.internId === updatedTraining.internId ? updatedTraining : t
+      )
     );
     showToast("Cập nhật điểm thành công!");
     setIsEditModalOpen(false);
@@ -191,11 +270,33 @@ export default function TrainingManagementPage() {
                 <option value="Đã dừng thực tập">Đã dừng thực tập</option>
               </select>
             </div>
+
+            <div className="filter-item">
+              <select
+                className="filter-select"
+                value={planFilter}
+                onChange={(e) => {
+                  setPlanFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+              >
+                <option value="">Chọn kế hoạch tuyển dụng</option>
+                {planSelectOptions.map((plan) => (
+                  <option key={plan.id} value={plan.id}>
+                    {plan.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
         {/* BẢNG DỮ LIỆU */}
-        <div className={`table-container table-fade ${isAnimating ? "fade-out" : "fade-in"}`}>
+        <div
+          className={`table-container table-fade ${
+            isAnimating ? "fade-out" : "fade-in"
+          }`}
+        >
           {loading ? (
             <p className="loading-text">Đang tải dữ liệu...</p>
           ) : error ? (
@@ -239,9 +340,15 @@ export default function TrainingManagementPage() {
                 ) : (
                   currentTrainings.map((t, index) => {
                     const stt = indexOfFirst + index + 1;
-                    const name = t.traineeName || t.fullName || t.name || "NA";
-                    const startDate = t.startDate || t.beginDate || t.trainingStartDate || null;
-                    const internDays = t.trainingDays ?? t.soNgayThucTap ?? t.soNgayTT ?? "NA";
+                    const name =
+                      t.traineeName || t.fullName || t.name || "NA";
+                    const startDate =
+                      t.startDate || t.beginDate || t.trainingStartDate || null;
+                    const internDays =
+                      t.trainingDays ??
+                      t.soNgayThucTap ??
+                      t.soNgayTT ??
+                      "NA";
                     const finalScore = t.finalScore ?? t.tongKet ?? "NA";
                     const teamEval = t.teamEvaluation ?? t.danhGiaTeam ?? "NA";
                     const internStatus = t.internStatus || t.status || "NA";
@@ -257,7 +364,9 @@ export default function TrainingManagementPage() {
                           <div className="subject-body-row">
                             {(t.scores || []).map((s, i) => (
                               <div key={i} className="subject-body-cell">
-                                {s.totalScore != null ? Number(s.totalScore).toFixed(2) : "NA"}
+                                {s.totalScore != null
+                                  ? Number(s.totalScore).toFixed(2)
+                                  : "NA"}
                               </div>
                             ))}
 
@@ -266,18 +375,26 @@ export default function TrainingManagementPage() {
                             )}
                           </div>
                         </td>
-                        <td>{t.summaryResult != null ? Number(t.summaryResult).toFixed(2) : "NA"}</td>
-                        <td>{t.teamReview != null ? Number(t.teamReview).toFixed(1) : "NA"}</td>
                         <td>
-                          {t.internStatus || "Đang thực tập"}
+                          {t.summaryResult != null
+                            ? Number(t.summaryResult).toFixed(2)
+                            : "NA"}
                         </td>
+                        <td>
+                          {t.teamReview != null
+                            ? Number(t.teamReview).toFixed(1)
+                            : "NA"}
+                        </td>
+                        <td>{internStatus}</td>
                         <td className="actions-cell text-center">
                           <div className="btn-action-wrapper">
                             <ActionButtons
                               onView={() => handleViewTraining(t)}
                               onEdit={() => handleEditTraining(t)}
                             />
-                            <div className="action-tooltip">Xem / Cập nhật đào tạo</div>
+                            <div className="action-tooltip">
+                              Xem / Cập nhật đào tạo
+                            </div>
                           </div>
                         </td>
                       </tr>
@@ -289,7 +406,11 @@ export default function TrainingManagementPage() {
           )}
         </div>
 
-        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
       </div>
 
       {/* MODAL CHỈNH SỬA ĐIỂM */}
@@ -303,7 +424,12 @@ export default function TrainingManagementPage() {
       )}
 
       {toast && (
-        <div className={`toast-container ${toast.type === "success" ? "toast-success" : "toast-error"}`} role="status">
+        <div
+          className={`toast-container ${
+            toast.type === "success" ? "toast-success" : "toast-error"
+          }`}
+          role="status"
+        >
           {toast.msg}
         </div>
       )}
