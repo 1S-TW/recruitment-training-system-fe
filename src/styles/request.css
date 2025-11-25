@@ -38,58 +38,126 @@
   align-items: center;
 }
 
-/* --- MINI PAGINATION (HIỂN THỊ) --- */
-.mini-pagination {
+/* ==== MINI PAGINATION (ô HIỂN THỊ) – hover nhẹ, KHÔNG NHÔ ==== */
+.mini-pagination,
+.pagination-bar .mini-pagination {
     display: flex;
     align-items: center;
-    background: #ffffff;
+    gap: 6px;
+    padding: 6px 12px;
     border: 1px solid #e2e8f0;
     border-radius: 10px;
-    padding: 6px 14px;
-    gap: 8px;
-    font-weight: 500;
-    font-size: 0.9rem;
-    color: #0f172a;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    transition: all 0.25s ease;
+    background: #ffffff;
+
+    /* Không nhô, không dịch chuyển */
+    transition: background 0.2s ease, border-color 0.2s ease;
 }
 
-.mini-pagination:hover {
+/* Hover toàn bộ khung */
+.mini-pagination:hover,
+.pagination-bar .mini-pagination:hover {
+    background: #f1f5f9;   /* xám nhạt sang trọng */
     border-color: #cbd5e1;
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.06);
-    transform: translateY(-1px);
 }
 
+/* Label */
 .mini-pagination-label {
     font-weight: 600;
+    font-size: 0.85rem;
     color: #0f172a;
 }
 
-.mini-pagination-select {
+/* ==== SELECT BÊN TRONG ==== */
+.mini-pagination-select,
+.pagination-bar .mini-pagination-select {
+    height: 26px;
+    padding: 0 22px 0 6px;
+    font-size: 0.85rem;
     border: none;
-    background: #f8fafc;
     border-radius: 6px;
-    padding: 4px 10px;
-    font-size: 0.9rem;
-    font-weight: 500;
+    background: #f8fafc;
     color: #111827;
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+
     appearance: none;
     -webkit-appearance: none;
-    background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='12' viewBox='0 0 24 24' width='12' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+    background-image: url("data:image/svg+xml;utf8,<svg fill='gray' height='10' width='10' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
     background-repeat: no-repeat;
-    background-position: right 8px center;
-    background-size: 12px;
-    padding-right: 24px;
+    background-position: right 6px center;
+    background-size: 10px;
+
+    /* Không nhô */
+    transition: background 0.2s ease;
 }
 
+/* Hover riêng ô select — màu xanh nhạt giống video */
 .mini-pagination-select:hover,
-.mini-pagination-select:focus {
-    background: #e0f2fe;
-    border-color: #bae6fd;
+.mini-pagination-select:focus,
+.pagination-bar .mini-pagination-select:hover,
+.pagination-bar .mini-pagination-select:focus {
+    background: #e0f2ff !important;  
     outline: none;
+}
+
+
+/* === Pagination bar === */
+.pagination-bar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* pagination ở giữa */
+  margin-top: 12px;
+  position: relative; /* cho mini box áp cạnh */
+}
+
+/* === Mini Pagination: nhỏ nhất, thẳng hàng === */
+.pagination-bar .mini-pagination {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  padding: 3px 8px;                  /* NHỎ LẠI  */
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  border-radius: 6px;                /* bo giống nút trang */
+  font-size: 0.8rem;                 /* nhỏ hơn */
+  font-weight: 500;
+
+  height: 28px;                      /* KHỚP CHIỀU CAO pagination */
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+/* Label nhỏ hơn */
+.pagination-bar .mini-pagination-label {
+  font-size: 0.8rem;
+  margin-right: 2px;
+}
+
+/* Dropdown mini */
+.pagination-bar .mini-pagination-select {
+  height: 24px;                      /* nhỏ gọn hơn */
+  padding: 0 20px 0 6px;
+  font-size: 0.78rem;
+
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #f8fafc;
+
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='gray' height='10' viewBox='0 0 24 24' width='10' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 4px center;
+  background-size: 10px;
+}
+
+.pagination-bar .mini-pagination-select:hover {
+  background: #eef6ff;
 }
 
 /* --- TITLE + FILTER --- */

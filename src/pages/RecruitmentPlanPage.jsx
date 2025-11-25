@@ -9,7 +9,8 @@ import AddPlanModal from "../components/AddPlanModal";
 import DatePicker from "../components/DatePicker";
 import Modal from "../components/Modal";
 import "../styles/plan.css";
-
+import { HiUserGroup } from "react-icons/hi"; 
+import { FiSearch } from "react-icons/fi";
 const formatDate = (dateString) => {
   if (!dateString) return "—";
   return new Date(dateString).toLocaleDateString("vi-VN");
@@ -438,7 +439,7 @@ const RecruitmentPlanPage = () => {
       {/* Breadcrumb */}
       <div className="breadcrumb-container fade-slide">
         <div className="breadcrumb-left">
-          <span className="breadcrumb-icon">💼</span>
+            <span className="breadcrumb-icon"><HiUserGroup /></span>
           <span className="breadcrumb-item">Tuyển dụng</span>
           <span className="breadcrumb-separator">&gt;</span>
           <span className="breadcrumb-current">Kế hoạch tuyển dụng</span>
@@ -475,7 +476,7 @@ const RecruitmentPlanPage = () => {
                   onChange={(e) => setSearchName(e.target.value)}
                   list="recent-names"
                 />
-                <span className="filter-icon"> 🔍</span>
+          <span className="filter-icon"><FiSearch /></span>
                 <datalist id="recent-names">
                   {(
                     JSON.parse(localStorage.getItem("recentNames") || "[]")
