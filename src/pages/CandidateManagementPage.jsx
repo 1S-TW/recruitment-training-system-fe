@@ -135,11 +135,30 @@ export default function CandidateManagementPage() {
     [candidates, searchTerm, statusFilter, planFilter]
   );
 
+   const getCreatedTime = (candidate) => {
+    if (candidate.createdAt) {
+      return new Date(candidate.createdAt).getTime();
+    }
+    if (candidate.createdDate) {
+      return new Date(candidate.createdDate).getTime();
+    }
+    if (candidate.created_at) {
+      return new Date(candidate.created_at).getTime();
+    }
+
+    // Fallback: dùng candidateId để giữ thứ tự ổn định (id cao hơn mới hơn)
+    if (candidate.candidateId) {
+      return Number(candidate.candidateId);
+    }
+
+    return 0;
+  };
+
   const filteredSorted = useMemo(
     () =>
       [...filteredCandidates].sort((a, b) => {
-        const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        const da = getCreatedTime(a);
+        const db = getCreatedTime(b);
         return db - da;
       }),
     [filteredCandidates]

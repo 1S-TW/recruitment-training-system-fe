@@ -312,11 +312,17 @@
     letter-spacing: 0.2px;
   }
   .status-badge.status-new {
-    background: #dbeafe;
-    border-color: #93c5fd;
-    color: #1d4ed8;
+    background: #fef9c3;
+    border-color: #fcd34d;
+    color: #92400e;
   }
   .status-badge.status-confirmed {
+    background: #e0f2fe;
+    border-color: #60a5fa;
+    color: #1d4ed8;
+  }
+  .status-badge.status-completed {
+    
     background: #dcfce7;
     border-color: #86efac;
     color: #166534;

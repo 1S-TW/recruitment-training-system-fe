@@ -285,11 +285,15 @@ export default function HRRequestModal({
     return techRows.reduce((sum, row) => sum + (row.quantity || 0), 0);
   }, [techRows]);
 
+  const rejectReasonText = (request?.rejectReason || "").trim();
   // Map mã trạng thái -> label tiếng Việt
   const getStatusLabel = (status) => {
     switch (String(status || "").toUpperCase()) {
       case "NEW":
         return "Đã gửi";
+        case "FAILED":
+      case "FAILURE":
+        return "Thất bại";
       case "PENDING":
         return "Đang chờ";
       case "IN_PROGRESS":
@@ -307,6 +311,24 @@ export default function HRRequestModal({
   const computedStatusRaw = useMemo(() => {
     const base = (request?.status || "").toUpperCase();
 
+    const hasFailureReason = !!rejectReasonText;
+    const outputRequired = planMeta?.outputRequired || 0;
+    const delivered = planMeta?.handoverCount || 0;
+
+    if (
+      base !== "CANCELED" &&
+      outputRequired > 0 &&
+      delivered < outputRequired &&
+      hasFailureReason
+    ) {
+      return "FAILED";
+    }
+
+    if (base === "FAILED" || base === "FAILURE") return "FAILED";
+
+    if (base === "COMPLETED" && hasFailureReason) return "FAILED";
+    
+
     // Nếu nhu cầu không bị từ chối và đã có planMeta + bàn giao đủ nhân sự
     if (
       base !== "CANCELED" &&
@@ -318,7 +340,7 @@ export default function HRRequestModal({
     }
 
     return base;
-  }, [request?.status, planMeta]);
+   }, [request?.status, planMeta, rejectReasonText]);
 
   // dùng status đã tính toán thay cho status gốc
   const statusRaw = computedStatusRaw;
@@ -704,8 +726,9 @@ export default function HRRequestModal({
           !!(parsedReject.reason || request?.rejectReason);
         const isFailure =
           hasRejectReason &&
-          statusRaw === "COMPLETED" &&
-          (handoverCount || 0) < outputRequired;
+          (statusRaw === "FAILED" ||
+            (statusRaw === "COMPLETED" &&
+              (handoverCount || 0) < outputRequired));
 
         if (handoverCount >= outputRequired) {
           // ✅ Bàn giao đủ số lượng yêu cầu → THÀNH CÔNG
