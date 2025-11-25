@@ -4,14 +4,16 @@ import Input from "./Form/Input";
 import api from "../services/api";
 import "../styles/AddResultModal.css";
 
-// Helper functions (Giữ nguyên)
+// Helper functions
 const getPlanName = (candidate) => {
   if (!candidate) return "—";
   return candidate.recruitmentPlanName || "Không rõ kế hoạch";
 };
+
 const formatDateTimeLocal = (isoString) => {
   if (!isoString) return "";
   try {
+    if (isoString.length === 16 && isoString.indexOf("T") === 10) return isoString;
     const d = new Date(isoString);
     const year = d.getFullYear();
     const month = (d.getMonth() + 1).toString().padStart(2, "0");
@@ -24,48 +26,59 @@ const formatDateTimeLocal = (isoString) => {
   }
 };
 
-// --- State rỗng ban đầu với mặc định mới ---
 const initialState = {
-  attendedInterview: "NO", // NEW DEFAULT: KHÔNG
+  // Thông tin ứng viên
+  fullName: "",
+  email: "",
+  phoneNumber: "",
+  cvLink: "",
+  interviewDate: "",
+
+  // Kết quả
+  attendedInterview: "NO",
   testScore: "",
   interviewScore: "",
   comment: "",
-  finalResult: "FAIL",     // NEW DEFAULT: FAIL
+  finalResult: "Không đạt", // Mặc định là Không đạt
   candidateStatus: "Chưa có kết quả",
   note: "",
   internshipDate: "",
 };
 
 export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }) {
-
   // 1. HOOKS
   const [formData, setFormData] = useState(initialState);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState(null);
+  const [errors, setErrors] = useState({});
   const [isFirstTime, setIsFirstTime] = useState(true);
-  const [isPassDisabled, setIsPassDisabled] = useState(false);
-
-  // --- LOGIC: Khóa dựa trên trạng thái đã lưu: chỉ khóa khi đã "Đã nhận việc" ---
+  
+  // --- LOGIC KHÓA FORM ---
+  // Nếu trạng thái là "Đã nhận việc" -> KHÓA TOÀN BỘ (Read-only)
   const isLockedByFinalStatus = candidate?.status === "Đã nhận việc";
-
-  // --- LOGIC: Khóa dựa trên việc không tham dự phỏng vấn ---
+  
+  // Nếu không đến phỏng vấn -> Khóa nhập điểm
   const isLockedByAttendance = formData.attendedInterview === "NO";
+  
+  // Biến khóa dùng cho vùng chấm điểm
+  const isResultLocked = isLockedByFinalStatus || isLockedByAttendance;
 
-  // --- LOGIC: Khóa tổng thể (khóa score/status) ---
-  const isScoringAndStatusLocked = isLockedByFinalStatus || isLockedByAttendance;
-
-
-  // --- CẬP NHẬT LOGIC NẠP DỮ LIỆU & GIỮ TRẠNG THÁI LẦN 2+ ---
+  // --- NẠP DỮ LIỆU ---
   useEffect(() => {
     if (isOpen && candidate) {
+      setErrors({});
+      const baseData = {
+        fullName: candidate.fullName || "",
+        email: candidate.email || "",
+        phoneNumber: candidate.phoneNumber || candidate.phone || "",
+        cvLink: candidate.cvLink || "",
+        interviewDate: formatDateTimeLocal(candidate.interviewDate),
+      };
 
-      // Kiểm tra xem đã có kết quả (finalResult) chưa
       if (candidate.finalResult && candidate.finalResult !== "NA") {
-
-        // Lần 2+: Nạp dữ liệu đã lưu
         setIsFirstTime(false);
-        const loadedData = {
-          // Dùng giá trị đã lưu, fallback về default nếu null (để tránh lỗi)
+        setFormData({
+          ...baseData,
           attendedInterview: candidate.attendedInterview || initialState.attendedInterview,
           testScore: candidate.testScore ?? "",
           interviewScore: candidate.interviewScore ?? "",
@@ -74,123 +87,127 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
           candidateStatus: candidate.status || "Đã có kết quả",
           note: candidate.note || "",
           internshipDate: "",
-        };
-        setFormData(loadedData);
+        });
       } else {
-        // Lần 1: Dùng mặc định mới
         setIsFirstTime(true);
-        setFormData(initialState);
+        setFormData({
+          ...initialState,
+          ...baseData,
+        });
       }
-      setIsPassDisabled(false);
       setApiError(null);
     }
   }, [isOpen, candidate]);
 
-  // --- LOGIC AUTO-PASS VÀ AUTO-FAIL (Khi điểm thay đổi) ---
+  // --- VALIDATE FORM ---
+  const validateForm = () => {
+    const newErrors = {};
+    const { fullName, email, phoneNumber, cvLink, interviewDate } = formData;
+
+    if (!fullName.trim()) newErrors.fullName = "Họ và tên không được để trống.";
+    
+    if (!email.trim()) newErrors.email = "Email không được để trống.";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = "Email không đúng định dạng.";
+
+    const phoneRegex = /^0[0-9]{9}$/;
+    if (!phoneNumber.trim()) newErrors.phoneNumber = "SĐT không được để trống.";
+    else if (!phoneRegex.test(phoneNumber)) newErrors.phoneNumber = "SĐT phải là 10 chữ số bắt đầu bằng 0.";
+
+    if (!cvLink.trim()) newErrors.cvLink = "Link CV không được để trống.";
+    else {
+        const urlRegex = /^(https?:\/\/)[^\s$.?#].[^\s]*$/i;
+        if (!urlRegex.test(cvLink)) newErrors.cvLink = "Link CV phải bắt đầu bằng http:// hoặc https://";
+    }
+
+    if (!interviewDate) newErrors.interviewDate = "Thời gian hẹn phỏng vấn không được để trống.";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // --- LOGIC HỖ TRỢ CHẤM ĐIỂM TỰ ĐỘNG (AUTO-GRADING) ---
   useEffect(() => {
-    // Không chạy logic Auto-PASS/FAIL nếu đang bị khóa cứng bởi trạng thái cuối cùng
+    // Nếu form đang bị khóa cứng thì không tự nhảy
     if (isLockedByFinalStatus) return;
 
-    const test = Number(formData.testScore);
-    const interview = Number(formData.interviewScore);
+    // Chỉ chạy khi cả 2 ô điểm đều đã có dữ liệu
+    if (formData.testScore !== "" && formData.interviewScore !== "") {
+        const test = Number(formData.testScore);
+        const interview = Number(formData.interviewScore);
 
-    // Yêu cầu: Điểm kiểm tra >= 70 VÀ Điểm phỏng vấn trực tiếp >= 7
-    const isReadyToPass = !Number.isNaN(test) && !Number.isNaN(interview)
-      && test >= 70 && interview >= 7;
-
-    if (isReadyToPass) {
-      // Auto-PASS nếu đạt (và chưa bị chặn bởi quota)
-      if (formData.finalResult !== "PASS" && !isPassDisabled) {
-        setFormData((prev) => ({ ...prev, finalResult: "PASS" }));
-      }
-    } else {
-      // Auto-reset về FAIL nếu điểm không đạt, nhưng chỉ khi đang là PASS
-      if (formData.finalResult === "PASS") {
-        setFormData((prev) => ({ ...prev, finalResult: "FAIL" }));
-      }
+        if (!isNaN(test) && !isNaN(interview)) {
+             // Điều kiện ĐẠT: Test >= 70 VÀ Phỏng vấn >= 7
+             if (test >= 70 && interview >= 7) {
+                 setFormData((prev) => ({ ...prev, finalResult: "Đạt" }));
+             } else {
+                 // Ngược lại: Tự động nhảy về KHÔNG ĐẠT
+                 setFormData((prev) => ({ ...prev, finalResult: "Không đạt" }));
+             }
+        }
     }
-  }, [
-    formData.testScore,
-    formData.interviewScore,
-    formData.finalResult,
-    isLockedByFinalStatus,
-    isPassDisabled
-  ]);
+  }, [formData.testScore, formData.interviewScore]); // Chỉ phụ thuộc vào biến đổi của điểm số
 
-  // --- LOGIC KHI CÓ ĐẾN PHỎNG VẤN LÀ "KHÔNG" (Khóa điểm, reset giá trị) ---
+  // --- LOGIC KHI "KHÔNG" ĐẾN PHỎNG VẤN ---
   useEffect(() => {
-    if (isLockedByAttendance) {
-      // Nếu chọn KHÔNG tham dự, reset các trường điểm và status
+    if (isLockedByAttendance && !isLockedByFinalStatus) {
       setFormData((prev) => ({
         ...prev,
         testScore: "",
         interviewScore: "",
         comment: "",
-        finalResult: "FAIL",
+        finalResult: "Không đạt",
         candidateStatus: "Chưa có kết quả"
       }));
     }
-  }, [isLockedByAttendance]);
+  }, [isLockedByAttendance, isLockedByFinalStatus]);
 
-  // --- LOGIC KIỂM TRA ĐỦ ĐIỀU KIỆN ĐỂ CHỌN "ĐÃ CÓ KẾT QUẢ" ---
+  // --- CHECK ĐIỀU KIỆN TRẠNG THÁI ---
   const canSetResultStatus = useMemo(() => {
-    // Cần có điểm test, điểm PV và final result (PASS/FAIL)
     return (
       (formData.testScore !== "" && formData.testScore !== null) &&
       (formData.interviewScore !== "" && formData.interviewScore !== null) &&
-      (formData.finalResult === "PASS" || formData.finalResult === "FAIL")
+      (formData.finalResult === "Đạt" || formData.finalResult === "Không đạt")
     );
-  }, [
-    formData.testScore,
-    formData.interviewScore,
-    formData.finalResult,
-  ]);
+  }, [formData.testScore, formData.interviewScore, formData.finalResult]);
 
-  // --- LOGIC TỰ ĐỘNG CẬP NHẬT TRẠNG THÁI ---
+  // --- AUTO UPDATE STATUS ---
   useEffect(() => {
-    // Nếu đủ điều kiện, tự động chuyển sang "Đã có kết quả" (nếu là lần đầu)
+    if (isLockedByFinalStatus) return;
+
     if (canSetResultStatus) {
-      // Chỉ tự động chuyển nếu trạng thái hiện tại chưa phải là các trạng thái "tiến xa" hơn
       if (isFirstTime && formData.candidateStatus === "Chưa có kết quả") {
         setFormData((prev) => ({ ...prev, candidateStatus: "Đã có kết quả" }));
       }
     } else {
-      // Nếu không đủ điều kiện (thiếu điểm/kết quả), bắt buộc phải quay về "Chưa có kết quả"
       if (formData.candidateStatus === "Đã có kết quả") {
         setFormData((prev) => ({ ...prev, candidateStatus: "Chưa có kết quả" }));
       }
     }
-  }, [canSetResultStatus, isFirstTime, formData.candidateStatus]); // ✅ Đã thêm dependency
+  }, [canSetResultStatus, isFirstTime, formData.candidateStatus, isLockedByFinalStatus]);
 
-  // 2. "EARLY RETURN"
-  if (!isOpen || !candidate) {
-    return null;
-  }
+  if (!isOpen || !candidate) return null;
 
-  // 3. LOGIC CÒN LẠI
+  // Handle Change chung
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // Chặn sửa trường ngoại trừ Note nếu đang bị khóa cứng
-    if (isLockedByFinalStatus && name !== "note") return;
-
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+        setErrors((prev) => ({ ...prev, [name]: null }));
+    }
   };
 
-  const showInternshipDate =
-    formData.candidateStatus === "Đã hẹn ngày thực tập";
+  const showInternshipDate = formData.candidateStatus === "Đã hẹn ngày thực tập";
 
-  const isSubmitDisabled = loading || isLockedByFinalStatus;
-
-
-  // handleSubmit (giữ nguyên logic API)
   const handleSubmit = async (e) => {
     e.preventDefault();
     setApiError(null);
+
+    if (!validateForm()) return;
+
     setLoading(true);
     const dto = { ...formData };
 
     try {
-      // Gọi PUT /api/candidates/{id}/save-result
       const response = await api.put(
         `/candidates/${candidate.candidateId}/save-result`,
         dto
@@ -198,56 +215,76 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
       onSuccess(response.data);
       onClose();
     } catch (err) {
-      console.error("Error details:", err); // Log để debug nếu cần
-
-      // ✅ SỬA: Ưu tiên lấy message từ backend trả về
-      // Backend (GlobalExceptionHandler) giờ sẽ trả về { "message": "Nội dung lỗi cụ thể..." }
       const msg =
         err.response?.data?.message ||
         err.response?.data?.error ||
         "Có lỗi xảy ra khi lưu kết quả.";
-
       setApiError(msg);
-
-      // Logic check quota (backend trả message chứa chuỗi này)
-      if (msg && msg.includes("đã đạt đủ số lượng")) {
-        setIsPassDisabled(true);
-      }
     } finally {
       setLoading(false);
     }
   };
 
-
   return (
     <>
       <div className="modal-backdrop" onClick={onClose} />
-      <div
-        className="modal-content"
-        style={{ maxWidth: "700px" }}
-        role="dialog"
-      >
+      <div className="modal-content" style={{ maxWidth: "700px" }} role="dialog">
         <div className="modal-header">
-          <h3 className="modal-title">Thông tin ứng viên</h3>
-          <button className="modal-close-btn" onClick={onClose}>
-            ✕
-          </button>
+          <h3 className="modal-title">Thông tin & Kết quả ứng viên</h3>
+          <button className="modal-close-btn" onClick={onClose}>✕</button>
         </div>
 
         <form onSubmit={handleSubmit} className="modal-scroll-form">
           <div className="modal-body">
 
-            {/* --- Phần 1: Thông tin (Read-only) --- */}
-            <h4 className="form-section-title">Thông tin</h4>
+            {/* --- Phần 1: Thông tin --- */}
+            <h4 className="form-section-title">Thông tin ứng viên</h4>
             <div className="candidate-form-grid">
               <div className="form-column">
-                <Input label="Họ và tên ứng viên *" value={candidate.fullName} readOnly />
-                <Input label="Số điện thoại *" value={candidate.phoneNumber} readOnly />
-                <Input label="Thời gian hẹn phỏng vấn *" type="datetime-local" value={formatDateTimeLocal(candidate.interviewDate)} readOnly />
+                {/* Các ô này bị khóa hoàn toàn nếu đã nhận việc */}
+                <Input 
+                    label="Họ và tên ứng viên *" 
+                    name="fullName"
+                    value={formData.fullName} 
+                    onChange={handleChange}
+                    disabled={isLockedByFinalStatus}
+                    error={errors.fullName}
+                />
+                <Input 
+                    label="Số điện thoại *" 
+                    name="phoneNumber"
+                    value={formData.phoneNumber} 
+                    onChange={handleChange}
+                    disabled={isLockedByFinalStatus}
+                    error={errors.phoneNumber}
+                />
+                <Input 
+                    label="Thời gian hẹn phỏng vấn *" 
+                    name="interviewDate"
+                    type="datetime-local" 
+                    value={formData.interviewDate} 
+                    onChange={handleChange}
+                    disabled={isLockedByFinalStatus}
+                    error={errors.interviewDate}
+                />
               </div>
               <div className="form-column">
-                <Input label="Email *" value={candidate.email} readOnly />
-                <Input label="Link CV" value={candidate.cvLink || "—"} readOnly />
+                <Input 
+                    label="Email *" 
+                    name="email"
+                    value={formData.email} 
+                    onChange={handleChange}
+                    disabled={isLockedByFinalStatus}
+                    error={errors.email}
+                />
+                <Input 
+                    label="Link CV *" 
+                    name="cvLink"
+                    value={formData.cvLink} 
+                    onChange={handleChange}
+                    disabled={isLockedByFinalStatus}
+                    error={errors.cvLink}
+                />
                 <Input label="Kế hoạch tuyển dụng" value={getPlanName(candidate)} readOnly />
               </div>
             </div>
@@ -256,10 +293,7 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
             <h4 className="form-section-title">Kết quả phỏng vấn</h4>
             {apiError && <div className="api-error-box">{apiError}</div>}
 
-            {/* NEW ROW 1: 3 Cột - Attended, Test Score, Interview Score */}
             <div className="candidate-form-grid-3">
-
-              {/* 1. Có đến phỏng vấn (Chỉ khóa nếu đã là Đã nhận việc) */}
               <div className="form-group">
                 <label>Có đến phỏng vấn?</label>
                 <select
@@ -274,50 +308,43 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
                 </select>
               </div>
 
-              {/* 2. Điểm kiểm tra */}
               <Input
-                label="Điểm kiểm tra (%)"
+                label="Điểm kiểm tra (0-100)"
                 name="testScore"
                 type="number"
-                min="0"
-                max="100"
-                step="0.5"
+                min="0" max="100" step="0.5"
                 value={formData.testScore}
                 onChange={handleChange}
                 placeholder="0-100"
-                disabled={isScoringAndStatusLocked}
+                disabled={isResultLocked}
               />
 
-              {/* 3. Điểm phỏng vấn trực tiếp */}
               <Input
-                label="Điểm phỏng vấn trực tiếp"
+                label="Điểm PV trực tiếp (0-10)"
                 name="interviewScore"
                 type="number"
-                min="0"
-                max="10"
-                step="0.5"
+                min="0" max="10" step="0.5"
                 value={formData.interviewScore}
                 onChange={handleChange}
                 placeholder="0-10"
-                disabled={isScoringAndStatusLocked}
+                disabled={isResultLocked}
               />
             </div>
 
-            {/* NEW ROW 2: Nhận xét (full-width, textarea) */}
             <div className="form-group full-width">
-              <label>Nhận xét (nếu có)</label>
-              <textarea
-                name="comment"
-                rows="4"
-                value={formData.comment}
-                onChange={handleChange}
-                placeholder="Nhập nhận xét của người phỏng vấn..."
-                className="input-style"
-                disabled={isLockedByFinalStatus}
-              />
+                <label>Nhận xét (nếu có)</label>
+                <textarea 
+                    name="comment" 
+                    rows="4" 
+                    value={formData.comment} 
+                    onChange={handleChange} 
+                    className="input-style"
+                    disabled={isResultLocked}
+                    placeholder="Nhập nhận xét..."
+                />
             </div>
 
-            {/* NEW ROW 3: Kết quả cuối cùng (Full-width, Centered, Nổi bật) */}
+            {/* --- Kết quả cuối cùng (Hỗ trợ tự động nhưng vẫn cho phép sửa) --- */}
             <div className="form-group full-width final-result-block">
               <label>Kết quả cuối cùng</label>
               <select
@@ -325,16 +352,10 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
                 value={formData.finalResult}
                 onChange={handleChange}
                 className="input-style final-result-select"
-                disabled={isScoringAndStatusLocked}
+                disabled={isResultLocked}
               >
-                {(!isPassDisabled || formData.finalResult === 'PASS') && (
-                  <option value="PASS" className="text-pass">
-                    PASS
-                  </option>
-                )}
-                <option value="FAIL" className="text-fail">
-                  FAIL
-                </option>
+                <option value="Đạt" className="text-pass">Đạt</option>
+                <option value="Không đạt" className="text-fail">Không đạt</option>
               </select>
             </div>
 
@@ -349,45 +370,14 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
                     value={formData.candidateStatus}
                     onChange={handleChange}
                     className="input-style"
-                    disabled={isScoringAndStatusLocked}
-                    title={isScoringAndStatusLocked ? "Chỉ được sửa khi Có đến PV và chưa là Đã nhận việc" : ""}
+                    disabled={isResultLocked}
                   >
                     <option value="Chưa có kết quả">Chưa có kết quả</option>
-                    <option
-                      value="Đã có kết quả"
-                      disabled={isScoringAndStatusLocked || !canSetResultStatus}
-                      title={
-                        isScoringAndStatusLocked ? "Đang bị khóa" : (canSetResultStatus ? "" : "Phải điền đủ Điểm Test, Điểm PV và Final Result")
-                      }
-                    >
-                      Đã có kết quả
-                    </option>
-                    <option
-                      value="Đã gửi mail cảm ơn"
-                      disabled={isScoringAndStatusLocked}
-                    >
-                      Đã gửi mail cảm ơn
-                    </option>
-                    <option
-                      value="Đã hẹn ngày thực tập"
-                      disabled={isScoringAndStatusLocked}
-                    >
-                      Đã hẹn ngày thực tập
-                    </option>
-                    <option
-                      value="Không nhận việc"
-                      disabled={isScoringAndStatusLocked}
-                    >
-                      Không nhận việc
-                    </option>
-                    {/* Logic chặn FAIL -> Đã nhận việc */}
-                    <option
-                      value="Đã nhận việc"
-                      disabled={isScoringAndStatusLocked || formData.finalResult === 'FAIL'}
-                      title={formData.finalResult === 'FAIL' ? "Kết quả cuối cùng là FAIL, không thể chọn Đã nhận việc" : undefined}
-                    >
-                      Đã nhận việc
-                    </option>
+                    <option value="Đã có kết quả" disabled={!canSetResultStatus}>Đã có kết quả</option>
+                    <option value="Đã gửi mail cảm ơn">Đã gửi mail cảm ơn</option>
+                    <option value="Đã hẹn ngày thực tập">Đã hẹn ngày thực tập</option>
+                    <option value="Không nhận việc">Không nhận việc</option>
+                    <option value="Đã nhận việc" disabled={formData.finalResult === 'Không đạt'}>Đã nhận việc</option>
                   </select>
                 </div>
               </div>
@@ -397,7 +387,6 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
                   name="note"
                   value={formData.note}
                   onChange={handleChange}
-                  placeholder="Nhập lưu ý (nếu có)..."
                   disabled={isLockedByFinalStatus}
                 />
               </div>
@@ -413,27 +402,16 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
                   onChange={handleChange}
                   required
                   disabled={isLockedByFinalStatus}
+                  error={errors.internshipDate}
                 />
               </div>
             )}
           </div>
 
-          {/* Footer (Nút bấm) */}
           <div className="modal-footer justify-end">
-            <button
-              type="button"
-              className="modal-btn btn-secondary"
-              onClick={onClose}
-              disabled={loading}
-            >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              className="modal-btn btn-save"
-              disabled={isSubmitDisabled}
-            >
-              {loading ? "Đang lưu..." : "Save"}
+            <button type="button" className="modal-btn btn-secondary" onClick={onClose} disabled={loading}>Hủy</button>
+            <button type="submit" className="modal-btn btn-save" disabled={loading || isLockedByFinalStatus}>
+              {loading ? "Đang lưu..." : "Lưu"}
             </button>
           </div>
         </form>

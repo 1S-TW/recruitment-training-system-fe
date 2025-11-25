@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Send, X } from "lucide-react";
+import { Plus, Send, X } from "lucide-react"; // Giữ nguyên icon
 import TechRow from "./TechRow";
 import useCreateRequest from "../hooks/useCreateRequest.jsx";
 import useUpdateRequest from "../hooks/useUpdateRequest.jsx";
@@ -14,7 +14,6 @@ export default function CreateRequestModal({
   // ====== Giữ NGUYÊN LOGIC GỐC ======
   const isEdit = !!initialData;
 
-  // phần người dùng nhập chính giữa
   const [titleMain, setTitleMain] = useState("");
   const [expectedDate, setExpectedDate] = useState("");
   const [note, setNote] = useState("");
@@ -26,11 +25,12 @@ export default function CreateRequestModal({
   const { update, loading: updateLoading } = useUpdateRequest();
   const loading = createLoading || updateLoading;
 
-  // === 2 THÁNG RƯỠI KỂ TỪ HÔM NAY ===
+  // === SỬA: ĐỒNG BỘ LOGIC 2 THÁNG VỚI BACKEND ===
   const today = new Date();
   const minDate = new Date(today);
   minDate.setMonth(today.getMonth() + 2);
-  minDate.setDate(minDate.getDate() + 15); // + nửa tháng
+   minDate.setDate(minDate.getDate() + 15); 
+  // minDate.setDate(minDate.getDate() + 15); // <-- ĐÃ BỎ dòng này để khớp BE
   const minDateStr = minDate.toISOString().split("T")[0];
 
   // ====== Khóa scroll nền & bắt phím Esc ======
@@ -53,8 +53,6 @@ export default function CreateRequestModal({
 
     if (isEdit && initialData) {
       const existingTitle = initialData.requestTitle || "";
-
-      // cố gắng tách phần người dùng đã nhập giữa "Nhu cầu nhân sự" và "tháng"
       let extractedMain = existingTitle;
       const prefixMatch = existingTitle.match(/^Nhu cầu nhân sự\s*(.*)$/i);
       if (prefixMatch) {
@@ -76,7 +74,6 @@ export default function CreateRequestModal({
       );
       setDateError("");
     } else if (!isEdit) {
-      // tạo mới
       setTitleMain("");
       setNote("");
       const defaultDate = new Date(minDate);
@@ -102,10 +99,16 @@ export default function CreateRequestModal({
   // ====== Validate ngày ======
   const handleDateChange = (value) => {
     setExpectedDate(value);
+    if (!value) {
+      setDateError(""); 
+      return;
+    }
     const selected = new Date(value);
-    if (selected < minDate) {
+    // So sánh với minDate (đã trừ giờ phút giây để so sánh chính xác ngày)
+    const minDateZeroTime = new Date(minDateStr); 
+    if (selected < minDateZeroTime) {
       setDateError(
-        "Vui lòng chọn ngày bàn giao tối thiểu sau 2 tháng rưỡi kể từ hôm nay."
+        "Vui lòng chọn ngày bàn giao tối thiểu sau 2 tháng kể từ hôm nay."
       );
     } else {
       setDateError("");
@@ -119,7 +122,6 @@ export default function CreateRequestModal({
   const updateTech = (i, field, value) => {
     setTechs((prev) => {
       const updated = [...prev];
-
       if (field === "soLuong") {
         if (value === "") {
           updated[i].soLuong = "";
@@ -130,7 +132,6 @@ export default function CreateRequestModal({
       } else {
         updated[i][field] = value;
       }
-
       return updated;
     });
   };
@@ -143,61 +144,44 @@ export default function CreateRequestModal({
 
   const getAvailableTechnologies = (rowIndex) => {
     if (!Array.isArray(technologies) || technologies.length === 0) return [];
-
     const usedIds = new Set(
       techs
         .map((t, idx) => (idx === rowIndex ? null : t.technologyId))
         .filter(Boolean)
         .map(String)
     );
-
-    const filtered = technologies.filter((t) => {
-      const id = String(t.id ?? t.technologyId);
-      return !usedIds.has(id);
-    });
-
-    if (filtered.length === 0) return technologies;
-    return filtered;
+    return technologies.filter((t) => !usedIds.has(String(t.id ?? t.technologyId)));
   };
 
-  // ====== TÍNH THÁNG NĂM TỪ expectedDate (KHÔNG DÙNG Intl để tránh "tháng tháng") ======
+  // ====== TÍNH THÁNG NĂM ======
   const baseForMonth = expectedDate ? new Date(expectedDate) : minDate;
   const mm = String(baseForMonth.getMonth() + 1).padStart(2, "0");
   const yyyy = baseForMonth.getFullYear();
-
-  // Text hiển thị bên phải input
   const monthDisplay = `tháng ${mm}, ${yyyy}`;
-
-  // Phần ghép vào tiêu đề gửi BE
   const monthPartForTitle = `tháng ${mm}/${yyyy}`;
 
   const basePrefix = "Nhu cầu nhân sự ";
   const baseSuffix = ` ${monthPartForTitle}`;
   const maxTitleLength = 60;
-
-  // số ký tự tối đa user được nhập ở ô giữa
   const maxMainLength = Math.max(
     0,
     maxTitleLength - basePrefix.length - baseSuffix.length
   );
 
-  // tiêu đề đầy đủ gửi BE
   const combinedTitle = (
     titleMain.trim()
       ? `${basePrefix}${titleMain.trim()}${baseSuffix}`
       : `${basePrefix}${baseSuffix}`
   ).slice(0, maxTitleLength);
 
-  // check điều kiện hợp lệ cho techs
   const hasInvalidTech = techs.some(
     (t) => !t.technologyId || !t.soLuong || Number(t.soLuong) <= 0
   );
 
-  // ====== Submit (giữ luồng gốc) ======
+  // ====== Submit ======
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (loading) return;
-
     if (dateError || !titleMain.trim() || hasInvalidTech) return;
 
     const data = {
@@ -234,7 +218,6 @@ export default function CreateRequestModal({
 
   return (
     <>
-      {/* Click backdrop để đóng */}
       <div
         className="modal-backdrop"
         onClick={() => !loading && onClose?.()}
@@ -305,6 +288,7 @@ export default function CreateRequestModal({
                 ))}
               </div>
 
+              {/* Nút thêm công nghệ */}
               <button
                 type="button"
                 onClick={addTech}
@@ -314,7 +298,7 @@ export default function CreateRequestModal({
               </button>
             </div>
 
-            {/* Deadline */}
+            {/* Deadline - Đã sửa */}
             <div className="form-group">
               <label htmlFor="deadline">
                 Thời hạn bàn giao <span className="required">*</span>
@@ -323,11 +307,15 @@ export default function CreateRequestModal({
                 <input
                   id="deadline"
                   type="date"
+                  // 1. Chặn ngày quá khứ/gần theo logic BE
                   min={minDateStr}
                   value={expectedDate}
                   onChange={(e) => handleDateChange(e.target.value)}
                   required
-                  className={dateError ? "error" : ""}
+                  // 2. Đổi class để CSS hiển thị icon
+                  className={`input-style-date ${dateError ? "error" : ""}`}
+                  // 3. Click vào ô input là hiện lịch luôn
+                  onClick={(e) => e.target.showPicker && e.target.showPicker()}
                 />
               </div>
               {dateError && (
