@@ -1,18 +1,9 @@
 // src/components/AddCandidateModal.jsx
 import React, { useState, useEffect } from "react";
-import Input from "./Form/Input"; // Dùng lại Input component có sẵn
-import api from "../services/api"; // Dùng instance axios chung
-import "../styles/AddCandidateModal.css"; // Dùng CSS mới
+import Input from "./Form/Input";
+import api from "../services/api";
+import "../styles/AddCandidateModal.css";
 
-/**
- * Props:
- * - isOpen (boolean): Hiển thị modal
- * - onClose (function): Hàm đóng modal
- * - onSuccess (function): Hàm callback khi tạo thành công, trả về (newCandidate)
- * - planOptions (Array): Danh sách plan đã duyệt
- *     + Có thể là dạng { id, name }
- *     + Hoặc dạng { recruitmentPlanId, planName }
- */
 export default function AddCandidateModal({
   isOpen,
   onClose,
@@ -46,45 +37,71 @@ export default function AddCandidateModal({
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // (Tuỳ chọn) Xóa lỗi ngay khi người dùng bắt đầu nhập lại
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: null }));
+    }
   };
 
   // --- Validate Form (Client-side) ---
   const validateForm = () => {
     const newErrors = {};
-    const { fullName, email, phoneNumber, interviewDate, planId } = formData;
+    const { fullName, email, phoneNumber, interviewDate, planId, cvLink } = formData;
 
-    // Full name
+    // 1. Full name
     if (!fullName.trim()) {
       newErrors.fullName = "Họ và tên không được để trống.";
     }
 
-    // Email (để BE check định dạng kỹ hơn, ở FE check cơ bản)
+    // 2. Email
     if (!email.trim()) {
       newErrors.email = "Email không được để trống.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = "Email không đúng định dạng.";
     }
 
-    // 1. Validate SĐT (chuẩn VN 10 số, bắt đầu bằng 0)
+    // 3. Validate SĐT (chuẩn VN 10 số, bắt đầu bằng 0)
     const phoneRegex = /^0[0-9]{9}$/;
     if (!phoneRegex.test(phoneNumber)) {
       newErrors.phoneNumber = "SĐT phải là 10 chữ số bắt đầu bằng 0.";
     }
 
-    // 2. Validate Ngày phỏng vấn (phải ở tương lai)
+    // 4. Validate Ngày phỏng vấn
     if (!interviewDate) {
-      newErrors.interviewDate =
-        "Thời gian hẹn phỏng vấn không được để trống.";
+      newErrors.interviewDate = "Thời gian hẹn phỏng vấn không được để trống.";
     } else {
       const selectedTime = new Date(interviewDate).getTime();
       const now = new Date().getTime();
       if (selectedTime <= now) {
-        newErrors.interviewDate =
-          "Thời gian hẹn phỏng vấn phải ở trong tương lai.";
+        newErrors.interviewDate = "Thời gian hẹn phỏng vấn phải ở trong tương lai.";
       }
     }
 
-    // 3. Validate Plan
+    // 5. Validate Plan
     if (!planId) {
       newErrors.planId = "Kế hoạch tuyển dụng không được để trống.";
+    }
+
+    // ============================================================
+    // 6. Validate Link CV (MỚI CẬP NHẬT)
+    // ============================================================
+    if (!cvLink.trim()) {
+      newErrors.cvLink = "Link CV không được để trống.";
+    } else {
+      // Cách 1: Dùng Regex đơn giản bắt buộc có http/https
+      const urlRegex = /^(https?:\/\/)[^\s$.?#].[^\s]*$/i;
+      
+      if (!urlRegex.test(cvLink)) {
+        newErrors.cvLink = "Link CV phải bắt đầu bằng http:// hoặc https://";
+      }
+      
+      // Cách 2: (Strict hơn) Dùng URL constructor của JS
+      // try {
+      //   new URL(cvLink);
+      // } catch (_) {
+      //   newErrors.cvLink = "Link CV không đúng định dạng URL.";
+      // }
     }
 
     setErrors(newErrors);
@@ -102,20 +119,16 @@ export default function AddCandidateModal({
 
     setLoading(true);
     try {
-      // Chuyển planId thành number cho chắc ăn
       const payload = {
         ...formData,
         planId: formData.planId ? Number(formData.planId) : null,
       };
 
-      // BE API: POST /api/candidates/create
       const response = await api.post("/candidates/create", payload);
 
-      // BE trả về CandidateListDto của ứng viên vừa tạo
       onSuccess(response.data);
-      onClose(); // Tự động đóng
+      onClose();
     } catch (err) {
-      // Hiển thị lỗi từ BE (vd: email trùng, validation BE)
       const msg =
         err.response?.data?.error ||
         err.response?.data?.message ||
@@ -127,20 +140,9 @@ export default function AddCandidateModal({
     }
   };
 
-  // Hàm chuẩn hoá plan: hỗ trợ cả 2 kiểu field (id/name vs recruitmentPlanId/planName)
   const normalizePlan = (raw) => {
-    const id =
-      raw.id ??
-      raw.recruitmentPlanId ??
-      raw.planId ??
-      null;
-
-    const name =
-      raw.name ??
-      raw.planName ??
-      raw.title ??
-      "Kế hoạch không tên";
-
+    const id = raw.id ?? raw.recruitmentPlanId ?? raw.planId ?? null;
+    const name = raw.name ?? raw.planName ?? raw.title ?? "Kế hoạch không tên";
     return { id, name };
   };
 
@@ -148,16 +150,12 @@ export default function AddCandidateModal({
 
   return (
     <>
-      {/* Nền mờ (dùng style của request.css/plan.css) */}
       <div className="modal-backdrop" onClick={onClose} />
-
-      {/* Nội dung Modal */}
       <div
         className="modal-content"
         style={{ maxWidth: "700px" }}
         role="dialog"
       >
-        {/* Header */}
         <div className="modal-header">
           <h3 className="modal-title">Thông tin ứng viên</h3>
           <button className="modal-close-btn" onClick={onClose}>
@@ -165,11 +163,8 @@ export default function AddCandidateModal({
           </button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit}>
-          {/* Body */}
           <div className="modal-body candidate-form-grid">
-            {/* Lỗi API */}
             {apiError && <div className="api-error-box">{apiError}</div>}
 
             {/* Cột 1 */}
@@ -215,14 +210,18 @@ export default function AddCandidateModal({
                 error={errors.email}
                 required
               />
+              
+              {/* CẬP NHẬT: Thêm required và dấu * */}
               <Input
-                label="Link CV"
+                label="Link CV *"
                 name="cvLink"
                 value={formData.cvLink}
                 onChange={handleChange}
                 placeholder="Link CV (Google Drive, TopCV...)"
                 error={errors.cvLink}
+                required
               />
+
               <div className="form-group">
                 <label>Kế hoạch tuyển dụng *</label>
                 <select
@@ -237,7 +236,7 @@ export default function AddCandidateModal({
                   <option value="">— Chọn kế hoạch đã duyệt —</option>
                   {planOptions.map((raw) => {
                     const plan = normalizePlan(raw);
-                    if (!plan.id) return null; // tránh option rác
+                    if (!plan.id) return null;
                     return (
                       <option key={plan.id} value={plan.id}>
                         {plan.name}
@@ -252,7 +251,6 @@ export default function AddCandidateModal({
             </div>
           </div>
 
-          {/* Footer */}
           <div className="modal-footer justify-end">
             <button
               type="button"
