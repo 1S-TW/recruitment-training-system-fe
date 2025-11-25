@@ -1,5 +1,6 @@
 // src/pages/CandidateManagementPage.jsx
 import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import api from "../services/api"; // Dùng axios instance chung
 
 import AddCandidateModal from "../components/AddCandidateModal";
@@ -14,13 +15,16 @@ import "../styles/toast.css";
 import "../styles/CandidateManagementPage.css";
 import { HiUserGroup } from "react-icons/hi"; 
 import { FiSearch } from "react-icons/fi";
+
 export default function CandidateManagementPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [planOptions, setPlanOptions] = useState([]);
 
-  // --- State cho 2 Modal ---
+  // --- Modal ---
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
@@ -59,12 +63,39 @@ export default function CandidateManagementPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isAnimating, setIsAnimating] = useState(false);
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [planFilter, setPlanFilter] = useState("");
+  // --- SEARCH + FILTER ---
+  const [searchInput, setSearchInput] = useState(searchParams.get("name") || "");
+  const [searchTerm, setSearchTerm] = useState(searchParams.get("name") || "");
+  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "");
+  const [planFilter, setPlanFilter] = useState(searchParams.get("plan") || "");
 
-  // ✅ ĐÃ XÓA: State 'toast' và hàm 'showToast'
+  // --- DEBOUNCE SEARCH ---
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchTerm(searchInput);
+      setCurrentPage(1);
+      updateSearchParams({ name: searchInput, page: 1 });
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchInput]);
 
+  // --- CẬP NHẬT URL PARAM ---
+  const updateSearchParams = ({ name, status, plan, page }) => {
+    const newParams = {
+      ...Object.fromEntries([...searchParams]),
+      ...(name !== undefined ? { name } : {}),
+      ...(status !== undefined ? { status } : {}),
+      ...(plan !== undefined ? { plan } : {}),
+      ...(page !== undefined ? { page } : {}),
+    };
+    if (!newParams.name) delete newParams.name;
+    if (!newParams.status) delete newParams.status;
+    if (!newParams.plan) delete newParams.plan;
+    if (!newParams.page) delete newParams.page;
+    setSearchParams(newParams);
+  };
+
+  // --- FILTER DATA ---
   const filteredCandidates = useMemo(
     () =>
       (candidates || []).filter((c) => {
@@ -73,37 +104,27 @@ export default function CandidateManagementPage() {
           const name = (c.fullName || c.name || "").toLowerCase();
           const email = (c.email || "").toLowerCase();
           const phone = (c.phone || c.phoneNumber || "").toLowerCase();
-          if (
-            !name.includes(keyword) &&
-            !email.includes(keyword) &&
-            !phone.includes(keyword)
-          ) {
-            return false;
-          }
+          if (!name.includes(keyword) && !email.includes(keyword) && !phone.includes(keyword)) return false;
         }
         if (statusFilter) {
           const status = (c.status || "").toLowerCase();
           if (status !== statusFilter.toLowerCase()) return false;
         }
         if (planFilter) {
-          if (c.recruitmentPlanId?.toString() !== planFilter) {
-            return false;
-          }
+          if (c.recruitmentPlanId?.toString() !== planFilter) return false;
         }
         return true;
       }),
     [candidates, searchTerm, statusFilter, planFilter]
   );
 
-  const filteredSorted = useMemo(
-    () =>
-      [...filteredCandidates].sort((a, b) => {
-        const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return db - da;
-      }),
-    [filteredCandidates]
-  );
+  const filteredSorted = useMemo(() => {
+    return [...filteredCandidates].sort((a, b) => {
+      const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return db - da;
+    });
+  }, [filteredCandidates]);
 
   const totalPages = Math.ceil(filteredSorted.length / itemsPerPage) || 1;
   const indexOfLast = currentPage * itemsPerPage;
@@ -113,6 +134,7 @@ export default function CandidateManagementPage() {
   const handleChangeItemsPerPage = (e) => {
     setItemsPerPage(Number(e.target.value));
     setCurrentPage(1);
+    updateSearchParams({ page: 1 });
   };
 
   const handlePageChange = (page) => {
@@ -120,13 +142,13 @@ export default function CandidateManagementPage() {
     setIsAnimating(true);
     setTimeout(() => {
       setCurrentPage(page);
+      updateSearchParams({ page });
       setIsAnimating(false);
     }, 180);
   };
 
   const handleViewCandidate = (candidate) => {
     console.log("Xem ứng viên:", candidate);
-    // ✅ ĐÃ XÓA: showToast("Mở chi tiết ứng viên (TODO)", "success");
   };
 
   const handleEditCandidate = (candidate) => {
@@ -136,19 +158,29 @@ export default function CandidateManagementPage() {
 
   const handleAddSuccess = (newCandidate) => {
     setCandidates((prev) => [newCandidate, ...prev]);
-    // ✅ ĐÃ XÓA: showToast("Thêm ứng viên thành công!", "success");
     setCurrentPage(1);
   };
 
   const handleEditSuccess = (updatedCandidate) => {
     setCandidates((prev) =>
-      prev.map((c) =>
-        c.candidateId === updatedCandidate.candidateId ? updatedCandidate : c
-      )
+      prev.map((c) => (c.candidateId === updatedCandidate.candidateId ? updatedCandidate : c))
     );
     setShowEditModal(false);
-    // ✅ ĐÃ XÓA: showToast("Chấm điểm thành công!", "success");
   };
+
+  // --- SYNC URL PARAMS KHI LOAD TRANG ---
+  useEffect(() => {
+    const urlName = searchParams.get("name") || "";
+    const urlStatus = searchParams.get("status") || "";
+    const urlPlan = searchParams.get("plan") || "";
+    const urlPage = Number(searchParams.get("page")) || 1;
+
+    setSearchInput(urlName);
+    setSearchTerm(urlName);
+    setStatusFilter(urlStatus);
+    setPlanFilter(urlPlan);
+    setCurrentPage(urlPage);
+  }, []);
 
   return (
     <Layout>
@@ -185,13 +217,10 @@ export default function CandidateManagementPage() {
                 type="text"
                 className="filter-input"
                 placeholder="Tìm theo tên..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setCurrentPage(1);
-                }}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
               />
-               <span className="filter-icon"><FiSearch /></span>
+              <span className="filter-icon"><FiSearch /></span>
             </div>
 
             {/* Trạng thái */}
@@ -202,19 +231,16 @@ export default function CandidateManagementPage() {
                 onChange={(e) => {
                   setStatusFilter(e.target.value);
                   setCurrentPage(1);
+                  updateSearchParams({ status: e.target.value, page: 1 });
                 }}
               >
                 <option value="">Chọn trạng thái</option>
                 <option value="Chưa có kết quả">Chưa có kết quả</option>
                 <option value="Đã có kết quả">Đã có kết quả</option>
                 <option value="Không nhận việc">Không nhận việc</option>
-                <option value="Đã gửi mail cảm ơn">
-                  Đã gửi mail cảm ơn
-                </option>
+                <option value="Đã gửi mail cảm ơn">Đã gửi mail cảm ơn</option>
                 <option value="Đã nhận việc">Đã nhận việc</option>
-                <option value="Đã thông báo thời gian TT">
-                  Đã thông báo thời gian TT
-                </option>
+                <option value="Đã thông báo thời gian TT">Đã thông báo thời gian TT</option>
               </select>
             </div>
 
@@ -226,6 +252,7 @@ export default function CandidateManagementPage() {
                 onChange={(e) => {
                   setPlanFilter(e.target.value);
                   setCurrentPage(1);
+                  updateSearchParams({ plan: e.target.value, page: 1 });
                 }}
               >
                 <option value="">Chọn kế hoạch tuyển dụng</option>
@@ -237,7 +264,7 @@ export default function CandidateManagementPage() {
               </select>
             </div>
 
-            {/* Nút Thêm ứng viên */}
+            {/* Thêm ứng viên */}
             <div className="filter-item filter-right-group">
               <button
                 type="button"
@@ -251,11 +278,7 @@ export default function CandidateManagementPage() {
         </div>
 
         {/* TABLE */}
-        <div
-          className={`table-container table-fade ${
-            isAnimating ? "fade-out" : "fade-in"
-          }`}
-        >
+        <div className={`table-container table-fade ${isAnimating ? "fade-out" : "fade-in"}`}>
           {loading ? (
             <p className="loading-text">Đang tải dữ liệu...</p>
           ) : error ? (
@@ -277,9 +300,7 @@ export default function CandidateManagementPage() {
               <tbody>
                 {currentCandidates.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="text-center">
-                      Không có ứng viên phù hợp.
-                    </td>
+                    <td colSpan={8} className="text-center">Không có ứng viên phù hợp.</td>
                   </tr>
                 ) : (
                   currentCandidates.map((c, index) => {
@@ -303,7 +324,6 @@ export default function CandidateManagementPage() {
                           <span className="status-badge">{status}</span>
                         </td>
                         <td className="actions-cell text-center">
-                          {/* Đã bỏ div wrapper thừa ở đây theo yêu cầu trước */}
                           <ActionButtons
                             onView={() => handleViewCandidate(c)}
                             onEdit={() => handleEditCandidate(c)}
@@ -326,7 +346,7 @@ export default function CandidateManagementPage() {
         />
       </div>
 
-      {/* Modal Thêm */}
+      {/* Modals */}
       <AddCandidateModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
@@ -334,15 +354,12 @@ export default function CandidateManagementPage() {
         planOptions={planOptions}
       />
 
-      {/* Modal Sửa/Chấm điểm */}
       <AddResultModal
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
         onSuccess={handleEditSuccess}
         candidate={selectedCandidate}
       />
-
-
     </Layout>
   );
 }
