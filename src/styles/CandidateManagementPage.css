@@ -245,7 +245,7 @@
 }
 
 /* --- TABLE --- */
-.table-container {
+.candidate-page .table-container {
     background: #ffffff;
     border-radius: 10px;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.03);
@@ -254,13 +254,6 @@
     transition: all 0.3s ease;
     max-width: 98%;
     margin-inline: auto;
-}
-
-.styled-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.95rem;
-    table-layout: fixed;
 }
 
 .styled-table thead {
@@ -529,6 +522,10 @@
 /* Riêng cho select kế hoạch để chữ không bị cắt */
 .candidate-plan-select {
   min-width: 200px;
+}
+.filter-select.candidate-plan-select {
+  width: auto !important;
+  min-width: 200px !important;
 }
 
 /* ===================== END CANDIDATE MANAGEMENT PAGE CSS ===================== */

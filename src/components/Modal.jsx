@@ -1,23 +1,25 @@
 // src/components/Modal.jsx
 import React from "react";
+import ReactDOM from "react-dom";
 
 export default function Modal({ title, width = 600, onClose, children }) {
   const handleBackdropClick = (e) => {
-    // Chỉ đóng khi click đúng vào nền mờ, không phải nội dung
     if (e.target.classList.contains("modal-backdrop")) {
       onClose && onClose();
     }
   };
 
-  return (
+  return ReactDOM.createPortal(
     <>
-      {/* Nền mờ phía sau */}
+      {/* Nền mờ */}
       <div className="modal-backdrop" onClick={handleBackdropClick} />
 
       {/* Khung modal */}
       <div
         className="modal-content"
-        style={{ maxWidth: width }}
+        style={{
+          maxWidth: width,
+        }}
       >
         <div className="modal-header">
           <h3 className="modal-title">{title}</h3>
@@ -28,6 +30,7 @@ export default function Modal({ title, width = 600, onClose, children }) {
 
         <div className="modal-body">{children}</div>
       </div>
-    </>
+    </>,
+    document.body // ⭐ Quan trọng: đưa modal ra ngoài layout
   );
 }

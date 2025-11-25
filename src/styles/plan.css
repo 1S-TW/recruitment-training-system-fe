@@ -912,22 +912,6 @@
     animation: fadeIn 0.2s ease-out;
   }
 
-  .modal-content {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-    z-index: 50;
-    width: 90%;
-    max-height: 90vh;
-    display: flex;
-    flex-direction: column;
-    animation: zoomIn 0.25s ease-out;
-  }
-
   /* ... phần detail-list, tech-table, modal-footer, modal-footer-canceled,
     reject-form, reject-textarea, @keyframes fadeIn, zoomIn
     y như bạn đã gửi ở trên, giữ nguyên là được */
@@ -1833,4 +1817,13 @@
   font-weight: 400;
   color: #6b7280;
   white-space: nowrap;
+}
+.modal-body {
+  padding: 16px 24px !important;
+}
+.modal-content {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
 }

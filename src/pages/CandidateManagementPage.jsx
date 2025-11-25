@@ -175,7 +175,8 @@ export default function CandidateManagementPage() {
         </div>
       </div>
 
-      <div className="recruitment-page fade-slide">
+      <div className="recruitment-page candidate-page fade-slide">
+
         <div className="title-row">
           <h2 className="page-title-small">Quản lý ứng viên</h2>
           <div className="filter-bar candidate-filter-bar">
@@ -318,12 +319,15 @@ export default function CandidateManagementPage() {
           )}
         </div>
 
-        {/* PAGINATION */}
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-        />
+    {/* PAGINATION - chỉ hiện khi có dữ liệu */}
+{filteredSorted.length > 0 && (
+  <Pagination
+    currentPage={currentPage}
+    totalPages={totalPages}
+    onPageChange={handlePageChange}
+  />
+)}
+
       </div>
 
       {/* Modal Thêm */}

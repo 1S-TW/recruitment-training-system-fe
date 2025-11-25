@@ -402,7 +402,7 @@ const RecruitmentPlanPage = () => {
       }));
     setTechSummary([]);
       setRequestTitle("");
-      return;
+      return; 
     }
     try {
       const res = await axiosAuth.get(`/api/hr-request/${id}/plan-defaults`);
