@@ -174,7 +174,7 @@ export default function HRRequestModal({
       });
   }, [isOpen, planMeta?.recruitmentPlanId]);
 
-  // ====== ĐẾM TTS ĐÃ BÀN GIAO (PASS) THEO PLAN ======
+  // ====== ĐẾM TTS ĐÃ BÀN GIAO (PASS) THEO PLAN ====== 
   useEffect(() => {
     if (!isOpen || !planMeta?.recruitmentPlanId) return;
 
@@ -338,7 +338,7 @@ export default function HRRequestModal({
 
     // 🔹 Lấy thông tin kế hoạch từ planMeta
     const planName = planMeta?.planName || "";
-const planLabel = planName || "Kế hoạch tuyển dụng";
+    const planLabel = planName || "Kế hoạch tuyển dụng";
 
     const planStatus = (planMeta?.status || "").toUpperCase();
     const planCreator = planMeta?.createdByName || createdBy;
@@ -537,14 +537,13 @@ const planLabel = planName || "Kế hoạch tuyển dụng";
 
       // Phê duyệt / Từ chối kế hoạch
       if (isPlanApproved) {
-  steps[3] = {
-    ...steps[3],
-    status: "success",
-    actor: planApprover,
-    detail: `"${planLabel}" đã được phê duyệt`,
-  };
-}
- else if (isPlanRejected) {
+        steps[3] = {
+          ...steps[3],
+          status: "success",
+          actor: planApprover,
+          detail: `"${planLabel}" đã được phê duyệt`,
+        };
+      } else if (isPlanRejected) {
         steps[3] = {
           ...steps[3],
           status: "rejected",
@@ -583,26 +582,14 @@ const planLabel = planName || "Kế hoạch tuyển dụng";
             ? steps[4].actor
             : planCreator;
 
-        // ✅ PHẦN DETAIL CHO BƯỚC "QUẢN LÝ ỨNG VIÊN"
-        if (candidateCount >= inputRequired) {
-          steps[4] = {
-            ...steps[4],
-            status: "success",
-            actor: baseActorCandidate,
-            detail: `Số lượng ứng viên ứng tuyển: ${candidateCount}`,
-          };
-        } else {
-          const text =
-            candidateCount > 0
-              ? `Số lượng ứng viên ứng tuyển: ${candidateCount}`
-              : "Số lượng ứng viên ứng tuyển: 0";
-          steps[4] = {
-            ...steps[4],
-            status: "pending",
-            actor: baseActorCandidate,
-            detail: text,
-          };
-        }
+        // ✅ CHỈ CẦN CÓ ÍT NHẤT 1 ỨNG VIÊN ỨNG TUYỂN LÀ ĐƯỢC ĐÁNH "ĐÃ HOÀN THÀNH"
+        const candidateDetail = `Số lượng ứng viên ứng tuyển: ${candidateCount}`;
+        steps[4] = {
+          ...steps[4],
+          actor: baseActorCandidate,
+          detail: candidateDetail,
+          status: candidateCount > 0 ? "success" : "pending",
+        };
 
         // ===== 2.2. ĐÀO TẠO – SỐ LƯỢNG TTS =====
         const baseActorTraining =
@@ -610,23 +597,13 @@ const planLabel = planName || "Kế hoạch tuyển dụng";
             ? steps[5].actor
             : planCreator;
 
-        const prefix = "Số lượng TTS tham gia đào tạo:";
-
-        if (trainingCount >= inputRequired) {
-          steps[5] = {
-            ...steps[5],
-            status: "success",
-            actor: baseActorTraining,
-            detail: `${prefix} ${trainingCount}`,
-          };
-        } else {
-          steps[5] = {
-            ...steps[5],
-            status: "pending",
-            actor: baseActorTraining,
-            detail: `${prefix} ${trainingCount}`,
-          };
-        }
+        const trainingDetail = `Số lượng TTS tham gia đào tạo: ${trainingCount}`;
+        steps[5] = {
+          ...steps[5],
+          actor: baseActorTraining,
+          detail: trainingDetail,
+          status: trainingCount > 0 ? "success" : "pending",
+        };
       }
 
       // ===== 2.3. BÀN GIAO NHÂN SỰ – THÀNH CÔNG / THẤT BẠI =====
@@ -941,12 +918,12 @@ const planLabel = planName || "Kế hoạch tuyển dụng";
                               </span>
                             </div>
                           )}
-                            {step.key !== "candidate" &&
+                          {step.key !== "candidate" &&
                             step.key !== "training" &&
                             step.key !== "handover" && (
-                            <div className="timeline-meta">
-                              Người thực hiện: {step.actor}
-                            </div>
+                              <div className="timeline-meta">
+                                Người thực hiện: {step.actor}
+                              </div>
                             )}
                         </div>
                       </div>
