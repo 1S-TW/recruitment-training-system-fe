@@ -32,59 +32,70 @@
     font-weight: 600;
 }
 
-/* --- MINI PAGINATION (nếu sau này dùng) --- */
-.mini-pagination {
+/* === Pagination bar container === */
+  .pagination-bar {
+    width: 100%;
     display: flex;
     align-items: center;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 6px 14px;
-    gap: 8px;
-    font-weight: 500;
-    font-size: 0.9rem;
-    color: #0f172a;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    transition: all 0.25s ease;
-}
+    justify-content: center;   /* Pagination nằm giữa */
+    margin-top: 16px;
+    position: relative;        /* để mini box bám trái */
+    padding: 8px 0;
+  }
 
-.mini-pagination:hover {
-    border-color: #cbd5e1;
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.06);
-    transform: translateY(-1px);
-}
+  /* === Mini Pagination (góc trái) === */
+  .mini-pagination {
+    position: absolute;
+    left: 0;
+    top: 50%;
 
-.mini-pagination-label {
-    font-weight: 600;
-    color: #0f172a;
-}
+    display: flex;
 
-.mini-pagination-select {
-    border: none;
-    background: #f8fafc;
-    border-radius: 6px;
+    align-items: center;     /* căn giữa theo chiều dọc */
+    gap: 6px;
+    height: 30px;            /* chiều cao cố định */
+    line-height: 24px;   
+
     padding: 4px 10px;
-    font-size: 0.9rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #ffffff;
+    font-size: 0.8rem;
     font-weight: 500;
+
+    height: 30px;
+    line-height: 24px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+
+  /* Label */
+  .mini-pagination-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-right: 4px;
+    color: #0f172a;
+  }
+
+  /* Select */
+  .mini-pagination-select {
+    height: 28px;
+    line-height: 20px;
+    padding: 0 20px 0 6px;
+    font-size: 0.78rem;
+
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #f8fafc;
     color: #111827;
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+
     appearance: none;
     -webkit-appearance: none;
-    background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='12' viewBox='0 0 24 24' width='12' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+    background-image: url("data:image/svg+xml;utf8,<svg fill='gray' height='10' viewBox='0 0 24 24' width='10' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
     background-repeat: no-repeat;
-    background-position: right 8px center;
-    background-size: 12px;
-    padding-right: 24px;
-}
-
-.mini-pagination-select:hover,
-.mini-pagination-select:focus {
-    background: #e0f2fe;
-    border-color: #bae6fd;
-    outline: none;
-}
+    background-position: right 4px center;
+    background-size: 10px;
+  }
 
 /* --- TITLE + FILTER --- */
 .title-row {
@@ -256,7 +267,7 @@
     margin-inline: auto;
 }
 
-.styled-table thead {
+.candidate-page .styled-table thead {
     background-color: #f9fafb;
     text-transform: uppercase;
     font-weight: 700;
@@ -264,8 +275,8 @@
     font-size: 0.85rem;
 }
 
-.styled-table th,
-.styled-table td {
+.candidate-page .styled-table th,
+.candidate-page .styled-table td {
     padding: 9px 12px;
     border-bottom: 1px solid #f1f5f9;
     vertical-align: middle;

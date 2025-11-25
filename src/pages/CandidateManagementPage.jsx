@@ -321,12 +321,27 @@ export default function CandidateManagementPage() {
 
     {/* PAGINATION - chỉ hiện khi có dữ liệu */}
 {filteredSorted.length > 0 && (
-  <Pagination
-    currentPage={currentPage}
-    totalPages={totalPages}
-    onPageChange={handlePageChange}
-  />
-)}
+          <div className="pagination-bar">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+
+            <div className="mini-pagination">
+              <label className="mini-pagination-label">Hiển thị:</label>
+              <select
+                value={itemsPerPage}
+                onChange={handleChangeItemsPerPage}
+                className="mini-pagination-select"
+              >
+                <option value={10}>10</option>
+                <option value={15}>15</option>
+                <option value={20}>20</option>
+              </select>
+            </div>
+          </div>
+        )}
 
       </div>
 
