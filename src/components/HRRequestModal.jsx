@@ -942,13 +942,13 @@ export default function HRRequestModal({
                               </span>
                             </div>
                           )}
-{step.key !== "candidate" &&
-step.key !== "training" &&
-step.key !== "handover" && (
-<div className="timeline-meta">
-   Người thực hiện: {step.actor}
-</div>
-)}
+                            {step.key !== "candidate" &&
+                            step.key !== "training" &&
+                            step.key !== "handover" && (
+                            <div className="timeline-meta">
+                              Người thực hiện: {step.actor}
+                            </div>
+                            )}
                         </div>
                       </div>
                     );

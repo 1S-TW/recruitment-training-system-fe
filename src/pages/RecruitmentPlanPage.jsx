@@ -129,6 +129,17 @@ const RecruitmentPlanPage = () => {
 
   // Mở AddPlan từ URL ?requestId=...
   useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const reqId = params.get("requestId");  
+    if (reqId) {
+      openEmptyAddModal();
+      setForm((f) => ({ ...f, requestId: reqId }));
+      handlePickRequest(reqId);
+    }
+  }, [location.search]);
+
+// Lọc kế hoạch khi thay đổi bộ lọc
+  useEffect(() => {
   let filtered = [...plans];
 
   if (searchName.trim()) {
@@ -177,16 +188,16 @@ const RecruitmentPlanPage = () => {
 }, [searchName, statusFilter, selectedDate, plans]);
 
 
-     const filteredSorted = [...filteredPlans].sort((a, b) => {
+  const filteredSorted = [...filteredPlans].sort((a, b) => {
     const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
     const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
     return db - da;
   });
 
-  const totalPages = Math.ceil(filteredPlans.length / itemsPerPage) || 1;
+  const totalPages = Math.ceil(filteredSorted.length / itemsPerPage) || 1;
   const indexOfLast = currentPage * itemsPerPage;
   const indexOfFirst = indexOfLast - itemsPerPage;
-  const currentPlans = filteredPlans.slice(indexOfFirst, indexOfLast);
+  const currentPlans = filteredSorted.slice(indexOfFirst, indexOfLast);
 
   const handleChangeItemsPerPage = (e) => {
     setItemsPerPage(Number(e.target.value));
