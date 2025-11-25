@@ -1,5 +1,5 @@
 // src/components/HRRequestModal.jsx
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/HRRequestModal.css";
 import Modal from "./Modal"; // dùng lại Modal giống bên kế hoạch
@@ -23,6 +23,15 @@ export default function HRRequestModal({
   const [planMeta, setPlanMeta] = useState(null);
 
   const navigate = useNavigate();
+
+  const handleGoToPlanPage = useCallback(() => {
+    const planName = planMeta?.planName || "";
+    const searchParam = planName
+      ? `?planName=${encodeURIComponent(planName)}`
+      : "";
+
+    navigate(`/recruitment/plan${searchParam}`);
+  }, [navigate, planMeta?.planName]);
 
   // ====== LOAD DANH MỤC CÔNG NGHỆ ======
   useEffect(() => {
@@ -369,6 +378,26 @@ export default function HRRequestModal({
     // 🔹 Lấy thông tin kế hoạch từ planMeta
     const planName = planMeta?.planName || "";
     const planLabel = planName || "Kế hoạch tuyển dụng";
+    const planLinkButton = planName ? (
+      <button
+        type="button"
+        className="timeline-link"
+        onClick={handleGoToPlanPage}
+      >
+        {planLabel}
+      </button>
+    ) : null;
+
+    const buildPlanDetail = (prefix, suffix) => {
+      if (!planLinkButton) return `${prefix}${planLabel}${suffix}`;
+      return (
+        <span className="timeline-desc-inline">
+          {prefix}
+          {planLinkButton}
+          {suffix}
+        </span>
+      );
+    };
 
     const planStatus = (planMeta?.status || "").toUpperCase();
     const planCreator = planMeta?.createdByName || createdBy;
@@ -401,7 +430,7 @@ export default function HRRequestModal({
         title: "Phê duyệt kế hoạch",
         status: "pending",
         actor: "Chưa thực hiện",
-        detail: `Chờ phê duyệt ${planLabel} để triển khai tuyển dụng`,
+        detail: buildPlanDetail("Chờ phê duyệt ", " để triển khai tuyển dụng"),
       },
       {
         key: "candidate",
@@ -571,7 +600,7 @@ export default function HRRequestModal({
           ...steps[3],
           status: "success",
           actor: planApprover,
-          detail: `"${planLabel}" đã được phê duyệt`,
+          detail: buildPlanDetail("", " đã được phê duyệt"),
         };
       } else if (isPlanRejected) {
         steps[3] = {
@@ -592,7 +621,7 @@ export default function HRRequestModal({
           ...steps[3],
           status: steps[3].status === "success" ? steps[3].status : "pending",
           actor: steps[3].actor || "Chưa thực hiện",
-          detail: `Chờ phê duyệt ${planLabel}`,
+          detail: buildPlanDetail("Chờ phê duyệt ", ""),
         };
       }
 
@@ -733,6 +762,7 @@ export default function HRRequestModal({
     planMeta,
     handleOpenCandidateManagement,
     handleOpenTrainingManagement,
+    handleGoToPlanPage,
   ]);
 
   // ================== API ERROR HELPER ==================

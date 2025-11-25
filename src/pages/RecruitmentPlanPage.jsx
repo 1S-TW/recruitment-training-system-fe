@@ -180,6 +180,12 @@ const RecruitmentPlanPage = () => {
   };
 
   useEffect(() => {
+    const paramsForSearch = new URLSearchParams(location.search);
+    const planNameFromUrl = paramsForSearch.get("planName");
+
+    if (planNameFromUrl) {
+      setSearchName(planNameFromUrl);
+    }
     if (!token) {
       setError("⚠️ Bạn chưa đăng nhập hoặc token đã hết hạn");
       setLoading(false);
