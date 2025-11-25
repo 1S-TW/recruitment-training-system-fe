@@ -433,7 +433,7 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
               className="modal-btn btn-save"
               disabled={isSubmitDisabled}
             >
-              {loading ? "Đang lưu..." : "Save"}
+              {loading ? "Đang lưu..." : "Lưu"}
             </button>
           </div>
         </form>

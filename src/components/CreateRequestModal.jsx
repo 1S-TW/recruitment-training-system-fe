@@ -373,7 +373,7 @@ export default function CreateRequestModal({
                 </>
               ) : (
                 <>
-                  {isEdit ? "Cập nhật" : "Gửi"} <Send size={18} />
+                  {isEdit ? "Cập nhật" : "Gửi"} 
                 </>
               )}
             </button>

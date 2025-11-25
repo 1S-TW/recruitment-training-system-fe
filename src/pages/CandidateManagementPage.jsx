@@ -230,8 +230,8 @@ export default function CandidateManagementPage() {
               >
                 <option value="">Chọn kế hoạch tuyển dụng</option>
                 {planOptions.map((plan) => (
-                  <option key={plan.id} value={plan.id}>
-                    {plan.name}
+                  <option key={plan.Id} value={plan.Id}>
+                    {plan.planName}
                   </option>
                 ))}
               </select>
