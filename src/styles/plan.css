@@ -1842,3 +1842,12 @@
   left: 50% !important;
   transform: translate(-50%, -50%) !important;
 }
+
+
+.status-confirmed {
+  color: #0ea5e9;          /* xanh nước biển */
+  border-color: #0ea5e9;   /* nếu bạn đang dùng border */
+  /* nếu badge có background thì dùng:
+  background-color: rgba(14, 165, 233, 0.1);
+  */
+}

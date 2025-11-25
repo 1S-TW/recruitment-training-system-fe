@@ -39,9 +39,9 @@ const getStatusClass = (status) => {
     case "NEW":
       return "status-new";
     case "CONFIRMED":
-      case "FAILED":
+      return "status-confirmed";   // ✅ CONFIRMED dùng class riêng
+    case "FAILED":
       return "status-failed";
-      return "status-confirmed";
     case "REJECTED":
       return "status-rejected";
     case "COMPLETED":
@@ -50,6 +50,7 @@ const getStatusClass = (status) => {
       return "status-unknown";
   }
 };
+
 
 const derivePlanStatus = (plan = {}, meta = {}) => {
   const base = String(plan.status || "").toUpperCase();
