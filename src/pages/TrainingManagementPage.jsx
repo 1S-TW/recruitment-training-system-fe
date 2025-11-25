@@ -10,6 +10,24 @@ import { FiSearch } from "react-icons/fi";
 import "../styles/toast.css";
 import "../styles/training.css";
 
+// Trả về class màu dựa trên trạng thái
+const getStatusClass = (status) => {
+  switch (status) {
+    case "Đang thực tập":
+      return "status-intern"; // màu xanh dương
+    case "Đã hoàn thành":
+      return "status-completed"; // màu xanh lá
+    case "Đã dừng thực tập":
+      return "status-stopped"; // màu đỏ
+    default:
+      return "status-unknown"; // màu xám
+  }
+};
+
+// Trả về nhãn hiển thị, bạn có thể giữ nguyên text
+const getStatusLabel = (status) => status || "Đang thực tập";
+
+
 export default function TrainingManagementPage() {
   const [trainings, setTrainings] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -310,7 +328,11 @@ const handleEditTraining = (training) => {
                         </td>
                        <td>{t.summaryResult != null ? Number(t.summaryResult).toFixed(2) : "NA"}</td> 
                        <td>{t.teamReview != null ? Number(t.teamReview).toFixed(1) : "NA"}</td> 
-                       <td> {t.internStatus || "Đang thực tập"} </td>
+                       <td>
+                          <span className={`status-badge ${getStatusClass(t.internStatus)}`}>
+                            {getStatusLabel(t.internStatus)}
+                          </span>
+                        </td>
                         <td className="actions-cell text-center">
                           <div className="btn-action-wrapper">
                               <ActionButtons
