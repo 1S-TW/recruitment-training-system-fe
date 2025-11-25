@@ -12,7 +12,8 @@ import ActionButtons from "../components/ActionButtons.jsx";
 import "../styles/request.css";
 import "../styles/toast.css";
 import "../styles/CandidateManagementPage.css";
-
+import { HiUserGroup } from "react-icons/hi"; 
+import { FiSearch } from "react-icons/fi";
 export default function CandidateManagementPage() {
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -153,7 +154,7 @@ export default function CandidateManagementPage() {
     <Layout>
       <div className="breadcrumb-container fade-slide">
         <div className="breadcrumb-left">
-          <span className="breadcrumb-icon">👤</span>
+          <span className="breadcrumb-icon"><HiUserGroup /></span>
           <span className="breadcrumb-item">Tuyển dụng</span>
           <span className="breadcrumb-separator">&gt;</span>
           <span className="breadcrumb-current">Quản lý ứng viên</span>
@@ -183,14 +184,14 @@ export default function CandidateManagementPage() {
               <input
                 type="text"
                 className="filter-input"
-                placeholder="Search..."
+                placeholder="Tìm theo tên..."
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
                   setCurrentPage(1);
                 }}
               />
-              <span className="filter-icon">🔍</span>
+               <span className="filter-icon"><FiSearch /></span>
             </div>
 
             {/* Trạng thái */}
@@ -203,7 +204,7 @@ export default function CandidateManagementPage() {
                   setCurrentPage(1);
                 }}
               >
-                <option value="">Trạng thái...</option>
+                <option value="">Chọn trạng thái</option>
                 <option value="Chưa có kết quả">Chưa có kết quả</option>
                 <option value="Đã có kết quả">Đã có kết quả</option>
                 <option value="Không nhận việc">Không nhận việc</option>
@@ -227,7 +228,7 @@ export default function CandidateManagementPage() {
                   setCurrentPage(1);
                 }}
               >
-                <option value="">Kế hoạch tuyển dụng...</option>
+                <option value="">Chọn kế hoạch tuyển dụng</option>
                 {planOptions.map((plan) => (
                   <option key={plan.id} value={plan.id}>
                     {plan.name}
