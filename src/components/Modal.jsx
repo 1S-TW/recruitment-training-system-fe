@@ -2,7 +2,13 @@
 import React from "react";
 import ReactDOM from "react-dom";
 
-export default function Modal({ title, width = 600, onClose, children }) {
+export default function Modal({
+  title,
+  subtitle = null,
+  width = 600,
+  onClose,
+  children,
+}) {
   const handleBackdropClick = (e) => {
     if (e.target.classList.contains("modal-backdrop")) {
       onClose && onClose();
@@ -22,7 +28,10 @@ export default function Modal({ title, width = 600, onClose, children }) {
         }}
       >
         <div className="modal-header">
-          <h3 className="modal-title">{title}</h3>
+          <div className="modal-title-wrap">
+            <h3 className="modal-title">{title}</h3>
+            {subtitle && <div className="modal-subtitle">{subtitle}</div>}
+          </div>
           <button className="modal-close-btn" onClick={onClose}>
             ✕
           </button>

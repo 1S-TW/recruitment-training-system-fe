@@ -11,7 +11,7 @@
   .breadcrumb-container {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       background: #f9fafb;
       padding: 12px 32px;
       border-bottom: 1px solid #e5e7eb;
@@ -24,6 +24,16 @@
       font-size: 0.95rem;
       color: #4b5563;
       font-weight: 500;
+  }
+  .modal-title-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .modal-subtitle {
+    font-size: 0.9rem;
+    color: #4b5563;
   }
 
   .breadcrumb-current {

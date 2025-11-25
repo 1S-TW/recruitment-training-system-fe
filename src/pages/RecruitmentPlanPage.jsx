@@ -208,8 +208,51 @@ const RecruitmentPlanPage = () => {
     try {
       setLoading(true);
       const res = await axiosAuth.get("/api/recruitment-plans");
-      setPlans(res.data);
-      setFilteredPlans(res.data);
+      const enrichedPlans = await Promise.all(
+        (res.data || []).map(async (plan) => {
+          const planId = plan.recruitmentPlanId;
+          const requestId = plan.request?.requestId;
+
+          let handoverCount =
+            plan.handoverCount ?? plan.deliveredCount ?? planMeta.handoverCount;
+          let requestRejectReason = plan.requestRejectReason || "";
+
+          try {
+            if (planId) {
+              const deliveredRes = await axiosAuth.get(
+                "/api/trainings/delivered-count-by-plan",
+                { params: { planId } }
+              );
+              handoverCount =
+                typeof deliveredRes.data === "number"
+                  ? deliveredRes.data
+                  : Number(deliveredRes.data ?? handoverCount) || handoverCount;
+            }
+
+            if (requestId) {
+              const hrReqRes = await axiosAuth.get(
+                `/api/hr-request/${requestId}`
+              );
+              requestRejectReason =
+                hrReqRes.data?.rejectReason || requestRejectReason;
+            }
+          } catch (e) {
+            console.warn("⚠️ Không thể tải meta cho kế hoạch", planId, e);
+          }
+
+          const derivedStatus = derivePlanStatus(plan, {
+            ...planMeta,
+            handoverCount,
+            deliveredCount: handoverCount,
+            requestRejectReason,
+          });
+
+          return { ...plan, status: derivedStatus };
+        })
+      );
+
+      setPlans(enrichedPlans);
+      setFilteredPlans(enrichedPlans);
       setError(null);
     } catch {
       setError("❌ Không thể tải danh sách kế hoạch tuyển dụng");
@@ -997,6 +1040,12 @@ const RecruitmentPlanPage = () => {
     );
   };
 
+    const derivedPlanStatus = selectedPlan
+    ? derivePlanStatus(selectedPlan, planMeta)
+    : "";
+  const planStatusLabel = getStatusLabel(derivedPlanStatus);
+  const planStatusClass = getStatusClass(derivedPlanStatus);
+
   return (
     <Layout>
       {/* Breadcrumb */}
@@ -1170,6 +1219,11 @@ const RecruitmentPlanPage = () => {
       {modalStep === 1 && selectedPlan && (
         <Modal
           title="Chi tiết Kế hoạch tuyển dụng"
+          subtitle={
+            <span className={`status-badge ${planStatusClass}`}>
+              {planStatusLabel}
+            </span>
+          }
           onClose={handleCloseModal}
           width={640}
         >
