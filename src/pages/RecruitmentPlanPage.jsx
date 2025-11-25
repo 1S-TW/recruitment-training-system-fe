@@ -18,9 +18,11 @@ const formatDate = (dateString) => {
 };
 
 const getStatusLabel = (status) => {
-  switch (status) {
+  switch (String(status || "").toUpperCase()) {
     case "NEW":
       return "Mới tạo";
+      case "FAILED":
+      return "Thất bại";
     case "CONFIRMED":
       return "Đã xác nhận";
     case "REJECTED":
@@ -37,6 +39,8 @@ const getStatusClass = (status) => {
     case "NEW":
       return "status-new";
     case "CONFIRMED":
+      case "FAILED":
+      return "status-failed";
       return "status-confirmed";
     case "REJECTED":
       return "status-rejected";
@@ -45,6 +49,39 @@ const getStatusClass = (status) => {
     default:
       return "status-unknown";
   }
+};
+
+const derivePlanStatus = (plan = {}, meta = {}) => {
+  const base = String(plan.status || "").toUpperCase();
+  if (base === "FAILED" || base === "FAILURE") return "FAILED";
+
+  const techRows = plan.request?.quantityCandidates || [];
+  const outputRequired = techRows.reduce(
+    (sum, qc) => sum + (qc.soLuong || 0),
+    0
+  );
+
+  const handoverCount =
+    meta.handoverCount ??
+    meta.deliveredCount ??
+    plan.handoverCount ??
+    plan.deliveredCount ??
+    0;
+
+  const hasRejectReason = !!(
+    meta.requestRejectReason || plan.requestRejectReason || ""
+  )?.trim();
+
+  if (
+    base === "COMPLETED" &&
+    outputRequired > 0 &&
+    handoverCount < outputRequired &&
+    hasRejectReason
+  ) {
+    return "FAILED";
+  }
+
+  return base;
 };
 
 // 🔹 TÍNH TÊN "NGƯỜI GỬI" CHO TỪNG KẾ HOẠCH
@@ -332,6 +369,34 @@ const RecruitmentPlanPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPlan, modalStep]);
 
+  useEffect(() => {
+    if (!selectedPlan) return;
+
+    const derived = derivePlanStatus(selectedPlan, planMeta);
+    const current = String(selectedPlan.status || "").toUpperCase();
+
+    if (derived && derived !== current) {
+      const updatedPlan = { ...selectedPlan, status: derived };
+
+      setSelectedPlan(updatedPlan);
+      setPlans((prev) =>
+        prev.map((p) =>
+          p.recruitmentPlanId === updatedPlan.recruitmentPlanId
+            ? { ...p, status: derived }
+            : p
+        )
+      );
+      setFilteredPlans((prev) =>
+        prev.map((p) =>
+          p.recruitmentPlanId === updatedPlan.recruitmentPlanId
+            ? { ...p, status: derived }
+            : p
+        )
+      );
+    }
+  }, [planMeta, selectedPlan]);
+
+
   // ====== LỌC KHI THAY ĐỔI BỘ LỌC ======
   useEffect(() => {
     let filtered = [...plans];
@@ -343,7 +408,9 @@ const RecruitmentPlanPage = () => {
     }
 
     if (statusFilter) {
-      filtered = filtered.filter((p) => p.status === statusFilter);
+      filtered = filtered.filter(
+        (p) => derivePlanStatus(p) === statusFilter
+      );
     }
 
     if (selectedDate?.value) {
@@ -608,7 +675,7 @@ const RecruitmentPlanPage = () => {
     if (!selectedPlan) return [];
 
     const plan = selectedPlan;
-    const planStatus = (plan.status || "").toUpperCase();
+    const planStatus = derivePlanStatus(plan, planMeta);
 
     const planName = plan.planName || "Kế hoạch tuyển dụng";
     const planLabel = planName || "Kế hoạch tuyển dụng";
@@ -683,7 +750,11 @@ const RecruitmentPlanPage = () => {
     ];
 
     // ===== B1. PHÊ DUYỆT KẾ HOẠCH =====
-    if (planStatus === "CONFIRMED" || planStatus === "COMPLETED") {
+    if (
+      planStatus === "CONFIRMED" ||
+      planStatus === "COMPLETED" ||
+      planStatus === "FAILED"
+    ) {
       steps[0] = {
         ...steps[0],
         status: "success",
@@ -788,9 +859,10 @@ const RecruitmentPlanPage = () => {
           : createdBy;
 
       const isFailure =
-        hasRejectReason &&
-        statusRaw === "COMPLETED" &&
-        (handoverCount || 0) < outputRequired;
+        planStatus === "FAILED" ||
+        (hasRejectReason &&
+          statusRaw === "COMPLETED" &&
+          (handoverCount || 0) < outputRequired);
 
       if (
         planStatus === "COMPLETED" &&
@@ -859,6 +931,7 @@ const RecruitmentPlanPage = () => {
     }
 
     const techRows = request.quantityCandidates || [];
+    const derivedStatus = derivePlanStatus(plan, planMeta);
 
     return (
       <div className="detail-list">
@@ -914,8 +987,8 @@ const RecruitmentPlanPage = () => {
         {showStatus && (
           <div className="detail-item">
             <span className="detail-label">Trạng thái:</span>
-            <span className={`detail-value ${getStatusClass(plan.status)}`}>
-              {getStatusLabel(plan.status)}
+            <span className={`detail-value ${getStatusClass(derivedStatus)}`}>
+              {getStatusLabel(derivedStatus)}
             </span>
           </div>
         )}
@@ -965,6 +1038,7 @@ const RecruitmentPlanPage = () => {
                 <option value="">Chọn trạng thái</option>
                 <option value="NEW">Mới tạo</option>
                 <option value="CONFIRMED">Đã xác nhận</option>
+                <option value="FAILED">Thất bại</option>
                 <option value="REJECTED">Bị từ chối</option>
                 <option value="COMPLETED">Đã hoàn thành</option>
               </select>
@@ -1018,31 +1092,35 @@ const RecruitmentPlanPage = () => {
                     </td>
                   </tr>
                 ) : (
-                  currentPlans.map((plan, index) => (
-                    <tr key={plan.recruitmentPlanId || index}>
-                      <td>{indexOfFirst + index + 1}</td>
-                      <td>{plan.planName}</td>
-                      <td>
-                        {plan.createdAt ? formatDate(plan.createdAt) : "—"}
-                      </td>
-                      <td>
-                        <span
-                          className={`status-badge ${getStatusClass(
-                            plan.status
-                          )}`}
-                        >
-                          {getStatusLabel(plan.status)}
-                        </span>
-                      </td>
-                      <td>{getSenderName(plan)}</td>
-                      <td className="actions-cell text-center">
-                        <ActionButtons
-                          onView={() => handleViewDetails(plan)}
-                          onEdit={() => {}}
-                        />
-                      </td>
-                    </tr>
-                  ))
+                  currentPlans.map((plan, index) => {
+                    const rowStatus = derivePlanStatus(plan);
+
+                    return (
+                      <tr key={plan.recruitmentPlanId || index}>
+                        <td>{indexOfFirst + index + 1}</td>
+                        <td>{plan.planName}</td>
+                        <td>
+                          {plan.createdAt ? formatDate(plan.createdAt) : "—"}
+                        </td>
+                        <td>
+                          <span
+                            className={`status-badge ${getStatusClass(
+                              rowStatus
+                            )}`}
+                          >
+                            {getStatusLabel(rowStatus)}
+                          </span>
+                        </td>
+                        <td>{getSenderName(plan)}</td>
+                        <td className="actions-cell text-center">
+                          <ActionButtons
+                            onView={() => handleViewDetails(plan)}
+                            onEdit={() => {}}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
