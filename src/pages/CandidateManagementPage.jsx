@@ -149,6 +149,24 @@ export default function CandidateManagementPage() {
     setShowEditModal(false);
     // ✅ ĐÃ XÓA: showToast("Chấm điểm thành công!", "success");
   };
+const getStatusClass = (status) => {
+  switch (status) {
+    case "Chưa có kết quả":
+      return "status-none";
+    case "Đã có kết quả":
+      return "status-done";
+    case "Không nhận việc":
+      return "status-refuse";
+    case "Đã gửi mail cảm ơn":
+      return "status-mail";
+    case "Đã nhận việc":
+      return "status-accept";
+    case "Đã thông báo thời gian TT":
+      return "status-inform";
+    default:
+      return "status-none";
+  }
+};
 
   return (
     <Layout>
@@ -301,7 +319,10 @@ export default function CandidateManagementPage() {
                         <td style={{ textAlign: "center" }}>{testScore}</td>
                         <td style={{ textAlign: "center" }}>{interviewScore}</td>
                         <td style={{ textAlign: "center" }}>
-                          <span className="status-badge">{status}</span>
+                       <span className={`status-badge ${getStatusClass(status)}`}>
+  {status}
+</span>
+
                         </td>
                         <td className="actions-cell text-center">
                           {/* Đã bỏ div wrapper thừa ở đây theo yêu cầu trước */}
@@ -364,4 +385,5 @@ export default function CandidateManagementPage() {
 
     </Layout>
   );
+
 }

@@ -538,5 +538,51 @@
   width: auto !important;
   min-width: 200px !important;
 }
+/* STYLE badge trạng thái ứng viên */
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: none;
+  border: none;
+}
+
+/* Chưa có kết quả — Xám */
+.status-none {
+  background: #E5E7EB;
+  color: #374151;
+}
+
+/* Đã có kết quả — Vàng */
+.status-done {
+  background: #FEF3C7;
+  color: #B45309;
+}
+
+/* Không nhận việc — Đỏ */
+.status-refuse {
+  background: #FEE2E2;
+  color: #B91C1C;
+}
+
+/* Đã gửi mail cảm ơn — Cam */
+.status-mail {
+  background: #FFEDD5;
+  color: #C2410C;
+}
+
+/* Đã nhận việc — Xanh lá */
+.status-accept {
+  background: #DCFCE7;
+  color: #166534;
+}
+
+/* Đã thông báo thời gian TT — Xanh dương */
+.status-inform {
+  background: #DBEAFE;
+  color: #1D4ED8;
+}
 
 /* ===================== END CANDIDATE MANAGEMENT PAGE CSS ===================== */
