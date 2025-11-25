@@ -20,9 +20,11 @@ export default function AddPlanModal({
     const start = new Date(end);
     start.setDate(end.getDate() - 14);
     const pad = (n) => String(n).padStart(2, "0");
-    return `Từ ${pad(start.getDate())}/${pad(start.getMonth() + 1)}/${start.getFullYear()} đến ${pad(
-      end.getDate()
-    )}/${pad(end.getMonth() + 1)}/${end.getFullYear()}`;
+    return `Từ ${pad(start.getDate())}/${pad(
+      start.getMonth() + 1
+    )}/${start.getFullYear()} đến ${pad(end.getDate())}/${pad(
+      end.getMonth() + 1
+    )}/${end.getFullYear()}`;
   }, [form.recruitmentDeadline]);
 
   const deliveryDeadlineStr = useMemo(() => {
@@ -31,6 +33,14 @@ export default function AddPlanModal({
     const pad = (n) => String(n).padStart(2, "0");
     return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
   }, [form.deliveryDeadline]);
+
+  // 🔹 HẬU TỐ "tháng 11, 2025" LẤY THEO recruitmentDeadline
+  const monthYearSuffix = useMemo(() => {
+    if (!form.recruitmentDeadline) return "";
+    const d = new Date(form.recruitmentDeadline);
+    const pad = (n) => String(n).padStart(2, "0");
+    return `tháng ${pad(d.getMonth() + 1)}, ${d.getFullYear()}`;
+  }, [form.recruitmentDeadline]);
 
   if (!open) return null;
 
@@ -70,7 +80,9 @@ export default function AddPlanModal({
                 className="input-style"
                 value={form.requestId || ""}
                 onChange={(e) =>
-                  onPickRequest?.(e.target.value ? Number(e.target.value) : undefined)
+                  onPickRequest?.(
+                    e.target.value ? Number(e.target.value) : undefined
+                  )
                 }
               >
                 <option value="">— Chọn nhu cầu —</option>
@@ -87,22 +99,37 @@ export default function AddPlanModal({
           {showFields && (
             <div className="form-group">
               <label>Tên nhu cầu</label>
-              <input type="text" className="input-style" value={requestTitle || ""} readOnly />
+              <input
+                type="text"
+                className="input-style"
+                value={requestTitle || ""}
+                readOnly
+              />
             </div>
           )}
 
-          {/* Tên kế hoạch */}
+          {/* 🔹 Tên kế hoạch: TIỀN TỐ – INPUT – HẬU TỐ */}
           {showFields && (
             <div className="form-group">
               <label>Tên kế hoạch</label>
-              <input
-                type="text"
-                placeholder="Nhập tên kế hoạch"
-                className="input-style"
-                value={form.planName}
-                onChange={(e) => onChange((f) => ({ ...f, planName: e.target.value }))}
-                required
-              />
+              <div className="plan-name-row">
+                <span className="plan-name-prefix">Kế hoạch tuyển dụng</span>
+
+                <input
+                  type="text"
+                  placeholder="Nhập tên kế hoạch"
+                  className="input-style plan-name-input"
+                  value={form.planName}
+                  onChange={(e) =>
+                    onChange((f) => ({ ...f, planName: e.target.value }))
+                  }
+                  required
+                />
+
+                <span className="plan-name-suffix">
+                  {monthYearSuffix || ""}
+                </span>
+              </div>
             </div>
           )}
 
@@ -111,62 +138,77 @@ export default function AddPlanModal({
             <>
               <div className="form-group">
                 <label>Thời gian tuyển dụng</label>
-                <input type="text" className="input-style" value={periodText} readOnly />
+                <input
+                  type="text"
+                  className="input-style"
+                  value={periodText}
+                  readOnly
+                />
               </div>
 
               <div className="form-group">
                 <label>Hạn bàn giao</label>
-                <input type="text" className="input-style" value={deliveryDeadlineStr} readOnly />
+                <input
+                  type="text"
+                  className="input-style"
+                  value={deliveryDeadlineStr}
+                  readOnly
+                />
               </div>
             </>
           )}
 
           {/* Bảng công nghệ */}
-          {showFields && Array.isArray(techSummary) && techSummary.length > 0 && (
-            <div className="form-group">
-              <label>Chi tiết công nghệ</label>
+          {showFields &&
+            Array.isArray(techSummary) &&
+            techSummary.length > 0 && (
+              <div className="form-group">
+                <label>Chi tiết công nghệ</label>
 
-              <div className="tech-table-wrapper">
-                <table className="styled-table">
-                  <thead>
-                    <tr>
-                      <th className="center">CÔNG NGHỆ</th>
-                      <th className="center">NV ĐẦU VÀO</th>
-                      <th className="center">NV ĐẦU RA</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {techSummary.map((t, i) => {
-                      const inQty = Number(t.soLuong ?? t.quantity ?? 0) || 0;
-                      const outQty = inQty * 2;
-                      return (
-                        <tr key={i}>
-                          <td className="center">{t.technologyName || t.technology || "-"}</td>
-                          <td className="center">{inQty}</td>
-                          <td className="center">{outQty}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                <div className="tech-table-wrapper">
+                  <table className="styled-table">
+                    <thead>
+                      <tr>
+                        <th className="center">CÔNG NGHỆ</th>
+                        <th className="center">NV ĐẦU VÀO</th>
+                        <th className="center">NV ĐẦU RA</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {techSummary.map((t, i) => {
+                        const inQty =
+                          Number(t.soLuong ?? t.quantity ?? 0) || 0;
+                        const outQty = inQty * 2;
+                        return (
+                          <tr key={i}>
+                            <td className="center">
+                              {t.technologyName || t.technology || "-"}
+                            </td>
+                            <td className="center">{inQty}</td>
+                            <td className="center">{outQty}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Footer: chỉ còn nút tạo, đặt ở góc dưới bên trái */}
-<div className="modal-footer-flex no-cancel">
- {/* Footer này giữ nguyên, KHÔNG còn nút ở đây */}
-</div>
-{/* Nút Tạo kế hoạch nằm dưới footer */}
-<div className="create-plan-fixed-area">
-<button
-   type="submit"
-   className="btn-green"
-   disabled={!canSubmit}
->
-   Tạo kế hoạch
-</button>
-</div>
+          <div className="modal-footer-flex no-cancel">
+            {/* Footer này giữ nguyên, KHÔNG còn nút ở đây */}
+          </div>
+          {/* Nút Tạo kế hoạch nằm dưới footer */}
+          <div className="create-plan-fixed-area">
+            <button
+              type="submit"
+              className="btn-green"
+              disabled={!canSubmit}
+            >
+              Tạo kế hoạch
+            </button>
+          </div>
         </form>
       </div>
     </>

@@ -9,8 +9,9 @@ import AddPlanModal from "../components/AddPlanModal";
 import DatePicker from "../components/DatePicker";
 import Modal from "../components/Modal";
 import "../styles/plan.css";
-import { HiUserGroup } from "react-icons/hi"; 
+import { HiUserGroup } from "react-icons/hi";
 import { FiSearch } from "react-icons/fi";
+
 const formatDate = (dateString) => {
   if (!dateString) return "—";
   return new Date(dateString).toLocaleDateString("vi-VN");
@@ -51,9 +52,7 @@ const getSenderName = (plan) => {
   const status = (plan.status || "").toUpperCase();
 
   const createdByName =
-    plan.request?.createdBy?.fullName ||
-    plan.request?.createdByName ||
-    "";
+    plan.request?.createdBy?.fullName || plan.request?.createdByName || "";
 
   const rejectedByName = plan.rejectedByName || "";
 
@@ -64,7 +63,16 @@ const getSenderName = (plan) => {
   return createdByName || "Không rõ";
 };
 
-
+// 🔹 HÀM MỚI: build tên kế hoạch đầy đủ
+// Kế hoạch tuyển dụng <shortName> tháng <MM>, <YYYY>
+const buildFullPlanName = (shortName) => {
+  const trimmed = (shortName || "").trim();
+  if (!trimmed) return "";
+  const now = new Date();
+  const month = now.getMonth() + 1; // 1–12
+  const year = now.getFullYear();
+  return `Kế hoạch tuyển dụng ${trimmed} tháng ${month}, ${year}`;
+};
 
 const RecruitmentPlanPage = () => {
   const [selectedDate, setSelectedDate] = useState(null);
@@ -130,7 +138,7 @@ const RecruitmentPlanPage = () => {
   // Mở AddPlan từ URL ?requestId=...
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const reqId = params.get("requestId");  
+    const reqId = params.get("requestId");
     if (reqId) {
       openEmptyAddModal();
       setForm((f) => ({ ...f, requestId: reqId }));
@@ -138,55 +146,58 @@ const RecruitmentPlanPage = () => {
     }
   }, [location.search]);
 
-// Lọc kế hoạch khi thay đổi bộ lọc
+  // Lọc kế hoạch khi thay đổi bộ lọc
   useEffect(() => {
-  let filtered = [...plans];
+    let filtered = [...plans];
 
-  if (searchName.trim()) {
-    filtered = filtered.filter((p) =>
-      (p.planName || "").toLowerCase().includes(searchName.toLowerCase())
-    );
-  }
+    if (searchName.trim()) {
+      filtered = filtered.filter((p) =>
+        (p.planName || "")
+          .toLowerCase()
+          .includes(searchName.toLowerCase())
+      );
+    }
 
-  if (statusFilter) {
-    filtered = filtered.filter((p) => p.status === statusFilter);
-  }
+    if (statusFilter) {
+      filtered = filtered.filter((p) => p.status === statusFilter);
+    }
 
-  if (selectedDate?.value) {
-    const createdFilter = new Date(selectedDate.value);
-    const filterMode = selectedDate.filterMode || "day";
+    if (selectedDate?.value) {
+      const createdFilter = new Date(selectedDate.value);
+      const filterMode = selectedDate.filterMode || "day";
 
-    const selectedDay = createdFilter.getDate();
-    const selectedMonth = selectedDate.displayMonth ?? createdFilter.getMonth();
-    const selectedYear = selectedDate.displayYear ?? createdFilter.getFullYear();
+      const selectedDay = createdFilter.getDate();
+      const selectedMonth =
+        selectedDate.displayMonth ?? createdFilter.getMonth();
+      const selectedYear =
+        selectedDate.displayYear ?? createdFilter.getFullYear();
 
-    filtered = filtered.filter((p) => {
-      const created = p.createdAt ? new Date(p.createdAt) : null;
-      if (!created) return false;
+      filtered = filtered.filter((p) => {
+        const created = p.createdAt ? new Date(p.createdAt) : null;
+        if (!created) return false;
 
-      if (filterMode === "day") {
-        return (
-          created.getDate() === selectedDay &&
-          created.getMonth() === selectedMonth &&
-          created.getFullYear() === selectedYear
-        );
-      } else if (filterMode === "month") {
-        return (
-          created.getMonth() === selectedMonth &&
-          created.getFullYear() === selectedYear
-        );
-      } else if (filterMode === "year") {
-        return created.getFullYear() === selectedYear;
-      }
+        if (filterMode === "day") {
+          return (
+            created.getDate() === selectedDay &&
+            created.getMonth() === selectedMonth &&
+            created.getFullYear() === selectedYear
+          );
+        } else if (filterMode === "month") {
+          return (
+            created.getMonth() === selectedMonth &&
+            created.getFullYear() === selectedYear
+          );
+        } else if (filterMode === "year") {
+          return created.getFullYear() === selectedYear;
+        }
 
-      return true;
-    });
-  }
+        return true;
+      });
+    }
 
-  setFilteredPlans(filtered);
-  setCurrentPage(1);
-}, [searchName, statusFilter, selectedDate, plans]);
-
+    setFilteredPlans(filtered);
+    setCurrentPage(1);
+  }, [searchName, statusFilter, selectedDate, plans]);
 
   const filteredSorted = [...filteredPlans].sort((a, b) => {
     const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -229,7 +240,9 @@ const RecruitmentPlanPage = () => {
     try {
       const res = await axiosAuth.get("/api/hr-request");
       const opts = (res.data || [])
-        .filter((r) => String(r.status || "").toUpperCase() === "NEW")
+        .filter(
+          (r) => String(r.status || "").toUpperCase() === "NEW"
+        )
         .map((r) => ({ id: r.requestId, title: r.requestTitle }))
         .sort((a, b) => a.title.localeCompare(b.title));
       setRequestOptions(opts);
@@ -252,7 +265,9 @@ const RecruitmentPlanPage = () => {
       return;
     }
     try {
-      const res = await axiosAuth.get(`/api/hr-request/${id}/plan-defaults`);
+      const res = await axiosAuth.get(
+        `/api/hr-request/${id}/plan-defaults`
+      );
       const d = res.data;
       setForm({
         requestId: d.requestId,
@@ -283,14 +298,29 @@ const RecruitmentPlanPage = () => {
         alert("⚠️ Vui lòng chọn nhu cầu trước khi tạo kế hoạch.");
         return;
       }
-      if (!form.planName || !form.recruitmentDeadline || !form.deliveryDeadline) {
+      if (
+        !form.planName ||
+        !form.recruitmentDeadline ||
+        !form.deliveryDeadline
+      ) {
         alert("⚠️ Vui lòng nhập tên kế hoạch và thời hạn.");
         return;
       }
 
-      await axiosAuth.post("/api/recruitment-plans", form);
+      // 🔹 GHÉP TIỀN TỐ + TÊN NHẬP + HẬU TỐ THÁNG/NĂM HIỆN TẠI
+      const fullPlanName = buildFullPlanName(form.planName);
+
+      const payload = {
+        ...form,
+        planName: fullPlanName,
+      };
+
+      await axiosAuth.post("/api/recruitment-plans", payload);
+
       try {
-        await axiosAuth.put(`/api/hr-request/${form.requestId}/approve?note=`);
+        await axiosAuth.put(
+          `/api/hr-request/${form.requestId}/approve?note=`
+        );
       } catch (err) {
         console.error("Không thể cập nhật trạng thái nhu cầu:", err);
       }
@@ -321,10 +351,14 @@ const RecruitmentPlanPage = () => {
       const updated = res.data;
 
       setPlans((prev) =>
-        prev.map((p) => (p.recruitmentPlanId === planId ? updated : p))
+        prev.map((p) =>
+          p.recruitmentPlanId === planId ? updated : p
+        )
       );
       setFilteredPlans((prev) =>
-        prev.map((p) => (p.recruitmentPlanId === planId ? updated : p))
+        prev.map((p) =>
+          p.recruitmentPlanId === planId ? updated : p
+        )
       );
       setSelectedPlan(updated);
 
@@ -364,10 +398,14 @@ const RecruitmentPlanPage = () => {
       const updated = res.data;
 
       setPlans((prev) =>
-        prev.map((p) => (p.recruitmentPlanId === planId ? updated : p))
+        prev.map((p) =>
+          p.recruitmentPlanId === planId ? updated : p
+        )
       );
       setFilteredPlans((prev) =>
-        prev.map((p) => (p.recruitmentPlanId === planId ? updated : p))
+        prev.map((p) =>
+          p.recruitmentPlanId === planId ? updated : p
+        )
       );
       setSelectedPlan(updated);
 
@@ -397,7 +435,9 @@ const RecruitmentPlanPage = () => {
       <div className="detail-list">
         <div className="detail-item">
           <span className="detail-label">Tên nhu cầu:</span>
-          <span className="detail-value">{request.requestTitle}</span>
+          <span className="detail-value">
+            {request.requestTitle}
+          </span>
         </div>
         <div className="detail-item">
           <span className="detail-label">Tên kế hoạch:</span>
@@ -418,7 +458,9 @@ const RecruitmentPlanPage = () => {
                 <tr key={qc.technology.id}>
                   <td>{qc.technology.name}</td>
                   <td className="text-center">{qc.soLuong}</td>
-                  <td className="text-center">{qc.soLuong * 2}</td>
+                  <td className="text-center">
+                    {qc.soLuong * 2}
+                  </td>
                 </tr>
               ))
             ) : (
@@ -461,10 +503,14 @@ const RecruitmentPlanPage = () => {
       {/* Breadcrumb */}
       <div className="breadcrumb-container fade-slide">
         <div className="breadcrumb-left">
-            <span className="breadcrumb-icon"><HiUserGroup /></span>
+          <span className="breadcrumb-icon">
+            <HiUserGroup />
+          </span>
           <span className="breadcrumb-item">Tuyển dụng</span>
           <span className="breadcrumb-separator">&gt;</span>
-          <span className="breadcrumb-current">Kế hoạch tuyển dụng</span>
+          <span className="breadcrumb-current">
+            Kế hoạch tuyển dụng
+          </span>
         </div>
       </div>
 
@@ -473,24 +519,27 @@ const RecruitmentPlanPage = () => {
         <div className="title-row">
           <h2 className="page-title-small">Kế hoạch tuyển dụng</h2>
 
-         <div className="filter-bar">
+          <div className="filter-bar">
             <div className="filter-item">
               <input
-               type="text"
-               className="filter-input"
-               placeholder="Tìm theo tên..."
-               value={searchName}
-               onChange={(e) => setSearchName(e.target.value)}
-               />
-                <span className="filter-icon"><FiSearch /></span>
-         
-             </div>  
+                type="text"
+                className="filter-input"
+                placeholder="Tìm theo tên..."
+                value={searchName}
+                onChange={(e) => setSearchName(e.target.value)}
+              />
+              <span className="filter-icon">
+                <FiSearch />
+              </span>
+            </div>
 
             <div className="filter-item">
               <select
                 className="filter-select smooth-dropdown"
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={(e) =>
+                  setStatusFilter(e.target.value)
+                }
               >
                 <option value="">Chọn trạng thái</option>
                 <option value="NEW">Mới tạo</option>
@@ -548,22 +597,32 @@ const RecruitmentPlanPage = () => {
                   </tr>
                 ) : (
                   currentPlans.map((plan, index) => (
-                    <tr key={plan.recruitmentPlanId || index}>
+                    <tr
+                      key={plan.recruitmentPlanId || index}
+                    >
                       <td>{indexOfFirst + index + 1}</td>
                       <td>{plan.planName}</td>
                       <td>
-                        {plan.createdAt ? formatDate(plan.createdAt) : "—"}
+                        {plan.createdAt
+                          ? formatDate(plan.createdAt)
+                          : "—"}
                       </td>
                       <td>
-                        <span className={`status-badge ${getStatusClass(plan.status)}`}>
-                    {getStatusLabel(plan.status)}
+                        <span
+                          className={`status-badge ${getStatusClass(
+                            plan.status
+                          )}`}
+                        >
+                          {getStatusLabel(plan.status)}
                         </span>
                       </td>
                       {/* 🔹 CỘT NGƯỜI GỬI – ĐÃ SỬA DÙNG getSenderName */}
                       <td>{getSenderName(plan)}</td>
                       <td className="actions-cell text-center">
                         <ActionButtons
-                          onView={() => handleViewDetails(plan)}
+                          onView={() =>
+                            handleViewDetails(plan)
+                          }
                           onEdit={() => {}}
                         />
                       </td>
@@ -575,28 +634,30 @@ const RecruitmentPlanPage = () => {
           )}
         </div>
 
-       {filteredSorted.length > 0 && (
-        <div className="pagination-bar">
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-          />
+        {filteredSorted.length > 0 && (
+          <div className="pagination-bar">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
 
-          <div className="mini-pagination">
-            <label className="mini-pagination-label">Hiển thị:</label>
-            <select
-              value={itemsPerPage}
-              onChange={handleChangeItemsPerPage}
-              className="mini-pagination-select"
-            >
-              <option value={10}>10</option>
-              <option value={15}>15</option>
-              <option value={20}>20</option>
-            </select>
+            <div className="mini-pagination">
+              <label className="mini-pagination-label">
+                Hiển thị:
+              </label>
+              <select
+                value={itemsPerPage}
+                onChange={handleChangeItemsPerPage}
+                className="mini-pagination-select"
+              >
+                <option value={10}>10</option>
+                <option value={15}>15</option>
+                <option value={20}>20</option>
+              </select>
+            </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
 
       {/* Modal tạo kế hoạch */}
@@ -642,10 +703,14 @@ const RecruitmentPlanPage = () => {
             <div className="rejection-card">
               <p className="rejection-title">
                 LÝ DO KẾ HOẠCH BỊ{" "}
-                {selectedPlan.status === "CANCELED" ? "HỦY" : "TỪ CHỐI"}:
+                {selectedPlan.status === "CANCELED"
+                  ? "HỦY"
+                  : "TỪ CHỐI"}
+                :
               </p>
               <p className="rejection-reason-text">
-                {selectedPlan.note || "Không có lý do cụ thể được ghi lại."}
+                {selectedPlan.note ||
+                  "Không có lý do cụ thể được ghi lại."}
               </p>
               <div className="modal-footer justify-end" />
             </div>
@@ -653,7 +718,8 @@ const RecruitmentPlanPage = () => {
             <div className="modal-footer justify-center only-view-footer">
               <p className="only-view-text">
                 Kế hoạch đang ở trạng thái "
-                {getStatusLabel(selectedPlan.status)}". Chỉ có thể xem.
+                {getStatusLabel(selectedPlan.status)}". Chỉ
+                có thể xem.
               </p>
             </div>
           )}
@@ -668,7 +734,10 @@ const RecruitmentPlanPage = () => {
           width={520}
         >
           <div className="reject-form">
-            <label htmlFor="rejectReason" className="reject-label">
+            <label
+              htmlFor="rejectReason"
+              className="reject-label"
+            >
               Vui lòng nhập lý do từ chối kế hoạch:{" "}
               <span className="reject-plan-name">
                 "{selectedPlan.planName}"
@@ -678,7 +747,9 @@ const RecruitmentPlanPage = () => {
               id="rejectReason"
               className="reject-textarea"
               value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
+              onChange={(e) =>
+                setRejectReason(e.target.value)
+              }
               placeholder="Nhập lý do cụ thể..."
             />
           </div>

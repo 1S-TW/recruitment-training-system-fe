@@ -338,7 +338,7 @@ export default function HRRequestModal({
 
     // 🔹 Lấy thông tin kế hoạch từ planMeta
     const planName = planMeta?.planName || "";
-    const planLabel = planName ? `kế hoạch "${planName}"` : "kế hoạch tuyển dụng";
+const planLabel = planName || "Kế hoạch tuyển dụng";
 
     const planStatus = (planMeta?.status || "").toUpperCase();
     const planCreator = planMeta?.createdByName || createdBy;
@@ -537,15 +537,14 @@ export default function HRRequestModal({
 
       // Phê duyệt / Từ chối kế hoạch
       if (isPlanApproved) {
-        steps[3] = {
-          ...steps[3],
-          status: "success",
-          actor: planApprover,
-          detail: `${planLabel.charAt(0).toUpperCase()}${planLabel.slice(
-            1
-          )} đã được phê duyệt`,
-        };
-      } else if (isPlanRejected) {
+  steps[3] = {
+    ...steps[3],
+    status: "success",
+    actor: planApprover,
+    detail: `"${planLabel}" đã được phê duyệt`,
+  };
+}
+ else if (isPlanRejected) {
         steps[3] = {
           ...steps[3],
           status: "rejected",
