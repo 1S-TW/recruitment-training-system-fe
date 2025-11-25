@@ -1,37 +1,30 @@
 // === EditTrainingModal.jsx ===
 import React, { useState, useEffect } from "react";
 import "../styles/EditTrainingModal.css";
-import axios from "axios";
-import api from "../services/api"; // SỬ DỤNG api ĐÃ CẤU HÌNH
+import api from "../services/api";
 
 export default function EditTrainingModal({
   isOpen,
   onClose,
   trainingData,
-  onSave, // callback để cập nhật FE
+  onSave,
+  isViewOnly = false,
 }) {
   const [scores, setScores] = useState([]);
   const [overallScore, setOverallScore] = useState("NA");
   const [teamEvaluation, setTeamEvaluation] = useState("");
   const [stopped, setStopped] = useState(false);
 
-  useEffect(() => {
-    if (trainingData) {
-      setStopped(trainingData.internStatus === "Đã dừng thực tập");
+  const [toast, setToast] = useState(null);
+  const [confirmStop, setConfirmStop] = useState(false);
 
-      const initScores = (trainingData.scores || []).map((s) => ({
-      courseName: s.courseName,
-      theory: s.theoryScore != null ? s.theoryScore : "",
-      attitude: s.attitudeScore != null ? s.attitudeScore : "",
-      practice: s.practiceScore != null ? s.practiceScore : "",
-      totalScore: s.totalScore,
-    }));
+  const canEdit = !stopped && !isViewOnly;
 
-      setScores(initScores);
-      calculateOverall(initScores);
-      setTeamEvaluation(trainingData.teamReview || "");
-    }
-  }, [trainingData]);
+  const showToast = (msg, type = "success") => {
+    setToast({ msg, type });
+    window.clearTimeout(showToast._t);
+    showToast._t = window.setTimeout(() => setToast(null), 2500);
+  };
 
   const isValid = (v) => v !== "" && !isNaN(v) && v >= 0 && v <= 10;
 
@@ -67,143 +60,111 @@ export default function EditTrainingModal({
   };
 
   const handleScoreChange = (index, key, value) => {
-    if (stopped) return;
+    if (!canEdit) return;
     const newScores = [...scores];
     newScores[index][key] = value;
     setScores(newScores);
     calculateOverall(newScores);
   };
 
-  // Thêm hàm dừng thực tập
   const handleStopInternship = async () => {
-    if (!window.confirm("Bạn có chắc chắn muốn DỪNG thực tập của thực tập sinh này?\nHành động này KHÔNG THỂ HOÀN TÁC!")) {
-      return;
-    }
-
     try {
       const response = await api.put(`/trainings/${trainingData.internId}/stop`);
       onSave(response.data);
+      setStopped(true);
+      setConfirmStop(false);
       onClose();
-      alert("Đã dừng thực tập thành công!");
+      showToast("Đã dừng thực tập thành công!");
     } catch (err) {
       console.error(err);
-      alert("Lỗi khi dừng thực tập!");
+      showToast("Lỗi khi dừng thực tập!", "error");
     }
   };
 
-  // Sửa useEffect để hiển thị trạng thái đúng
-  useEffect(() => {
-    if (trainingData) {
-      const status = trainingData.internStatus || "Đang thực tập";
-      setStopped(status === "Đã dừng thực tập");
+  const handleSave = async () => {
+    const processedScores = scores.map((s) => ({
+      courseName: s.courseName,
+      theoryScore: s.theory !== "" ? Number(s.theory) : null,
+      attitudeScore: s.attitude !== "" ? Number(s.attitude) : null,
+      practiceScore: s.practice !== "" ? Number(s.practice) : null,
+    }));
 
-      const initScores = (trainingData.scores || []).map((s) => ({
-        courseName: s.courseName,
-        theory: s.theoryScore != null ? s.theoryScore : "",
-        attitude: s.attitudeScore != null ? s.attitudeScore : "",
-        practice: s.practiceScore != null ? s.practiceScore : "",
-        totalScore: s.totalScore,
-      }));
-
-      setScores(initScores);
-      setOverallScore(
-        trainingData.summaryResult != null 
-          ? Number(trainingData.summaryResult).toFixed(2)
-          : "NA"
-      );
-      setTeamEvaluation(
-        trainingData.teamReview != null ? String(trainingData.teamReview) : ""
-      );
-    }
-  }, [trainingData]);
-
-  // --- gửi payload lên API backend ---
-const handleSave = async () => {
-  const processedScores = scores.map((s) => ({
-    courseName: s.courseName,
-    theoryScore: s.theory !== "" ? Number(s.theory) : null,
-    practiceScore: s.practice !== "" ? Number(s.practice) : null,
-    attitudeScore: s.attitude !== "" ? Number(s.attitude) : null,
-    // ← KHÔNG GỬI totalScore → backend tự tính!
-  }));
-
-  // Tính overall score để gửi
-  const validScores = processedScores.filter(s =>
-    s.theoryScore !== null && s.practiceScore !== null && s.attitudeScore !== null
-  );
-
-  const overall = validScores.length > 0
-    ? (validScores.reduce((sum, s) =>
-        sum + (s.theoryScore + s.practiceScore + s.attitudeScore) / 3, 0) / validScores.length
-      ).toFixed(2)
-    : null;
-
-  // Xác định kết quả thực tập
-  const hasIncomplete = processedScores.some(s =>
-    s.theoryScore === null || s.practiceScore === null || s.attitudeScore === null
-  );
-  const hasFailSubject = validScores.some(s =>
-    (s.theoryScore + s.practiceScore + s.attitudeScore) / 3 < 7
-  );
-
-  const internshipResult = hasIncomplete
-    ? "NA"
-    : (overall >= 7 && !hasFailSubject ? "PASS" : "FAIL");
-
-  // PAYLOAD ĐÚNG 100% THEO BACKEND
-  const payload = {
-    scores: processedScores,
-    summaryResult: overall !== null ? Number(overall) : null,
-    teamReview: teamEvaluation !== "" && !isNaN(teamEvaluation) ? Number(teamEvaluation) : null,
-    internshipResult: internshipResult
-  };
-
-  console.log("Gửi payload:", payload); // ← KIỂM TRA TRONG CONSOLE
-
-  try {
-    // DÙNG api ĐÃ CẤU HÌNH (tự thêm token + withCredentials)
-    const response = await api.put(
-      `/trainings/${trainingData.internId}/scores`,
-      payload
+    const validScores = processedScores.filter(
+      (s) => s.theoryScore !== null && s.attitudeScore !== null && s.practiceScore !== null
     );
 
-    // Cập nhật ngay dữ liệu trên FE
-    onSave(response.data);
-    onClose();
-    alert("Lưu điểm thành công!");
-  } catch (err) {
-    console.error("Lỗi lưu điểm:", err.response?.data || err.message);
-    alert("Lưu thất bại! Kiểm tra console (F12)");
-  }
-};
+    const overall =
+      validScores.length > 0
+        ? (
+            validScores.reduce(
+              (sum, s) => sum + (s.theoryScore + s.attitudeScore + s.practiceScore) / 3,
+              0
+            ) / validScores.length
+          ).toFixed(2)
+        : null;
 
+    const hasIncomplete = processedScores.some(
+      (s) => s.theoryScore === null || s.attitudeScore === null || s.practiceScore === null
+    );
+    const hasFailSubject = validScores.some(
+      (s) => (s.theoryScore + s.attitudeScore + s.practiceScore) / 3 < 7
+    );
+
+    const internshipResult = hasIncomplete ? "NA" : overall >= 7 && !hasFailSubject ? "PASS" : "FAIL";
+
+    const payload = {
+      scores: processedScores,
+      summaryResult: overall !== null ? Number(overall) : null,
+      teamReview: teamEvaluation !== "" && !isNaN(teamEvaluation) ? Number(teamEvaluation) : null,
+      internshipResult,
+    };
+
+    try {
+      const response = await api.put(`/trainings/${trainingData.internId}/scores`, payload);
+      onSave(response.data);
+      onClose();
+      showToast("Lưu điểm thành công!");
+    } catch (err) {
+      console.error("Lỗi lưu điểm:", err.response?.data || err.message);
+      showToast("Lỗi khi lưu điểm!", "error");
+    }
+  };
+
+  useEffect(() => {
+    if (!trainingData) return;
+
+    const status = trainingData.internStatus || "Đang thực tập";
+    setStopped(status === "Đã dừng thực tập");
+
+    const initScores = (trainingData.scores || []).map((s) => ({
+      courseName: s.courseName,
+      theory: s.theoryScore != null ? s.theoryScore : "",
+      attitude: s.attitudeScore != null ? s.attitudeScore : "",
+      practice: s.practiceScore != null ? s.practiceScore : "",
+      totalScore: s.totalScore,
+    }));
+
+    setScores(initScores);
+    calculateOverall(initScores);
+    setTeamEvaluation(trainingData.teamReview || "");
+  }, [trainingData]);
 
   if (!isOpen) return null;
 
-   return (
+  return (
     <div className="modal-overlay">
       <div className="modal-content">
         <div className="modal-close" onClick={onClose}>✕</div>
-
         <h2>Kết quả học tập</h2>
 
         <div className="training-info">
+          <div>Họ và tên: {trainingData?.traineeName || trainingData?.fullName || trainingData?.name || "NA"}</div>
           <div>
-            Họ và tên: {trainingData?.traineeName || trainingData?.fullName || trainingData?.name || "NA"}
-          </div>
-
-          <div>
-            Ngày bắt đầu: {trainingData?.startDate} |Số ngày thực tập: {trainingData?.trainingDays ?? trainingData?.soNgayThucTap ?? trainingData?.soNgayTT ?? "NA"}
+            Ngày bắt đầu: {trainingData?.startDate} | Số ngày thực tập: {trainingData?.trainingDays ?? trainingData?.soNgayThucTap ?? "NA"}
           </div>
           <div>Ngày kết thúc: {trainingData?.endDate || "Chưa kết thúc"}</div>
-          {stopped && (
-            <div style={{ color: "red", fontWeight: 600 }}>
-              • ĐÃ DỪNG THỰC TẬP — KHÔNG THỂ CHỈNH SỬA
-            </div>
-          )}
         </div>
 
-        {/* SCORE TABLE */}
         <div className="scores-table">
           <div className="scores-header">
             <div className="subject-cell">Môn học</div>
@@ -214,130 +175,97 @@ const handleSave = async () => {
           </div>
 
           {scores.map((s, i) => {
-            const valid3 =
-              isValid(s.theory) && isValid(s.attitude) && isValid(s.practice);
-            const total = valid3
-              ? (
-                  (Number(s.theory) + Number(s.attitude) + Number(s.practice)) /
-                  3
-                ).toFixed(1)
-              : "NA";
+            const valid3 = isValid(s.theory) && isValid(s.attitude) && isValid(s.practice);
+            const total = valid3 ? ((Number(s.theory) + Number(s.attitude) + Number(s.practice)) / 3).toFixed(1) : "NA";
 
             return (
               <div key={i} className="scores-row">
                 <div className="subject-cell">{s.courseName}</div>
-
-                  {['theory','attitude','practice'].map((key) => (
-                    <div className="subject-cell" key={key}>
-                      <input
-                        disabled={stopped}
-                        type="text"
-                        value={s[key]}
-                        onChange={(e) => {
-                          let value = e.target.value;
-                          // Nếu bỏ trống thì ok
-                          if (value === "") {
-                            handleScoreChange(i, key, "");
-                            return;
+                {["theory", "attitude", "practice"].map((key) => (
+                  <div className="subject-cell" key={key}>
+                    <input
+                      disabled={!canEdit}
+                      type="text"
+                      value={s[key]}
+                      onChange={(e) => {
+                        let value = e.target.value;
+                        if (value === "") {
+                          handleScoreChange(i, key, "");
+                          return;
+                        }
+                        if (/^\d*\.?\d*$/.test(value)) {
+                          let num = parseFloat(value);
+                          if (!isNaN(num)) {
+                            if (num > 10) num = 10;
+                            if (num < 0) num = 0;
+                            handleScoreChange(i, key, num);
                           }
-                          // Chỉ cho phép số và dấu chấm
-                          if (/^\d*\.?\d*$/.test(value)) {
-                            let num = parseFloat(value);
-                            if (!isNaN(num)) {
-                              // Giới hạn 0 → 10
-                              if (num > 10) num = 10;
-                              if (num < 0) num = 0;
-                              handleScoreChange(i, key, num);
-                            }
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          // Chặn ký tự ngoài số, dấu ., backspace, delete, tab, mũi tên
-                          if (
-                            !(
-                              (e.key >= "0" && e.key <= "9") ||
-                              e.key === "." ||
-                              e.key === "Backspace" ||
-                              e.key === "Delete" ||
-                              e.key === "ArrowLeft" ||
-                              e.key === "ArrowRight" ||
-                              e.key === "Tab"
-                            )
-                          ) {
-                            e.preventDefault();
-                          }
-                        }}
-                        className="score-input"
-                        style={{ width: "60px", padding: "4px", textAlign: "center", fontSize: "14px" }}
-                      />
-                    </div>
-                  ))}
-
-
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (
+                          !(
+                            (e.key >= "0" && e.key <= "9") ||
+                            e.key === "." ||
+                            e.key === "Backspace" ||
+                            e.key === "Delete" ||
+                            e.key === "ArrowLeft" ||
+                            e.key === "ArrowRight" ||
+                            e.key === "Tab"
+                          )
+                        ) {
+                          e.preventDefault();
+                        }
+                      }}
+                      className="score-input"
+                      style={{ width: "60px", padding: "4px", textAlign: "center", fontSize: "14px" }}
+                    />
+                  </div>
+                ))}
                 <div className="subject-cell total-cell">
                   {total !== "NA" ? (
                     <div className="total-flex">
                       <span>{total}</span>
                       {renderIcon(Number(total))}
                     </div>
-                  ) : (
-                    "NA"
-                  )}
+                  ) : "NA"}
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* OVERALL */}
         <div className="overall-scores">
           <strong>
-            Tổng kết: {overallScore !== "NA" ? (
+            Tổng kết:{" "}
+            {overallScore !== "NA" ? (
               <span className="total-flex">
                 <span>{overallScore}</span>
                 {renderIcon(Number(overallScore))}
               </span>
-            ) : (
-              "NA"
-            )}
+            ) : "NA"}
           </strong>
 
           {(() => {
-          // Lấy tổng điểm từng môn (null nếu thiếu)
-          const subjectTotals = scores.map((s) => {
-            if (isValid(s.theory) && isValid(s.attitude) && isValid(s.practice)) {
-              return (
-                (Number(s.theory) +
-                  Number(s.attitude) +
-                  Number(s.practice)) /
-                3
-              );
-            }
-            return null; // môn thiếu điểm
-          });
+            const subjectTotals = scores.map((s) =>
+              isValid(s.theory) && isValid(s.attitude) && isValid(s.practice)
+                ? (Number(s.theory) + Number(s.attitude) + Number(s.practice)) / 3
+                : null
+            );
 
-          // Nếu có bất kỳ môn nào thiếu điểm → toàn bộ kết quả = NA
-          if (subjectTotals.includes(null)) {
-            return <strong>Kết quả thực tập: NA</strong>;
-          }
+            if (subjectTotals.includes(null)) return <strong>Kết quả thực tập: NA</strong>;
 
-          // Kiểm tra có môn nào < 7 không
-          const hasFailSubject = subjectTotals.some((t) => t < 7);
+            const hasFailSubject = subjectTotals.some((t) => t < 7);
+            const finalResult =
+              overallScore !== "NA" && !hasFailSubject && overallScore >= 7 ? "PASS" : "FAIL";
 
-          // Kết quả chung
-          const finalResult =
-            overallScore !== "NA" && !hasFailSubject && overallScore >= 7
-              ? "PASS"
-              : "FAIL";
+            return <strong>Kết quả thực tập: {finalResult}</strong>;
+          })()}
 
-          return <strong>Kết quả thực tập: {finalResult}</strong>;
-        })()}
-
-        
           <div>
             <strong>Đánh giá trên team:</strong>
             <input
-              disabled={stopped}
+              disabled={!canEdit}
               type="text"
               value={teamEvaluation}
               onChange={(e) => setTeamEvaluation(e.target.value)}
@@ -346,37 +274,44 @@ const handleSave = async () => {
         </div>
 
         <div className="modal-actions">
-            {/* Chỉ hiện nút Dừng khi đang thực tập và chưa hoàn thành */}
-            {!stopped && (trainingData.internStatus || "Đang thực tập") !== "Đã hoàn thành" && (
-              <button className="btn-cancel" onClick={handleStopInternship}>
-                Dừng thực tập
-              </button>
-            )}
+          {!stopped && (trainingData.internStatus || "Đang thực tập") !== "Đã hoàn thành" && (
+            <button className="btn-cancel" onClick={() => setConfirmStop(true)}>
+              Dừng thực tập
+            </button>
+          )}
 
-            {/* Nút Lưu chỉ hiện và hoạt động khi CHƯA DỪNG */}
-            {!stopped && (
-              <button
-                className="btn-save"
-                onClick={handleSave}
-                disabled={(trainingData.internStatus || "Đang thực tập") === "Đã hoàn thành"}
-              >
-                Lưu
-              </button>
-            )}
+          {canEdit && (
+            <button
+              className="btn-save"
+              onClick={handleSave}
+              disabled={(trainingData.internStatus || "Đang thực tập") === "Đã hoàn thành"}
+            >
+              Lưu
+            </button>
+          )}
+        </div>
 
-            {/* Thông báo khi đã dừng hoặc đã hoàn thành */}
-            {stopped && (
-              <div style={{ color: "red", fontWeight: "bold", fontSize: "16px" }}>
-                ĐÃ DỪNG THỰC TẬP – KHÔNG THỂ CHỈNH SỬA
+        {confirmStop && (
+          <div className="modal-overlay">
+            <div className="modal-content confirm-modal">
+              <p>Bạn có chắc chắn muốn dừng thực tập không?</p>
+              <div className="modal-actions">
+                <button className="btn-cancel" onClick={() => setConfirmStop(false)}>
+                  Hủy
+                </button>
+                <button className="btn-save" onClick={handleStopInternship}>
+                  Xác nhận
+                </button>
               </div>
-            )}
-
-            {!stopped && (trainingData.internStatus || "Đang thực tập") === "Đã hoàn thành" && (
-              <div style={{ color: "green", fontWeight: "bold", fontSize: "16px" }}>
-                ĐÃ HOÀN THÀNH THỰC TẬP – KHÔNG THỂ CHỈNH SỬA
-              </div>
-            )}
+            </div>
           </div>
+        )}
+
+        {toast && (
+          <div className={`toast-container ${toast.type === "success" ? "toast-success" : "toast-error"}`} role="status">
+            {toast.msg}
+          </div>
+        )}
       </div>
     </div>
   );
