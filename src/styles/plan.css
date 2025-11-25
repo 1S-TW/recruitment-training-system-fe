@@ -31,88 +31,72 @@
     font-weight: 600;
 }
 
-/* === MINI PAGINATION (HIỂN THỊ) === */
+/* === Pagination bar container === */
+.pagination-bar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;   /* Pagination nằm giữa */
+  margin-top: 16px;
+  position: relative;        /* để mini box bám trái */
+  padding: 8px 0;
+}
+
+/* === Mini Pagination (góc trái) === */
 .mini-pagination {
-    display: flex;
-    align-items: center;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 6px 14px;
-    gap: 8px;
-    font-weight: 500;
-    font-size: 0.9rem;
-    color: #0f172a;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    transition: all 0.25s ease;
+  position: absolute;
+  left: 0;
+  top: 50%;
+
+  display: flex;
+
+  align-items: center;     /* căn giữa theo chiều dọc */
+  gap: 6px;
+  height: 30px;            /* chiều cao cố định */
+  line-height: 24px;   
+
+  padding: 4px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 500;
+
+  height: 30px;
+  line-height: 24px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
 }
 
-.mini-pagination:hover {
-    border-color: #cbd5e1;
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.06);
-    transform: translateY(-1px);
-}
-
+/* Label */
 .mini-pagination-label {
-    font-weight: 600;
-    color: #0f172a;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-right: 4px;
+  color: #0f172a;
 }
 
-/* === HIỂN THỊ SELECT (mượt và xóa màu) === */
+/* Select */
 .mini-pagination-select {
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    padding: 4px 10px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: #111827;
-    background: #fff; /* ✅ nền trắng tinh khi dropdown */
-    cursor: pointer;
-    appearance: none;
-    -webkit-appearance: none;
-    transition: all 0.25s ease;
-    background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='12' viewBox='0 0 24 24' width='12' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
-    background-repeat: no-repeat;
-    background-position: right 8px center;
-    background-size: 12px;
-    padding-right: 24px;
+  height: 28px;
+  line-height: 20px;
+  padding: 0 20px 0 6px;
+  font-size: 0.78rem;
+
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #111827;
+  cursor: pointer;
+
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='gray' height='10' viewBox='0 0 24 24' width='10' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 4px center;
+  background-size: 10px;
 }
 
 
-/* Khi focus hoặc hover */
-.mini-pagination-select:hover,
-.filter-select:hover,
-.datepicker-input:hover {
-    background-color: #fefefe; /* gần trắng */
-    border-color: #cbd5e1;
-    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.08);
-}
-/* === Focus: giữ hiệu ứng nhẹ nhàng khi chọn === */
-.mini-pagination-select:focus,
-.filter-select:focus,
-.datepicker-input:focus {
-    background-color: #ffffff;
-    border-color: #0284c7;
-    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
-    outline: none;
-}
-/* === FADE-IN CHO MENU DROPDOWN === */
-.mini-pagination-select option {
-    background-color: #ffffff; /* ✅ không màu nền khi mở */
-    color: #111827;
-    animation: fadeInDropdown 0.3s ease-in-out;
-}
-
-@keyframes fadeInDropdown {
-    from {
-        opacity: 0;
-        transform: translateY(-5px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
 /* === TITLE + FILTER BAR === */
 .title-row {
     display: flex;
@@ -314,17 +298,38 @@
     width: 100px;
 }
 
-/* === STATUS BADGE === */
+/* --- STATUS BADGE --- */
 .status-badge {
-    display: inline-block;
-    padding: 4px 9px;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    border: 1px solid #e2e8f0;
-    background: #f8fafc;
-    color: #475569;
+   display: inline-block;
+   padding: 4px 9px;
+   border-radius: 6px;
+   font-size: 0.75rem;
+   font-weight: 600;
+   text-transform: uppercase;
+   border: 1px solid #e2e8f0;
+   background: #f8fafc;
+   color: #475569;
+   letter-spacing: 0.2px;
+}
+.status-badge.status-new {
+   background: #dbeafe;
+   border-color: #93c5fd;
+   color: #1d4ed8;
+}
+.status-badge.status-confirmed {
+   background: #dcfce7;
+   border-color: #86efac;
+   color: #166534;
+}
+.status-badge.status-rejected {
+   background: #fee2e2;
+   border-color: #fca5a5;
+   color: #b91c1c;
+}
+.status-badge.status-unknown {
+   background: #f8fafc;
+   border-color: #e2e8f0;
+   color: #475569;
 }
 
 /* === ACTION BUTTONS === */

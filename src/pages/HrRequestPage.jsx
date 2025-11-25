@@ -209,9 +209,9 @@ export default function HRRequestPage() {
                 value={searchName}
                 onChange={(e) => setSearchName(e.target.value)}
               />
-    <span className="filter-icon"><FiSearch /></span>
+              <span className="filter-icon"><FiSearch /></span>
 
-            </div>
+            </div>  
 
             <div className="filter-item">
               <select

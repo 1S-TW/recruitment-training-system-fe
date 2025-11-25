@@ -24,16 +24,21 @@ const getStatusLabel = (status) => {
       return "Đã xác nhận";
     case "REJECTED":
       return "Bị từ chối";
-    case "PENDING":
-      return "Đã gửi đi";
-    case "IN_PROGRESS":
-      return "Đang xử lý";
-    case "COMPLETED":
-      return "Hoàn thành";
-    case "CANCELED":
-      return "Đã hủy";
     default:
       return status || "Không rõ";
+  }
+};
+
+const getStatusClass = (status) => {
+  switch (String(status || "").toUpperCase()) {
+    case "NEW":
+      return "status-new";
+    case "CONFIRMED":
+      return "status-confirmed";
+    case "REJECTED":
+      return "status-rejected";
+    default:
+      return "status-unknown";
   }
 };
 
@@ -58,6 +63,8 @@ const getSenderName = (plan) => {
 
   return createdByName || "Không rõ";
 };
+
+
 
 const RecruitmentPlanPage = () => {
   const [selectedDate, setSelectedDate] = useState(null);
@@ -122,55 +129,59 @@ const RecruitmentPlanPage = () => {
 
   // Mở AddPlan từ URL ?requestId=...
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const requestId = params.get("requestId");
-    if (!requestId) return;
+  let filtered = [...plans];
 
-    (async () => {
-      try {
-        const res = await axiosAuth.get(
-          `/api/hr-request/${requestId}/plan-defaults`
+  if (searchName.trim()) {
+    filtered = filtered.filter((p) =>
+      (p.planName || "").toLowerCase().includes(searchName.toLowerCase())
+    );
+  }
+
+  if (statusFilter) {
+    filtered = filtered.filter((p) => p.status === statusFilter);
+  }
+
+  if (selectedDate?.value) {
+    const createdFilter = new Date(selectedDate.value);
+    const filterMode = selectedDate.filterMode || "day";
+
+    const selectedDay = createdFilter.getDate();
+    const selectedMonth = selectedDate.displayMonth ?? createdFilter.getMonth();
+    const selectedYear = selectedDate.displayYear ?? createdFilter.getFullYear();
+
+    filtered = filtered.filter((p) => {
+      const created = p.createdAt ? new Date(p.createdAt) : null;
+      if (!created) return false;
+
+      if (filterMode === "day") {
+        return (
+          created.getDate() === selectedDay &&
+          created.getMonth() === selectedMonth &&
+          created.getFullYear() === selectedYear
         );
-        const d = res.data;
-        setForm({
-          requestId: d.requestId,
-          planName: "",
-          status: d.status || "NEW",
-          recruitmentDeadline: d.recruitmentDeadline || "",
-          deliveryDeadline: d.deliveryDeadline || "",
-          note: d.note || "",
-        });
-        setRequestTitle(d.suggestedPlanName || d.requestTitle || "");
-        setTechSummary(d.techQuantities || []);
-        setModalMode("locked");
-        setOpenAddModal(true);
-      } catch {
-        setModalMode("locked");
+      } else if (filterMode === "month") {
+        return (
+          created.getMonth() === selectedMonth &&
+          created.getFullYear() === selectedYear
+        );
+      } else if (filterMode === "year") {
+        return created.getFullYear() === selectedYear;
       }
-    })();
-  }, [location.search]);
 
-  useEffect(() => {
-    let filtered = [...plans];
-    if (searchName.trim()) {
-      filtered = filtered.filter((p) =>
-        (p.planName || "").toLowerCase().includes(searchName.toLowerCase())
-      );
-    }
-    if (statusFilter) {
-      filtered = filtered.filter((p) => p.status === statusFilter);
-    }
-    if (selectedDate) {
-      const m = selectedDate.getMonth();
-      const y = selectedDate.getFullYear();
-      filtered = filtered.filter((p) => {
-        const created = new Date(p.createdAt);
-        return created.getMonth() === m && created.getFullYear() === y;
-      });
-    }
-    setFilteredPlans(filtered);
-    setCurrentPage(1);
-  }, [searchName, statusFilter, selectedDate, plans]);
+      return true;
+    });
+  }
+
+  setFilteredPlans(filtered);
+  setCurrentPage(1);
+}, [searchName, statusFilter, selectedDate, plans]);
+
+
+     const filteredSorted = [...filteredPlans].sort((a, b) => {
+    const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return db - da;
+  });
 
   const totalPages = Math.ceil(filteredPlans.length / itemsPerPage) || 1;
   const indexOfLast = currentPage * itemsPerPage;
@@ -444,20 +455,6 @@ const RecruitmentPlanPage = () => {
           <span className="breadcrumb-separator">&gt;</span>
           <span className="breadcrumb-current">Kế hoạch tuyển dụng</span>
         </div>
-        <div className="breadcrumb-right">
-          <div className="mini-pagination">
-            <label className="mini-pagination-label">Hiển thị:</label>
-            <select
-              value={itemsPerPage}
-              onChange={handleChangeItemsPerPage}
-              className="mini-pagination-select smooth-dropdown"
-            >
-              <option value={10}>10</option>
-              <option value={15}>15</option>
-              <option value={20}>20</option>
-            </select>
-          </div>
-        </div>
       </div>
 
       {/* Nội dung chính */}
@@ -465,27 +462,18 @@ const RecruitmentPlanPage = () => {
         <div className="title-row">
           <h2 className="page-title-small">Kế hoạch tuyển dụng</h2>
 
-          <div className="filter-bar">
-            <div className="filter-item search-wrapper">
-              <div className="search-input-container">
-                <input
-                  type="text"
-                  className="filter-input search-input"
-                  placeholder="Tìm theo tên..."
-                  value={searchName}
-                  onChange={(e) => setSearchName(e.target.value)}
-                  list="recent-names"
-                />
-          <span className="filter-icon"><FiSearch /></span>
-                <datalist id="recent-names">
-                  {(
-                    JSON.parse(localStorage.getItem("recentNames") || "[]")
-                  ).map((name, i) => (
-                    <option key={i} value={name} />
-                  ))}
-                </datalist>
-              </div>
-            </div>
+         <div className="filter-bar">
+            <div className="filter-item">
+              <input
+               type="text"
+               className="filter-input"
+               placeholder="Tìm theo tên..."
+               value={searchName}
+               onChange={(e) => setSearchName(e.target.value)}
+               />
+                <span className="filter-icon"><FiSearch /></span>
+         
+             </div>  
 
             <div className="filter-item">
               <select
@@ -493,7 +481,7 @@ const RecruitmentPlanPage = () => {
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
-                <option value="">Trạng thái</option>
+                <option value="">Chọn trạng thái</option>
                 <option value="NEW">Mới tạo</option>
                 <option value="CONFIRMED">Đã xác nhận</option>
                 <option value="REJECTED">Bị từ chối</option>
@@ -556,8 +544,8 @@ const RecruitmentPlanPage = () => {
                         {plan.createdAt ? formatDate(plan.createdAt) : "—"}
                       </td>
                       <td>
-                        <span className="status-badge">
-                          {getStatusLabel(plan.status)}
+                        <span className={`status-badge ${getStatusClass(plan.status)}`}>
+                    {getStatusLabel(plan.status)}
                         </span>
                       </td>
                       {/* 🔹 CỘT NGƯỜI GỬI – ĐÃ SỬA DÙNG getSenderName */}
@@ -576,11 +564,28 @@ const RecruitmentPlanPage = () => {
           )}
         </div>
 
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-        />
+       {filteredSorted.length > 0 && (
+        <div className="pagination-bar">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+
+          <div className="mini-pagination">
+            <label className="mini-pagination-label">Hiển thị:</label>
+            <select
+              value={itemsPerPage}
+              onChange={handleChangeItemsPerPage}
+              className="mini-pagination-select"
+            >
+              <option value={10}>10</option>
+              <option value={15}>15</option>
+              <option value={20}>20</option>
+            </select>
+          </div>
+        </div>
+      )}
       </div>
 
       {/* Modal tạo kế hoạch */}
