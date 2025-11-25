@@ -220,6 +220,30 @@ const RecruitmentPlanPage = () => {
     setPlanMeta(INITIAL_PLAN_META);
   }, [navigate, selectedPlan]);
 
+  // ====== HÀM CHUYỂN SANG TRANG ĐÀO TẠO (DÙNG TRONG TIMELINE) ======
+  const handleOpenTrainingManagement = useCallback(() => {
+    if (!selectedPlan?.recruitmentPlanId) return;
+
+    const planId = selectedPlan.recruitmentPlanId;
+    const planName = selectedPlan.planName
+      ? encodeURIComponent(selectedPlan.planName)
+      : "";
+
+    const query = [`planId=${planId}`];
+
+    if (planName) {
+      query.push(`planName=${planName}`);
+    }
+
+    navigate(`/training?${query.join("&")}`);
+
+    // đóng modal thủ công
+    setModalStep(0);
+    setSelectedPlan(null);
+    setRejectReason("");
+    setPlanMeta(INITIAL_PLAN_META);
+  }, [navigate, selectedPlan]);
+
   // ====== KHI MỞ MODAL CHI TIẾT KẾ HOẠCH → LẤY META (CANDIDATE / TRAINING / DELIVERED + HR REQUEST) ======
   useEffect(() => {
     if (!selectedPlan || modalStep !== 1) {
@@ -732,7 +756,21 @@ const RecruitmentPlanPage = () => {
           ? steps[2].actor
           : createdBy;
 
-      const detail = `Số lượng TTS tham gia đào tạo: ${trainingCount}`;
+      const detail = (
+        <div className="timeline-desc-stack">
+          <span>Số lượng TTS tham gia đào tạo: {trainingCount}</span>
+
+          {selectedPlan?.recruitmentPlanId && (
+            <button
+              type="button"
+              className="timeline-link"
+              onClick={handleOpenTrainingManagement}
+            >
+              xem kết quả đào tạo
+            </button>
+          )}
+        </div>
+      );
 
       steps[2] = {
         ...steps[2],
@@ -801,7 +839,12 @@ const RecruitmentPlanPage = () => {
     }
 
     return steps;
-  }, [selectedPlan, planMeta, handleOpenCandidateManagement]);
+  }, [
+    selectedPlan,
+    planMeta,
+    handleOpenCandidateManagement,
+    handleOpenTrainingManagement,
+  ]);
 
   const renderPlanDetails = (plan, showStatus = false) => {
     if (!plan) return null;
