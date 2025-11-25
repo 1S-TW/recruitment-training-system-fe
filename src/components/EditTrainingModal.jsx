@@ -9,11 +9,14 @@ export default function EditTrainingModal({
   onClose,
   trainingData,
   onSave, // callback để cập nhật FE
+  isViewOnly = false, // default false
 }) {
   const [scores, setScores] = useState([]);
   const [overallScore, setOverallScore] = useState("NA");
   const [teamEvaluation, setTeamEvaluation] = useState("");
   const [stopped, setStopped] = useState(false);
+
+  const canEdit = !stopped && !isViewOnly;
 
   useEffect(() => {
     if (trainingData) {
@@ -196,55 +199,44 @@ const handleSave = async () => {
             Ngày bắt đầu: {trainingData?.startDate} |Số ngày thực tập: {trainingData?.trainingDays ?? trainingData?.soNgayThucTap ?? trainingData?.soNgayTT ?? "NA"}
           </div>
           <div>Ngày kết thúc: {trainingData?.endDate || "Chưa kết thúc"}</div>
-          {stopped && (
-            <div style={{ color: "red", fontWeight: 600 }}>
-              • ĐÃ DỪNG THỰC TẬP — KHÔNG THỂ CHỈNH SỬA
-            </div>
-          )}
         </div>
 
         {/* SCORE TABLE */}
-        <div className="scores-table">
-          <div className="scores-header">
-            <div className="subject-cell">Môn học</div>
-            <div className="subject-cell">Lý thuyết</div>
-            <div className="subject-cell">Thái độ</div>
-            <div className="subject-cell">Thực hành</div>
-            <div className="subject-cell">Tổng</div>
-          </div>
+          <div className="scores-table">
+            <div className="scores-header">
+              <div className="subject-cell">Môn học</div>
+              <div className="subject-cell">Lý thuyết</div>
+              <div className="subject-cell">Thái độ</div>
+              <div className="subject-cell">Thực hành</div>
+              <div className="subject-cell">Tổng</div>
+            </div>
 
-          {scores.map((s, i) => {
-            const valid3 =
-              isValid(s.theory) && isValid(s.attitude) && isValid(s.practice);
-            const total = valid3
-              ? (
-                  (Number(s.theory) + Number(s.attitude) + Number(s.practice)) /
-                  3
-                ).toFixed(1)
-              : "NA";
+            {scores.map((s, i) => {
+              const valid3 =
+                isValid(s.theory) && isValid(s.attitude) && isValid(s.practice);
+              const total = valid3
+                ? ((Number(s.theory) + Number(s.attitude) + Number(s.practice)) / 3).toFixed(1)
+                : "NA";
 
-            return (
-              <div key={i} className="scores-row">
-                <div className="subject-cell">{s.courseName}</div>
+              return (
+                <div key={i} className="scores-row">
+                  <div className="subject-cell">{s.courseName}</div>
 
                   {['theory','attitude','practice'].map((key) => (
                     <div className="subject-cell" key={key}>
                       <input
-                        disabled={stopped}
+                        disabled={!canEdit}
                         type="text"
                         value={s[key]}
                         onChange={(e) => {
                           let value = e.target.value;
-                          // Nếu bỏ trống thì ok
                           if (value === "") {
                             handleScoreChange(i, key, "");
                             return;
                           }
-                          // Chỉ cho phép số và dấu chấm
                           if (/^\d*\.?\d*$/.test(value)) {
                             let num = parseFloat(value);
                             if (!isNaN(num)) {
-                              // Giới hạn 0 → 10
                               if (num > 10) num = 10;
                               if (num < 0) num = 0;
                               handleScoreChange(i, key, num);
@@ -252,7 +244,6 @@ const handleSave = async () => {
                           }
                         }}
                         onKeyDown={(e) => {
-                          // Chặn ký tự ngoài số, dấu ., backspace, delete, tab, mũi tên
                           if (
                             !(
                               (e.key >= "0" && e.key <= "9") ||
@@ -273,88 +264,70 @@ const handleSave = async () => {
                     </div>
                   ))}
 
-
-                <div className="subject-cell total-cell">
-                  {total !== "NA" ? (
-                    <div className="total-flex">
-                      <span>{total}</span>
-                      {renderIcon(Number(total))}
-                    </div>
-                  ) : (
-                    "NA"
-                  )}
+                  <div className="subject-cell total-cell">
+                    {total !== "NA" ? (
+                      <div className="total-flex">
+                        <span>{total}</span>
+                        {renderIcon(Number(total))}
+                      </div>
+                    ) : (
+                      "NA"
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* OVERALL */}
-        <div className="overall-scores">
-          <strong>
-            Tổng kết: {overallScore !== "NA" ? (
-              <span className="total-flex">
-                <span>{overallScore}</span>
-                {renderIcon(Number(overallScore))}
-              </span>
-            ) : (
-              "NA"
-            )}
-          </strong>
-
-          {(() => {
-          // Lấy tổng điểm từng môn (null nếu thiếu)
-          const subjectTotals = scores.map((s) => {
-            if (isValid(s.theory) && isValid(s.attitude) && isValid(s.practice)) {
-              return (
-                (Number(s.theory) +
-                  Number(s.attitude) +
-                  Number(s.practice)) /
-                3
               );
-            }
-            return null; // môn thiếu điểm
-          });
-
-          // Nếu có bất kỳ môn nào thiếu điểm → toàn bộ kết quả = NA
-          if (subjectTotals.includes(null)) {
-            return <strong>Kết quả thực tập: NA</strong>;
-          }
-
-          // Kiểm tra có môn nào < 7 không
-          const hasFailSubject = subjectTotals.some((t) => t < 7);
-
-          // Kết quả chung
-          const finalResult =
-            overallScore !== "NA" && !hasFailSubject && overallScore >= 7
-              ? "PASS"
-              : "FAIL";
-
-          return <strong>Kết quả thực tập: {finalResult}</strong>;
-        })()}
-
-        
-          <div>
-            <strong>Đánh giá trên team:</strong>
-            <input
-              disabled={stopped}
-              type="text"
-              value={teamEvaluation}
-              onChange={(e) => setTeamEvaluation(e.target.value)}
-            />
+            })}
           </div>
-        </div>
 
-        <div className="modal-actions">
-            {/* Chỉ hiện nút Dừng khi đang thực tập và chưa hoàn thành */}
+          {/* OVERALL */}
+          <div className="overall-scores">
+            <strong>
+              Tổng kết: {overallScore !== "NA" ? (
+                <span className="total-flex">
+                  <span>{overallScore}</span>
+                  {renderIcon(Number(overallScore))}
+                </span>
+              ) : "NA"}
+            </strong>
+
+            {(() => {
+              const subjectTotals = scores.map((s) => {
+                if (isValid(s.theory) && isValid(s.attitude) && isValid(s.practice)) {
+                  return ((Number(s.theory) + Number(s.attitude) + Number(s.practice)) / 3);
+                }
+                return null;
+              });
+
+              if (subjectTotals.includes(null)) return <strong>Kết quả thực tập: NA</strong>;
+
+              const hasFailSubject = subjectTotals.some((t) => t < 7);
+              const finalResult =
+                overallScore !== "NA" && !hasFailSubject && overallScore >= 7 ? "PASS" : "FAIL";
+
+              return <strong>Kết quả thực tập: {finalResult}</strong>;
+            })()}
+
+            <div>
+              <strong>Đánh giá trên team:</strong>
+              <input
+                disabled={!canEdit}
+                type="text"
+                value={teamEvaluation}
+                onChange={(e) => setTeamEvaluation(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="modal-actions">
+            {/* Nút Dừng thực tập luôn hiện khi chưa dừng */}
             {!stopped && (trainingData.internStatus || "Đang thực tập") !== "Đã hoàn thành" && (
               <button className="btn-cancel" onClick={handleStopInternship}>
                 Dừng thực tập
               </button>
             )}
 
-            {/* Nút Lưu chỉ hiện và hoạt động khi CHƯA DỪNG */}
-            {!stopped && (
+            {/* Nút Lưu chỉ hiện khi có quyền edit */}
+            {canEdit && (
               <button
                 className="btn-save"
                 onClick={handleSave}
@@ -363,21 +336,8 @@ const handleSave = async () => {
                 Lưu
               </button>
             )}
-
-            {/* Thông báo khi đã dừng hoặc đã hoàn thành */}
-            {stopped && (
-              <div style={{ color: "red", fontWeight: "bold", fontSize: "16px" }}>
-                ĐÃ DỪNG THỰC TẬP – KHÔNG THỂ CHỈNH SỬA
-              </div>
-            )}
-
-            {!stopped && (trainingData.internStatus || "Đang thực tập") === "Đã hoàn thành" && (
-              <div style={{ color: "green", fontWeight: "bold", fontSize: "16px" }}>
-                ĐÃ HOÀN THÀNH THỰC TẬP – KHÔNG THỂ CHỈNH SỬA
-              </div>
-            )}
           </div>
-      </div>
+        </div>
     </div>
   );
 }

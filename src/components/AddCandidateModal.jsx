@@ -150,7 +150,7 @@ export default function AddCandidateModal({
 
   return (
     <>
-      <div className="modal-backdrop" onClick={onClose} />
+      <div className="modal-backdrop" />
       <div
         className="modal-content"
         style={{ maxWidth: "700px" }}

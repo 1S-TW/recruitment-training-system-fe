@@ -6,7 +6,7 @@ import Layout from "../components/Layout";
 import Pagination from "../components/Pagination";
 import ActionButtons from "../components/ActionButtons.jsx";
 import EditTrainingModal from "../components/EditTrainingModal"; // <-- import modal
-
+import { FiSearch } from "react-icons/fi";
 import "../styles/toast.css";
 import "../styles/training.css";
 
@@ -21,10 +21,16 @@ export default function TrainingManagementPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [internStatusFilter, setInternStatusFilter] = useState("");
+  const [planFilter, setPlanFilter] = useState("");
+
+  // plan options (select kế hoạch)
+  const [planOptions, setPlanOptions] = useState([]);
 
   // --- STATE MODAL ---
   const [editingTraining, setEditingTraining] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  const [isViewOnly, setIsViewOnly] = useState(false);
 
   const [toast, setToast] = useState(null);
   const showToast = (msg, type = "success") => {
@@ -48,8 +54,19 @@ export default function TrainingManagementPage() {
     }
   };
 
+  const fetchPlans = async () => {
+    try {
+      const res = await api.get("/recruitment-plans/approved");
+      setPlanOptions(Array.isArray(res.data) ? res.data : []);
+    } catch (e) {
+      console.error("Lỗi tải kế hoạch tuyển dụng:", e);
+      setPlanOptions([]);
+    }
+  };
+
   useEffect(() => {
     fetchTrainings();
+    fetchPlans();
   }, []);
 
   const filteredTrainings = useMemo(
@@ -71,20 +88,22 @@ export default function TrainingManagementPage() {
           if (!st.includes(internStatusFilter.toLowerCase())) return false;
         }
 
+        if (planFilter) {
+          // sửa: dùng 't' chứ không phải biến 'c'
+          if (t.recruitmentPlanId?.toString() !== planFilter) {
+            return false;
+          }
+        }
+
         return true;
       }),
-    [trainings, searchTerm, internStatusFilter]
+    [trainings, searchTerm, internStatusFilter, planFilter]
   );
 
-  const filteredSorted = useMemo(
-    () =>
-      [...filteredTrainings].sort((a, b) => {
-        const da = a.startDate ? new Date(a.startDate).getTime() : 0;
-        const db = b.startDate ? new Date(b.startDate).getTime() : 0;
-        return db - da;
-      }),
-    [filteredTrainings]
-  );
+  // Lưu ý: nếu bạn muốn giữ nguyên thứ tự API trả về (không resort khi chỉnh),
+  // thay phần sort bằng việc giữ nguyên order như dưới. Nếu muốn sort theo startDate,
+  // đổi lại thành sort như trước.
+  const filteredSorted = useMemo(() => [...filteredTrainings], [filteredTrainings]);
 
   const totalPages = Math.ceil(filteredSorted.length / itemsPerPage) || 1;
   const indexOfLast = currentPage * itemsPerPage;
@@ -106,18 +125,23 @@ export default function TrainingManagementPage() {
   };
 
   const handleViewTraining = (training) => {
-    console.log("Xem đào tạo:", training);
-    showToast("Mở chi tiết đào tạo (TODO)", "success");
-  };
+  setEditingTraining(training);
+  setIsViewOnly(true); // Chỉ xem
+  setIsEditModalOpen(true);
+};
 
-  const handleEditTraining = (training) => {
-    setEditingTraining(training);
-    setIsEditModalOpen(true);
-  };
+const handleEditTraining = (training) => {
+  setEditingTraining(training);
+  setIsViewOnly(false); // Có thể chỉnh sửa
+  setIsEditModalOpen(true);
+};
 
   const handleSaveTraining = (updatedTraining) => {
-    setTrainings((prev) =>
-      prev.map((t) => (t.id === updatedTraining.id ? updatedTraining : t))
+    // merge vào object cũ, giữ nguyên thứ tự list
+    setTrainings((prevTrainings) =>
+      prevTrainings.map((t) =>
+        t.internId === updatedTraining.internId ? { ...t, ...updatedTraining } : t
+      )
     );
     showToast("Cập nhật điểm thành công!");
     setIsEditModalOpen(false);
@@ -166,14 +190,14 @@ export default function TrainingManagementPage() {
               <input
                 type="text"
                 className="filter-input"
-                placeholder="Search..."
+                placeholder="Tìm theo tên..."
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
                   setCurrentPage(1);
                 }}
               />
-              <span className="filter-icon">🔍</span>
+              <span className="filter-icon"><FiSearch /></span>
             </div>
 
             <div className="filter-item">
@@ -185,10 +209,28 @@ export default function TrainingManagementPage() {
                   setCurrentPage(1);
                 }}
               >
-                <option value="">Trạng thái thực tập...</option>
+                <option value="">Chọn trạng thái</option>
                 <option value="Đang thực tập">Đang thực tập</option>
                 <option value="Đã hoàn thành">Đã hoàn thành </option>
                 <option value="Đã dừng thực tập">Đã dừng thực tập</option>
+              </select>
+            </div>
+            {/* Kế hoạch tuyển dụng */}
+            <div className="filter-item">
+              <select
+                className="filter-select candidate-plan-select"
+                value={planFilter}
+                onChange={(e) => {
+                  setPlanFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+              >
+                <option value="">Chọn kế hoạch tuyển dụng</option>
+                {planOptions.map((plan) => (
+                  <option key={plan.id || plan.planId} value={String(plan.id ?? plan.planId)}>
+                    {plan.name ?? plan.planName}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -243,7 +285,7 @@ export default function TrainingManagementPage() {
                     const startDate = t.startDate || t.beginDate || t.trainingStartDate || null;
                     const internDays = t.trainingDays ?? t.soNgayThucTap ?? t.soNgayTT ?? "NA";
                     const finalScore = t.finalScore ?? t.tongKet ?? "NA";
-                    const teamEval = t.teamEvaluation ?? t.danhGiaTeam ?? "NA";
+                    const teamEval = t.teamReview ?? t.danhGiaTeam ?? "NA";
                     const internStatus = t.internStatus || t.status || "NA";
 
                     return (
@@ -266,18 +308,16 @@ export default function TrainingManagementPage() {
                             )}
                           </div>
                         </td>
-                        <td>{t.summaryResult != null ? Number(t.summaryResult).toFixed(2) : "NA"}</td>
-                        <td>{t.teamReview != null ? Number(t.teamReview).toFixed(1) : "NA"}</td>
-                        <td>
-                          {t.internStatus || "Đang thực tập"}
-                        </td>
+                       <td>{t.summaryResult != null ? Number(t.summaryResult).toFixed(2) : "NA"}</td> 
+                       <td>{t.teamReview != null ? Number(t.teamReview).toFixed(1) : "NA"}</td> 
+                       <td> {t.internStatus || "Đang thực tập"} </td>
                         <td className="actions-cell text-center">
                           <div className="btn-action-wrapper">
-                            <ActionButtons
-                              onView={() => handleViewTraining(t)}
-                              onEdit={() => handleEditTraining(t)}
-                            />
-                            <div className="action-tooltip">Xem / Cập nhật đào tạo</div>
+                              <ActionButtons
+                                onView={() => handleViewTraining(t)}
+                                onEdit={() => handleEditTraining(t)}
+                                canEdit={t.internStatus !== "Đã dừng thực tập" && t.internStatus !== "Đã hoàn thành"}
+                              />
                           </div>
                         </td>
                       </tr>
@@ -289,7 +329,28 @@ export default function TrainingManagementPage() {
           )}
         </div>
 
-        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+        {filteredSorted.length > 0 && (
+        <div className="pagination-bar">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+
+          <div className="mini-pagination">
+            <label className="mini-pagination-label">Hiển thị:</label>
+            <select
+              value={itemsPerPage}
+              onChange={handleChangeItemsPerPage}
+              className="mini-pagination-select"
+            >
+              <option value={10}>10</option>
+              <option value={15}>15</option>
+              <option value={20}>20</option>
+            </select>
+          </div>
+        </div>
+      )}
       </div>
 
       {/* MODAL CHỈNH SỬA ĐIỂM */}
@@ -299,6 +360,7 @@ export default function TrainingManagementPage() {
           onClose={() => setIsEditModalOpen(false)}
           trainingData={editingTraining}
           onSave={handleSaveTraining}
+          isViewOnly={isViewOnly} // <-- thêm prop
         />
       )}
 
