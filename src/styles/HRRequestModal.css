@@ -108,10 +108,9 @@
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: #111827;    /* 🔥 Đổi sang đen */
+  color: #111827; /* 🔥 Đổi sang đen */
   font-weight: 700;
 }
-
 
 .info-value {
   font-size: 0.9rem;
@@ -330,7 +329,6 @@
   }
 }
 
-
 .hrmodal-overlay {
   position: fixed;
   inset: 0;
@@ -340,7 +338,6 @@
   justify-content: center;
   z-index: 60; /* hoặc 100, miễn nhỏ hơn z-index trong modal.css */
 }
-
 
 .hrmodal-overlay {
   z-index: 1000;
@@ -388,30 +385,26 @@
   resize: none;
 }
 
-
 .progress-block {
- 
   background: transparent;
   border: none;
   border-radius: 0;
   padding: 10px 4px 6px;
 }
 
-
 .status-in_progress {
- background: #fef9c3;
- color: #92400e;
+  background: #fef9c3;
+  color: #92400e;
 }
 .status-completed {
- background: #dcfce7;
- color: #15803d;
+  background: #dcfce7;
+  color: #15803d;
 }
 
 .status-pending {
- background: #e5e7eb;
- color: #4b5563;
+  background: #e5e7eb;
+  color: #4b5563;
 }
-
 
 .request-overview {
   background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
@@ -697,6 +690,29 @@
   color: #4b5563;
   margin-bottom: 4px;
 }
+
+.timeline-desc-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.timeline-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: #2563eb;
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.timeline-link:hover {
+  color: #1d4ed8;
+}
+
 .timeline-reject-reason {
   margin-top: 6px;
   color: #4b5563;

@@ -224,6 +224,21 @@ export default function HRRequestModal({
     }
   }, [isOpen, request]);
 
+  const handleOpenCandidateManagement = () => {
+    if (!planMeta?.recruitmentPlanId) return;
+
+    const planId = planMeta.recruitmentPlanId;
+    const planName = planMeta.planName ? encodeURIComponent(planMeta.planName) : "";
+    const query = [`planId=${planId}`];
+
+    if (planName) {
+      query.push(`planName=${planName}`);
+    }
+
+    navigate(`/recruitment/candidates?${query.join("&")}`);
+    onClose?.();
+  };
+
   const techRows = useMemo(() => {
     const arr = request?.techQuantities || [];
     return arr.map((t) => ({
@@ -583,7 +598,21 @@ export default function HRRequestModal({
             : planCreator;
 
         // ✅ CHỈ CẦN CÓ ÍT NHẤT 1 ỨNG VIÊN ỨNG TUYỂN LÀ ĐƯỢC ĐÁNH "ĐÃ HOÀN THÀNH"
-        const candidateDetail = `Số lượng ứng viên ứng tuyển: ${candidateCount}`;
+        const candidateDetail = (
+          <div className="timeline-desc-stack">
+            <span>Số lượng ứng viên ứng tuyển: {candidateCount}</span>
+
+            {planMeta?.recruitmentPlanId && (
+              <button
+                type="button"
+                className="timeline-link"
+                onClick={handleOpenCandidateManagement}
+              >
+                xem kết quả tuyển dụng
+              </button>
+            )}
+          </div>
+        );
         steps[4] = {
           ...steps[4],
           actor: baseActorCandidate,
@@ -673,6 +702,7 @@ export default function HRRequestModal({
     statusRaw,
     parsedReject,
     planMeta,
+    handleOpenCandidateManagement,
   ]);
 
   // ================== API ERROR HELPER ==================

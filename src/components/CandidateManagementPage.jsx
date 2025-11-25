@@ -4,7 +4,6 @@ import axios from "axios";
 import { Eye, Pencil } from "lucide-react";
 import "../styles/CandidateManagementPage.css";
 
-
 export default function CandidateManagementPage() {
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -55,9 +54,13 @@ export default function CandidateManagementPage() {
       const keyword = searchTerm.trim().toLowerCase();
 
       if (keyword) {
-        const inName = (c.fullName || c.name || "").toLowerCase().includes(keyword);
+        const inName = (c.fullName || c.name || "")
+          .toLowerCase()
+          .includes(keyword);
         const inEmail = (c.email || "").toLowerCase().includes(keyword);
-        const inPhone = (c.phone || c.phoneNumber || "").toLowerCase().includes(keyword);
+        const inPhone = (c.phone || c.phoneNumber || "")
+          .toLowerCase()
+          .includes(keyword);
         if (!inName && !inEmail && !inPhone) return false;
       }
 
@@ -78,7 +81,10 @@ export default function CandidateManagementPage() {
   }, [candidates, searchTerm, statusFilter, planFilter]);
 
   // Phân trang
-  const totalPages = Math.max(1, Math.ceil(filteredCandidates.length / pageSize));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredCandidates.length / pageSize)
+  );
   const safePage = Math.min(currentPage, totalPages);
   const startIndex = (safePage - 1) * pageSize;
   const paginated = filteredCandidates.slice(startIndex, startIndex + pageSize);
@@ -127,7 +133,10 @@ export default function CandidateManagementPage() {
       <>
         {start > 1 && (
           <>
-            <button className="btn-page-number" onClick={() => handleChangePage(1)}>
+            <button
+              className="btn-page-number"
+              onClick={() => handleChangePage(1)}
+            >
               1
             </button>
             {start > 2 && <span className="dots">...</span>}
@@ -137,7 +146,10 @@ export default function CandidateManagementPage() {
         {end < totalPages && (
           <>
             {end < totalPages - 1 && <span className="dots">...</span>}
-            <button className="btn-page-number" onClick={() => handleChangePage(totalPages)}>
+            <button
+              className="btn-page-number"
+              onClick={() => handleChangePage(totalPages)}
+            >
               {totalPages}
             </button>
           </>
@@ -192,24 +204,27 @@ export default function CandidateManagementPage() {
               <option value="Không nhận việc">Không nhận việc</option>
               <option value="Đã gửi email cảm ơn">Đã gửi email cảm ơn</option>
               <option value="Đã nhận việc">Đã nhận việc</option>
-              <option value="Đã thông báo thời gian TT">Đã thông báo thời gian TT</option>
+              <option value="Đã thông báo thời gian TT">
+                Đã thông báo thời gian TT
+              </option>
             </select>
           </div>
 
           {/* 3) Kế hoạch tuyển dụng */}
+          {/* Kế hoạch tuyển dụng */}
           <div className="filter-item">
             <select
-              className="filter-select"
+              className="filter-select candidate-plan-select"
               value={planFilter}
               onChange={(e) => {
                 setPlanFilter(e.target.value);
                 setCurrentPage(1);
               }}
             >
-              <option value="ALL">Kế hoạch tuyển dụng...</option>
-              {planOptions.map((plan) => (
-                <option key={plan} value={plan}>
-                  {plan}
+              <option value="">Chọn kế hoạch tuyển dụng</option>
+              {planSelectOptions.map((plan) => (
+                  <option key={plan.id} value={`${plan.id}`}>
+                  {plan.planName}
                 </option>
               ))}
             </select>
@@ -260,13 +275,19 @@ export default function CandidateManagementPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={8} style={{ textAlign: "center", padding: "20px" }}>
+                <td
+                  colSpan={8}
+                  style={{ textAlign: "center", padding: "20px" }}
+                >
                   Đang tải dữ liệu...
                 </td>
               </tr>
             ) : paginated.length === 0 ? (
               <tr>
-                <td colSpan={8} style={{ textAlign: "center", padding: "20px" }}>
+                <td
+                  colSpan={8}
+                  style={{ textAlign: "center", padding: "20px" }}
+                >
                   Không có ứng viên phù hợp.
                 </td>
               </tr>
@@ -277,7 +298,8 @@ export default function CandidateManagementPage() {
                 const email = c.email || "—";
                 const phone = c.phone || c.phoneNumber || "—";
                 const testScore = c.testScore ?? c.testPercent ?? "—";
-                const interviewScore = c.interviewScore ?? c.interviewPoint ?? "—";
+                const interviewScore =
+                  c.interviewScore ?? c.interviewPoint ?? "—";
                 const status = c.status || "Chưa có kết quả";
 
                 return (

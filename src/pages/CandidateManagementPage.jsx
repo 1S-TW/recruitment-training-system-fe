@@ -1,5 +1,6 @@
 // src/pages/CandidateManagementPage.jsx
 import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import api from "../services/api"; // Dùng axios instance chung
 
 import AddCandidateModal from "../components/AddCandidateModal";
@@ -12,13 +13,17 @@ import ActionButtons from "../components/ActionButtons.jsx";
 import "../styles/request.css";
 import "../styles/toast.css";
 import "../styles/CandidateManagementPage.css";
-import { HiUserGroup } from "react-icons/hi"; 
+import { HiUserGroup } from "react-icons/hi";
 import { FiSearch } from "react-icons/fi";
 export default function CandidateManagementPage() {
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [planOptions, setPlanOptions] = useState([]);
+
+  const [prefilledPlan, setPrefilledPlan] = useState(null);
+
+  const [searchParams] = useSearchParams();
 
   // --- State cho 2 Modal ---
   const [showAddModal, setShowAddModal] = useState(false);
@@ -55,6 +60,20 @@ export default function CandidateManagementPage() {
     fetchConfirmedPlans();
   }, []);
 
+  useEffect(() => {
+    const planId = searchParams.get("planId");
+    const planName = searchParams.get("planName");
+
+    if (planId) {
+      setPlanFilter(planId);
+      setCurrentPage(1);
+
+      if (planName) {
+        setPrefilledPlan({ id: planId, name: planName });
+      }
+    }
+  }, [searchParams]);
+
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -62,6 +81,27 @@ export default function CandidateManagementPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [planFilter, setPlanFilter] = useState("");
+
+  const normalizePlan = (raw) => {
+    const id = raw.id ?? raw.recruitmentPlanId ?? raw.planId ?? null;
+    const name = raw.name ?? raw.planName ?? raw.title ?? "Kế hoạch không tên";
+    return { id, name };
+  };
+
+  const planSelectOptions = useMemo(() => {
+    const normalized = planOptions
+      .map(normalizePlan)
+      .filter((plan) => plan.id !== null && plan.id !== undefined);
+
+    if (
+      prefilledPlan &&
+      !normalized.some((plan) => String(plan.id) === String(prefilledPlan.id))
+    ) {
+      return [...normalized, prefilledPlan];
+    }
+
+    return normalized;
+  }, [planOptions, prefilledPlan]);
 
   // ✅ ĐÃ XÓA: State 'toast' và hàm 'showToast'
 
@@ -149,30 +189,32 @@ export default function CandidateManagementPage() {
     setShowEditModal(false);
     // ✅ ĐÃ XÓA: showToast("Chấm điểm thành công!", "success");
   };
-const getStatusClass = (status) => {
-  switch (status) {
-    case "Chưa có kết quả":
-      return "status-none";
-    case "Đã có kết quả":
-      return "status-done";
-    case "Không nhận việc":
-      return "status-refuse";
-    case "Đã gửi mail cảm ơn":
-      return "status-mail";
-    case "Đã nhận việc":
-      return "status-accept";
-    case "Đã thông báo thời gian TT":
-      return "status-inform";
-    default:
-      return "status-none";
-  }
-};
+  const getStatusClass = (status) => {
+    switch (status) {
+      case "Chưa có kết quả":
+        return "status-none";
+      case "Đã có kết quả":
+        return "status-done";
+      case "Không nhận việc":
+        return "status-refuse";
+      case "Đã gửi mail cảm ơn":
+        return "status-mail";
+      case "Đã nhận việc":
+        return "status-accept";
+      case "Đã thông báo thời gian TT":
+        return "status-inform";
+      default:
+        return "status-none";
+    }
+  };
 
   return (
     <Layout>
       <div className="breadcrumb-container fade-slide">
         <div className="breadcrumb-left">
-          <span className="breadcrumb-icon"><HiUserGroup /></span>
+          <span className="breadcrumb-icon">
+            <HiUserGroup />
+          </span>
           <span className="breadcrumb-item">Tuyển dụng</span>
           <span className="breadcrumb-separator">&gt;</span>
           <span className="breadcrumb-current">Quản lý ứng viên</span>
@@ -194,7 +236,6 @@ const getStatusClass = (status) => {
       </div>
 
       <div className="recruitment-page candidate-page fade-slide">
-
         <div className="title-row">
           <h2 className="page-title-small">Quản lý ứng viên</h2>
           <div className="filter-bar candidate-filter-bar">
@@ -210,7 +251,9 @@ const getStatusClass = (status) => {
                   setCurrentPage(1);
                 }}
               />
-               <span className="filter-icon"><FiSearch /></span>
+              <span className="filter-icon">
+                <FiSearch />
+              </span>
             </div>
 
             {/* Trạng thái */}
@@ -227,9 +270,7 @@ const getStatusClass = (status) => {
                 <option value="Chưa có kết quả">Chưa có kết quả</option>
                 <option value="Đã có kết quả">Đã có kết quả</option>
                 <option value="Không nhận việc">Không nhận việc</option>
-                <option value="Đã gửi mail cảm ơn">
-                  Đã gửi mail cảm ơn
-                </option>
+                <option value="Đã gửi mail cảm ơn">Đã gửi mail cảm ơn</option>
                 <option value="Đã nhận việc">Đã nhận việc</option>
                 <option value="Đã thông báo thời gian TT">
                   Đã thông báo thời gian TT
@@ -238,23 +279,23 @@ const getStatusClass = (status) => {
             </div>
 
             {/* Kế hoạch tuyển dụng */}
-            <div className="filter-item">
-              <select
-                className="filter-select candidate-plan-select"
-                value={planFilter}
-                onChange={(e) => {
-                  setPlanFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-              >
-                <option value="">Chọn kế hoạch tuyển dụng</option>
-                {planOptions.map((plan) => (
-                  <option key={plan.id} value={plan.id}>
-                    {plan.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+<div className="filter-item">
+  <select
+    className="filter-select candidate-plan-select"
+    value={planFilter}
+    onChange={(e) => {
+      setPlanFilter(e.target.value);
+      setCurrentPage(1);
+    }}
+  >
+    <option value="">Chọn kế hoạch tuyển dụng</option>
+    {planSelectOptions.map((plan) => (
+      <option key={plan.id} value={`${plan.id}`}>
+        {plan.name}
+      </option>
+    ))}
+  </select>
+</div>
 
             {/* Nút Thêm ứng viên */}
             <div className="filter-item filter-right-group">
@@ -317,12 +358,15 @@ const getStatusClass = (status) => {
                         <td style={{ textAlign: "left" }}>{email}</td>
                         <td style={{ textAlign: "center" }}>{phone}</td>
                         <td style={{ textAlign: "center" }}>{testScore}</td>
-                        <td style={{ textAlign: "center" }}>{interviewScore}</td>
                         <td style={{ textAlign: "center" }}>
-                       <span className={`status-badge ${getStatusClass(status)}`}>
-  {status}
-</span>
-
+                          {interviewScore}
+                        </td>
+                        <td style={{ textAlign: "center" }}>
+                          <span
+                            className={`status-badge ${getStatusClass(status)}`}
+                          >
+                            {status}
+                          </span>
                         </td>
                         <td className="actions-cell text-center">
                           {/* Đã bỏ div wrapper thừa ở đây theo yêu cầu trước */}
@@ -340,8 +384,8 @@ const getStatusClass = (status) => {
           )}
         </div>
 
-    {/* PAGINATION - chỉ hiện khi có dữ liệu */}
-{filteredSorted.length > 0 && (
+        {/* PAGINATION - chỉ hiện khi có dữ liệu */}
+        {filteredSorted.length > 0 && (
           <div className="pagination-bar">
             <Pagination
               currentPage={currentPage}
@@ -363,7 +407,6 @@ const getStatusClass = (status) => {
             </div>
           </div>
         )}
-
       </div>
 
       {/* Modal Thêm */}
@@ -381,9 +424,6 @@ const getStatusClass = (status) => {
         onSuccess={handleEditSuccess}
         candidate={selectedCandidate}
       />
-
-
     </Layout>
   );
-
 }
