@@ -331,7 +331,7 @@ export default function HRRequestModal({
   const progressSteps = useMemo(() => {
     const createdBy = request?.createdByName || "Không rõ";
     const requestTitle = request?.requestTitle || "nhu cầu";
-    const requestLabel = `nhu cầu "${requestTitle}"`;
+    const requestLabel = ` "${requestTitle}"`;
 
     const approverName =
       request?.approvedByName || request?.updatedByName || "Người phê duyệt";
@@ -402,14 +402,14 @@ export default function HRRequestModal({
         ...steps[1],
         status: "success",
         actor: approverName,
-        detail: `Phê duyệt ${requestLabel}`,
+        detail: `${requestLabel} đã được phê duyệt`,
       };
     } else if (statusRaw === "IN_PROGRESS") {
       steps[1] = {
         ...steps[1],
         status: "success",
         actor: approverName,
-        detail: `Phê duyệt ${requestLabel}`,
+        detail: `${requestLabel} đã được phê duyệt`,
       };
       steps[2] = {
         ...steps[2],
@@ -460,7 +460,7 @@ export default function HRRequestModal({
 
       if (
         reasonLower.includes("phê duyệt nhu cầu") ||
-        reasonLower.includes("nhu cầu")
+        reasonLower.includes("")
       ) {
         rejectIndex = 1;
       } else if (reasonLower.includes("khởi tạo kế hoạch")) {
@@ -877,7 +877,7 @@ export default function HRRequestModal({
                     <dd>{expectedDeliveryText}</dd>
                   </div>
                   <div className="overview-row">
-                    <dt>Tổng số lượng ứng viên</dt>
+                    <dt>Tổng số lượng nhân sự</dt>
                     <dd>{totalCandidates}</dd>
                   </div>
                 </dl>
@@ -942,9 +942,13 @@ export default function HRRequestModal({
                               </span>
                             </div>
                           )}
-                          <div className="timeline-meta">
-                            Người thực hiện: {step.actor}
-                          </div>
+{step.key !== "candidate" &&
+step.key !== "training" &&
+step.key !== "handover" && (
+<div className="timeline-meta">
+   Người thực hiện: {step.actor}
+</div>
+)}
                         </div>
                       </div>
                     );
