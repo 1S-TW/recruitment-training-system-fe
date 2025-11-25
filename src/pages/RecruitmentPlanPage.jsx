@@ -1,6 +1,6 @@
 // src/pages/RecruitmentPlanPage.jsx
-import React, { useEffect, useState, useMemo } from "react";
-import { useLocation } from "react-router-dom";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Layout from "../components/Layout";
 import Pagination from "../components/Pagination";
@@ -158,6 +158,7 @@ const RecruitmentPlanPage = () => {
   const [planMeta, setPlanMeta] = useState(INITIAL_PLAN_META);
 
   const location = useLocation();
+  const navigate = useNavigate();
   const token = localStorage.getItem("token");
   const axiosAuth = axios.create({
     baseURL: "http://localhost:8080",
@@ -194,6 +195,30 @@ const RecruitmentPlanPage = () => {
     loadPlans();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ====== HÀM CHUYỂN SANG TRANG QUẢN LÝ ỨNG VIÊN (DÙNG TRONG TIMELINE) ======
+  const handleOpenCandidateManagement = useCallback(() => {
+    if (!selectedPlan?.recruitmentPlanId) return;
+
+    const planId = selectedPlan.recruitmentPlanId;
+    const planName = selectedPlan.planName
+      ? encodeURIComponent(selectedPlan.planName)
+      : "";
+
+    const query = [`planId=${planId}`];
+
+    if (planName) {
+      query.push(`planName=${planName}`);
+    }
+
+    navigate(`/recruitment/candidates?${query.join("&")}`);
+
+    // đóng modal thủ công
+    setModalStep(0);
+    setSelectedPlan(null);
+    setRejectReason("");
+    setPlanMeta(INITIAL_PLAN_META);
+  }, [navigate, selectedPlan]);
 
   // ====== KHI MỞ MODAL CHI TIẾT KẾ HOẠCH → LẤY META (CANDIDATE / TRAINING / DELIVERED + HR REQUEST) ======
   useEffect(() => {
@@ -406,9 +431,9 @@ const RecruitmentPlanPage = () => {
         recruitmentDeadline: "",
         deliveryDeadline: "",
       }));
-    setTechSummary([]);
+      setTechSummary([]);
       setRequestTitle("");
-      return; 
+      return;
     }
     try {
       const res = await axiosAuth.get(`/api/hr-request/${id}/plan-defaults`);
@@ -676,7 +701,21 @@ const RecruitmentPlanPage = () => {
           ? steps[1].actor
           : createdBy;
 
-      const detail = `Số lượng ứng viên ứng tuyển: ${candidateCount}`;
+      const detail = (
+        <div className="timeline-desc-stack">
+          <span>Số lượng ứng viên ứng tuyển: {candidateCount}</span>
+
+          {selectedPlan?.recruitmentPlanId && (
+            <button
+              type="button"
+              className="timeline-link"
+              onClick={handleOpenCandidateManagement}
+            >
+              xem kết quả tuyển dụng
+            </button>
+          )}
+        </div>
+      );
 
       steps[1] = {
         ...steps[1],
@@ -762,7 +801,7 @@ const RecruitmentPlanPage = () => {
     }
 
     return steps;
-  }, [selectedPlan, planMeta]);
+  }, [selectedPlan, planMeta, handleOpenCandidateManagement]);
 
   const renderPlanDetails = (plan, showStatus = false) => {
     if (!plan) return null;
