@@ -303,19 +303,27 @@
    letter-spacing: 0.2px;
 }
 .status-badge.status-new {
+    
+      background: #fef9c3;
+   border-color: #facc15;
+   color: #854d0e;
+}
+.status-badge.status-inprogress {
    background: #dbeafe;
    border-color: #93c5fd;
    color: #1d4ed8;
 }
-.status-badge.status-inprogress {
-   background: #fef9c3;
-   border-color: #facc15;
-   color: #92400e;
-}
+
 .status-badge.status-completed {
    background: #dcfce7;
    border-color: #86efac;
    color: #166534;
+}
+
+.status-badge.status-failed {
+   background: #ffedd5;
+   border-color: #fdba74;
+   color: #c2410c;
 }
 .status-badge.status-canceled {
    background: #fee2e2;

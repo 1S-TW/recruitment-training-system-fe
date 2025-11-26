@@ -11,7 +11,7 @@
   .breadcrumb-container {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       background: #f9fafb;
       padding: 12px 32px;
       border-bottom: 1px solid #e5e7eb;
@@ -24,6 +24,16 @@
       font-size: 0.95rem;
       color: #4b5563;
       font-weight: 500;
+  }
+  .modal-title-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .modal-subtitle {
+    font-size: 0.9rem;
+    color: #4b5563;
   }
 
   .breadcrumb-current {
@@ -312,11 +322,22 @@
     letter-spacing: 0.2px;
   }
   .status-badge.status-new {
-    background: #dbeafe;
-    border-color: #93c5fd;
-    color: #1d4ed8;
+    background: #fef9c3;
+    border-color: #fcd34d;
+    color: #92400e;
   }
   .status-badge.status-confirmed {
+    background: #e0f2fe;
+    border-color: #60a5fa;
+    color: #1d4ed8;
+  }
+  .status-badge.status-failed {
+    background: #ffedd5;
+    border-color: #fdba74;
+    color: #c2410c;
+  }
+  .status-badge.status-completed {
+    
     background: #dcfce7;
     border-color: #86efac;
     color: #166534;
@@ -633,28 +654,28 @@
           .tech-fixed td.center, .tech-fixed th.center { text-align: center; }
 
 
-.btn-add-tech-custom {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    background: transparent;
-    border: 1px dashed #6B7280; /* Viền nét đứt màu xám */
-    color: #4B5563;
-    padding: 6px 12px;          /* Padding nhỏ */
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.85rem;         /* Chữ nhỏ */
-    font-weight: 500;
-    width: fit-content;         /* QUAN TRỌNG: Co lại vừa nội dung */
-    margin-top: 8px;
-    transition: all 0.2s;
-}
-.btn-add-tech-custom:hover {
-    background: rgba(75, 85, 99, 0.06);
-    border-style: solid;        /* Hover vào thì viền liền */
-    color: #111827;
-}
+          /* Nút thêm hàng công nghệ – đã thu nhỏ lại, vừa đủ nội dung */
+  .btn-add-tech-custom {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: transparent;
+      border: 1.5px dashed #4B5563;
+      color: #4B5563;
+      padding: 0.4rem 0.9rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+      margin-top: 4px;         /* nằm ngay bên dưới khu chọn công nghệ */
+      /* bỏ width: 100% để không còn kéo dài full hàng */
+  }
+
+  .btn-add-tech-custom:hover {
+      background: rgba(75, 85, 99, 0.06);
+      border-style: solid;
+  }
   .theme-dark .btn-add-tech-custom {
       border-color: #475569;
       color: #475569;
@@ -763,6 +784,10 @@
     font-weight: 700;
   }
 
+  .detail-value.status-failed {
+    color: #c2410c;
+    font-weight: 700;
+  }
   /* --- Tech List Table --- */
   .tech-table {
     width: 100%;
@@ -1827,67 +1852,12 @@
   left: 50% !important;
   transform: translate(-50%, -50%) !important;
 }
-/* 2. Style cho ô nhập ngày có icon */
-.date-input-container {
-    position: relative;
-    width: 100%;
-}
 
-/* Input ngày */
-.input-style-date {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    background: #fff;
-    color: #111827;
-    outline: none;
-    cursor: pointer; /* Con trỏ tay */
-    height: 42px;    /* Khớp chiều cao với các input khác */
-}
-.input-style-date:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
-}
-/* Khôi phục icon lịch mặc định của trình duyệt (nếu bị ẩn ở file khác) */
-.input-style-date::-webkit-calendar-picker-indicator {
-    opacity: 1 !important;
-    display: block !important;
-    cursor: pointer;
-    /* (Tuỳ chọn) filter: invert(0.4); để chỉnh màu icon nếu cần */
-}
 
-/* --- src/styles/plan.css --- */
-
-/* FIX LỖI 2 THANH CUỘN (DOUBLE SCROLLBAR) */
-
-/* 1. Khung Modal: Tắt cuộn tuyệt đối */
-.modal.create-modal {
-    overflow: hidden !important;  /* Ẩn thanh cuộn ngoài */
-    display: flex;
-    flex-direction: column;
-    max-height: 90vh;             /* Giới hạn chiều cao modal */
-}
-
-/* 2. Nội dung Form: Cho phép cuộn và làm đẹp thanh cuộn */
-.modal-form {
-    overflow-y: auto !important;  /* Chỉ thanh cuộn này được hiện */
-    flex: 1;                      /* Tự động giãn hết chiều cao còn lại */
-    
-    /* Tùy chỉnh thanh cuộn cho mảnh mai hơn (trên Chrome/Edge) */
-    scrollbar-width: thin;
-}
-
-.modal-form::-webkit-scrollbar {
-    width: 6px;
-}
-
-.modal-form::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.modal-form::-webkit-scrollbar-thumb {
-    background-color: #cbd5e1;
-    border-radius: 10px;
+.status-confirmed {
+  color: #0ea5e9;          /* xanh nước biển */
+  border-color: #0ea5e9;   /* nếu bạn đang dùng border */
+  /* nếu badge có background thì dùng:
+  background-color: rgba(14, 165, 233, 0.1);
+  */
 }

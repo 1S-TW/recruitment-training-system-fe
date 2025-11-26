@@ -22,6 +22,9 @@ const getStatusLabel = (status) => {
   switch (String(status || "").toUpperCase()) {
     case "NEW":
       return "Đã gửi";
+      case "FAILED":
+    case "FAILURE":
+      return "Thất bại";
     case "PENDING":
       return "Đang chờ";
     case "IN_PROGRESS":
@@ -39,6 +42,9 @@ const getStatusClass = (status) => {
   switch (String(status || "").toUpperCase()) {
     case "NEW":
       return "status-new";
+      case "FAILED":
+    case "FAILURE":
+      return "status-failed";
     case "IN_PROGRESS":
       return "status-inprogress";
     case "COMPLETED":
@@ -51,6 +57,18 @@ const getStatusClass = (status) => {
       return "status-unknown";
   }
 };
+
+const deriveRequestStatus = (req = {}) => {
+  const raw = String(req.status || "").toUpperCase();
+
+  if (raw === "FAILED" || raw === "FAILURE") return "FAILED";
+
+  const rejectReason = (req.rejectReason || "").trim();
+  if (raw === "COMPLETED" && rejectReason) return "FAILED";
+
+  return raw;
+};
+
 
 
 export default function HRRequestPage() {
@@ -81,9 +99,9 @@ export default function HRRequestPage() {
     const matchesName = (req.requestTitle || "")
       .toLowerCase()
       .includes(searchName.toLowerCase());
-
+const derivedStatus = deriveRequestStatus(req);
     const matchesStatus = statusFilter
-      ? String(req.status || "").toUpperCase() === statusFilter
+      ? derivedStatus === statusFilter
       : true;
 
 
@@ -224,6 +242,7 @@ export default function HRRequestPage() {
                 <option value="IN_PROGRESS">Đang tiến hành</option>
                 <option value="COMPLETED">Đã hoàn thành</option>
                 <option value="CANCELED">Bị từ chối</option>
+                <option value="FAILED">Thất bại</option>
               </select>
             </div>
 
@@ -268,9 +287,10 @@ export default function HRRequestPage() {
           </tr>
         ) : (
           currentRequests.map((req, index) => {
+            const displayStatus = deriveRequestStatus(req);
             const canEdit = isActionable(req.status);
             const rowAttrs = {
-              "data-status": req.status || "",
+              "data-status": displayStatus || req.status || "",
               "data-editable": canEdit ? "true" : "false",
             };
 
@@ -284,8 +304,8 @@ export default function HRRequestPage() {
                     : "—"}
                 </td>
                 <td>
-                  <span className={`status-badge ${getStatusClass(req.status)}`}>
-                    {getStatusLabel(req.status)}
+                  <span className={`status-badge ${getStatusClass(displayStatus)}`}>
+                    {getStatusLabel(displayStatus)}
                   </span>
                 </td>
                 <td>{req.createdByName || "Không rõ"}</td>

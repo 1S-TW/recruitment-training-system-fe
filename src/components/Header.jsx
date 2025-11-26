@@ -30,14 +30,6 @@ export default function Header() {
         </div>
 
         <div className="header__right">
-          <button className="icon-btn" aria-label="notifications">
-            {/* ✅ icon theo currentColor → dark sẽ trắng như icon người */}
-            <Bell size={18} />
-          </button>
-
-          <button onClick={toggleTheme} className="icon-btn" aria-label="toggle theme">
-            {isDark ? <Sun size={18}/> : <Moon size={18}/> }
-          </button>
 
           <div className="dropdown">
             <button className="avatar" onClick={()=>setShowDropdown(s=>!s)} aria-label="user">
@@ -45,7 +37,6 @@ export default function Header() {
             </button>
             {showDropdown && (
               <div className="dropdown__menu">
-                <div className="dropdown__item"><User size={18}/> Hồ sơ</div>
                 <div className="dropdown__item" onClick={handleLogout}><LogOut size={18}/> Đăng xuất</div>
               </div>
             )}

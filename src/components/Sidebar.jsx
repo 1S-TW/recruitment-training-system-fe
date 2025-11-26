@@ -43,8 +43,7 @@ export default function Sidebar() {
             <span>LMS</span>
           </div>
           <div>
-            <div className="brand__title">LMS</div>
-            <div className="brand__subtitle">Hệ thống quản lý đào tạo</div>
+            <div className="brand__title">Hệ thống quản lý đào tạo</div>
           </div>
         </div>
       </div>
@@ -72,9 +71,8 @@ export default function Sidebar() {
                   <span className="nav__label">{item.label}</span>
 
                   <span
-                    className={`nav__arrow ${
-                      isSubmenuOpen ? "nav__arrow--open" : ""
-                    }`}
+                    className={`nav__arrow ${isSubmenuOpen ? "nav__arrow--open" : ""
+                      }`}
                   >
                     ▼
                   </span>
@@ -82,9 +80,8 @@ export default function Sidebar() {
               ) : (
                 <Link
                   to={item.path}
-                  className={`nav__item ${
-                    isActive ? "nav__item--active" : ""
-                  }`}
+                  className={`nav__item ${isActive ? "nav__item--active" : ""
+                    }`}
                 >
                   <Icon size={20} />
                   <span className="nav__label">{item.label}</span>
@@ -100,9 +97,8 @@ export default function Sidebar() {
                       <Link
                         key={j}
                         to={sub.path}
-                        className={`nav__item nav__item--sub ${
-                          subActive ? "nav__item--active" : ""
-                        }`}
+                        className={`nav__item nav__item--sub ${subActive ? "nav__item--active" : ""
+                          }`}
                       >
                         <span className="nav__label">{sub.label}</span>
                       </Link>

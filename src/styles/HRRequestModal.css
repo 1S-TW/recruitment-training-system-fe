@@ -56,13 +56,21 @@
   background: #dbeafe;
   color: #1d4ed8;
 }
-.status-approved {
+.status-completed {
   background: #dcfce7;
-  color: #15803d;
+   color: #166534;
 }
 .status-canceled {
   background: #fee2e2;
   color: #b91c1c;
+}
+.status-failed {
+  background: #ffedd5;
+  color: #c2410c;
+}
+.status-pending {
+  background: #e5e7eb;
+  color: #475569;
 }
 
 .hrmodal-close {
@@ -472,10 +480,29 @@
   font-weight: 500;
 }
 
-.status-dot.status-in_progress,
-.status-dot.status-approved,
-.status-dot.status-completed,
+
 .status-dot.status-new {
+background: #facc15;
+  border-color: #eab308;
+}
+
+.status-dot.status-in_progress,
+.status-dot.status-approved {
+  background: #93c5fd;
+  border-color: #60a5fa;
+}
+
+.status-dot.status-completed {
+  background: #4ade80;
+  border-color: #22c55e;
+}
+
+.status-dot.status-failed {
+  background: #fdba74;
+  border-color: #f97316;
+}
+.status-in_progress,
+.status-approved {
   background: #d1fae5;
   border-color: #34d399;
 }
@@ -484,6 +511,12 @@
   background: #fee2e2;
   border-color: #f87171;
 }
+
+.status-dot.status-pending {
+  background: #e5e7eb;
+  border-color: #cbd5e1;
+}
+
 
 .overview-list {
   margin: 10px 0 0;
@@ -789,4 +822,78 @@
   .timeline-badge {
     margin-top: 4px;
   }
+}
+ 
+/* src/styles/plan.css */
+
+/* ... (Giữ nguyên các phần trên) ... */
+
+/* ===================== FIX UI CREATE REQUEST MODAL ===================== */
+
+/* 1. XỬ LÝ THANH CUỘN KÉP (DOUBLE SCROLLBAR) */
+.modal.create-modal {
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;        /* Giới hạn chiều cao modal */
+    overflow: hidden;        /* Ẩn thanh cuộn của khung modal chính */
+}
+
+.modal.create-modal .modal-form {
+    flex: 1;                 /* Form chiếm toàn bộ không gian còn lại */
+    overflow-y: auto;        /* Chỉ cho phép cuộn nội dung form */
+    padding: 16px 24px;      /* Padding cho nội dung */
+    
+    /* Tùy chỉnh thanh cuộn cho đẹp (Chrome/Edge/Safari) */
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
+
+.modal.create-modal .modal-form::-webkit-scrollbar {
+    width: 6px;
+}
+.modal.create-modal .modal-form::-webkit-scrollbar-track {
+    background: transparent;
+}
+.modal.create-modal .modal-form::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 10px;
+}
+
+/* 2. SỬA NÚT "THÊM CÔNG NGHỆ" BÉ LẠI & SANG TRÁI */
+.btn-add-tech-custom {
+    display: inline-flex;       /* Để nút co lại theo nội dung */
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    
+    background: transparent;
+    border: 1px dashed #6B7280; /* Viền nét đứt màu xám */
+    color: #4B5563;
+    
+    padding: 6px 12px;          /* Padding nhỏ gọn */
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    
+    width: fit-content;         /* QUAN TRỌNG: Co lại vừa nội dung */
+    margin-top: 12px;           /* Cách bảng bên trên một chút */
+    transition: all 0.2s;
+}
+
+.btn-add-tech-custom:hover {
+    background: rgba(75, 85, 99, 0.06);
+    border-style: solid;        /* Hover vào thì viền liền */
+    color: #111827;
+    border-color: #374151;
+}
+
+/* Dark mode support (nếu cần) */
+.theme-dark .btn-add-tech-custom {
+    border-color: #475569;
+    color: #94a3b8;
+}
+.theme-dark .btn-add-tech-custom:hover {
+    background: rgba(71, 85, 105, 0.1);
+    color: #e2e8f0;
 }

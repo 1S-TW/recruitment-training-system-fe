@@ -18,9 +18,11 @@ const formatDate = (dateString) => {
 };
 
 const getStatusLabel = (status) => {
-  switch (status) {
+  switch (String(status || "").toUpperCase()) {
     case "NEW":
       return "Mới tạo";
+      case "FAILED":
+      return "Thất bại";
     case "CONFIRMED":
       return "Đã xác nhận";
     case "REJECTED":
@@ -37,7 +39,9 @@ const getStatusClass = (status) => {
     case "NEW":
       return "status-new";
     case "CONFIRMED":
-      return "status-confirmed";
+      return "status-confirmed";   // ✅ CONFIRMED dùng class riêng
+    case "FAILED":
+      return "status-failed";
     case "REJECTED":
       return "status-rejected";
     case "COMPLETED":
@@ -45,6 +49,40 @@ const getStatusClass = (status) => {
     default:
       return "status-unknown";
   }
+};
+
+
+const derivePlanStatus = (plan = {}, meta = {}) => {
+  const base = String(plan.status || "").toUpperCase();
+  if (base === "FAILED" || base === "FAILURE") return "FAILED";
+
+  const techRows = plan.request?.quantityCandidates || [];
+  const outputRequired = techRows.reduce(
+    (sum, qc) => sum + (qc.soLuong || 0),
+    0
+  );
+
+  const handoverCount =
+    meta.handoverCount ??
+    meta.deliveredCount ??
+    plan.handoverCount ??
+    plan.deliveredCount ??
+    0;
+
+  const hasRejectReason = !!(
+    meta.requestRejectReason || plan.requestRejectReason || ""
+  )?.trim();
+
+  if (
+    base === "COMPLETED" &&
+    outputRequired > 0 &&
+    handoverCount < outputRequired &&
+    hasRejectReason
+  ) {
+    return "FAILED";
+  }
+
+  return base;
 };
 
 // 🔹 TÍNH TÊN "NGƯỜI GỬI" CHO TỪNG KẾ HOẠCH
@@ -170,8 +208,51 @@ const RecruitmentPlanPage = () => {
     try {
       setLoading(true);
       const res = await axiosAuth.get("/api/recruitment-plans");
-      setPlans(res.data);
-      setFilteredPlans(res.data);
+      const enrichedPlans = await Promise.all(
+        (res.data || []).map(async (plan) => {
+          const planId = plan.recruitmentPlanId;
+          const requestId = plan.request?.requestId;
+
+          let handoverCount =
+            plan.handoverCount ?? plan.deliveredCount ?? planMeta.handoverCount;
+          let requestRejectReason = plan.requestRejectReason || "";
+
+          try {
+            if (planId) {
+              const deliveredRes = await axiosAuth.get(
+                "/api/trainings/delivered-count-by-plan",
+                { params: { planId } }
+              );
+              handoverCount =
+                typeof deliveredRes.data === "number"
+                  ? deliveredRes.data
+                  : Number(deliveredRes.data ?? handoverCount) || handoverCount;
+            }
+
+            if (requestId) {
+              const hrReqRes = await axiosAuth.get(
+                `/api/hr-request/${requestId}`
+              );
+              requestRejectReason =
+                hrReqRes.data?.rejectReason || requestRejectReason;
+            }
+          } catch (e) {
+            console.warn("⚠️ Không thể tải meta cho kế hoạch", planId, e);
+          }
+
+          const derivedStatus = derivePlanStatus(plan, {
+            ...planMeta,
+            handoverCount,
+            deliveredCount: handoverCount,
+            requestRejectReason,
+          });
+
+          return { ...plan, status: derivedStatus };
+        })
+      );
+
+      setPlans(enrichedPlans);
+      setFilteredPlans(enrichedPlans);
       setError(null);
     } catch {
       setError("❌ Không thể tải danh sách kế hoạch tuyển dụng");
@@ -332,6 +413,34 @@ const RecruitmentPlanPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPlan, modalStep]);
 
+  useEffect(() => {
+    if (!selectedPlan) return;
+
+    const derived = derivePlanStatus(selectedPlan, planMeta);
+    const current = String(selectedPlan.status || "").toUpperCase();
+
+    if (derived && derived !== current) {
+      const updatedPlan = { ...selectedPlan, status: derived };
+
+      setSelectedPlan(updatedPlan);
+      setPlans((prev) =>
+        prev.map((p) =>
+          p.recruitmentPlanId === updatedPlan.recruitmentPlanId
+            ? { ...p, status: derived }
+            : p
+        )
+      );
+      setFilteredPlans((prev) =>
+        prev.map((p) =>
+          p.recruitmentPlanId === updatedPlan.recruitmentPlanId
+            ? { ...p, status: derived }
+            : p
+        )
+      );
+    }
+  }, [planMeta, selectedPlan]);
+
+
   // ====== LỌC KHI THAY ĐỔI BỘ LỌC ======
   useEffect(() => {
     let filtered = [...plans];
@@ -343,7 +452,9 @@ const RecruitmentPlanPage = () => {
     }
 
     if (statusFilter) {
-      filtered = filtered.filter((p) => p.status === statusFilter);
+      filtered = filtered.filter(
+        (p) => derivePlanStatus(p) === statusFilter
+      );
     }
 
     if (selectedDate?.value) {
@@ -608,7 +719,7 @@ const RecruitmentPlanPage = () => {
     if (!selectedPlan) return [];
 
     const plan = selectedPlan;
-    const planStatus = (plan.status || "").toUpperCase();
+    const planStatus = derivePlanStatus(plan, planMeta);
 
     const planName = plan.planName || "Kế hoạch tuyển dụng";
     const planLabel = planName || "Kế hoạch tuyển dụng";
@@ -683,7 +794,11 @@ const RecruitmentPlanPage = () => {
     ];
 
     // ===== B1. PHÊ DUYỆT KẾ HOẠCH =====
-    if (planStatus === "CONFIRMED" || planStatus === "COMPLETED") {
+    if (
+      planStatus === "CONFIRMED" ||
+      planStatus === "COMPLETED" ||
+      planStatus === "FAILED"
+    ) {
       steps[0] = {
         ...steps[0],
         status: "success",
@@ -788,9 +903,10 @@ const RecruitmentPlanPage = () => {
           : createdBy;
 
       const isFailure =
-        hasRejectReason &&
-        statusRaw === "COMPLETED" &&
-        (handoverCount || 0) < outputRequired;
+        planStatus === "FAILED" ||
+        (hasRejectReason &&
+          statusRaw === "COMPLETED" &&
+          (handoverCount || 0) < outputRequired);
 
       if (
         planStatus === "COMPLETED" &&
@@ -859,6 +975,7 @@ const RecruitmentPlanPage = () => {
     }
 
     const techRows = request.quantityCandidates || [];
+    const derivedStatus = derivePlanStatus(plan, planMeta);
 
     return (
       <div className="detail-list">
@@ -914,14 +1031,20 @@ const RecruitmentPlanPage = () => {
         {showStatus && (
           <div className="detail-item">
             <span className="detail-label">Trạng thái:</span>
-            <span className={`detail-value ${getStatusClass(plan.status)}`}>
-              {getStatusLabel(plan.status)}
+            <span className={`detail-value ${getStatusClass(derivedStatus)}`}>
+              {getStatusLabel(derivedStatus)}
             </span>
           </div>
         )}
       </div>
     );
   };
+
+    const derivedPlanStatus = selectedPlan
+    ? derivePlanStatus(selectedPlan, planMeta)
+    : "";
+  const planStatusLabel = getStatusLabel(derivedPlanStatus);
+  const planStatusClass = getStatusClass(derivedPlanStatus);
 
   return (
     <Layout>
@@ -965,6 +1088,7 @@ const RecruitmentPlanPage = () => {
                 <option value="">Chọn trạng thái</option>
                 <option value="NEW">Mới tạo</option>
                 <option value="CONFIRMED">Đã xác nhận</option>
+                <option value="FAILED">Thất bại</option>
                 <option value="REJECTED">Bị từ chối</option>
                 <option value="COMPLETED">Đã hoàn thành</option>
               </select>
@@ -1018,31 +1142,35 @@ const RecruitmentPlanPage = () => {
                     </td>
                   </tr>
                 ) : (
-                  currentPlans.map((plan, index) => (
-                    <tr key={plan.recruitmentPlanId || index}>
-                      <td>{indexOfFirst + index + 1}</td>
-                      <td>{plan.planName}</td>
-                      <td>
-                        {plan.createdAt ? formatDate(plan.createdAt) : "—"}
-                      </td>
-                      <td>
-                        <span
-                          className={`status-badge ${getStatusClass(
-                            plan.status
-                          )}`}
-                        >
-                          {getStatusLabel(plan.status)}
-                        </span>
-                      </td>
-                      <td>{getSenderName(plan)}</td>
-                      <td className="actions-cell text-center">
-                        <ActionButtons
-                          onView={() => handleViewDetails(plan)}
-                          onEdit={() => {}}
-                        />
-                      </td>
-                    </tr>
-                  ))
+                  currentPlans.map((plan, index) => {
+                    const rowStatus = derivePlanStatus(plan);
+
+                    return (
+                      <tr key={plan.recruitmentPlanId || index}>
+                        <td>{indexOfFirst + index + 1}</td>
+                        <td>{plan.planName}</td>
+                        <td>
+                          {plan.createdAt ? formatDate(plan.createdAt) : "—"}
+                        </td>
+                        <td>
+                          <span
+                            className={`status-badge ${getStatusClass(
+                              rowStatus
+                            )}`}
+                          >
+                            {getStatusLabel(rowStatus)}
+                          </span>
+                        </td>
+                        <td>{getSenderName(plan)}</td>
+                        <td className="actions-cell text-center">
+                          <ActionButtons
+                            onView={() => handleViewDetails(plan)}
+                            onEdit={() => {}}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -1091,6 +1219,11 @@ const RecruitmentPlanPage = () => {
       {modalStep === 1 && selectedPlan && (
         <Modal
           title="Chi tiết Kế hoạch tuyển dụng"
+          subtitle={
+            <span className={`status-badge ${planStatusClass}`}>
+              {planStatusLabel}
+            </span>
+          }
           onClose={handleCloseModal}
           width={640}
         >
