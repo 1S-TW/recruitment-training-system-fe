@@ -157,6 +157,7 @@ const INITIAL_PLAN_META = {
   requestStatus: null,
   requestRejectReason: "",
   candidateCount: 0,
+  candidatePassedCount: 0,
   trainingCount: 0,
   handoverCount: 0,
 };
@@ -385,6 +386,11 @@ const RecruitmentPlanPage = () => {
           ? candidatesRes.data
           : [];
         const candidateCount = candidateList.length;
+        const candidatePassedCount = candidateList.filter(
+          (candidate) =>
+            typeof candidate.finalResult === "string" &&
+            candidate.finalResult.trim().toLowerCase() === "đạt"
+        ).length;
 
         const trainingCount =
           typeof trainingCountRes.data === "number"
@@ -397,6 +403,7 @@ const RecruitmentPlanPage = () => {
           deliveredCount,
           handoverCount: deliveredCount,
           candidateCount,
+          candidatePassedCount,
           trainingCount,
           requestStatus: hrReq?.status || null,
           requestRejectReason: hrReq?.rejectReason || "",
@@ -835,6 +842,10 @@ const RecruitmentPlanPage = () => {
 
     // ===== B2. QUẢN LÝ ỨNG VIÊN (giống HRRequestModal: chỉ cần >0 là xanh) =====
     if (planStatus !== "NEW") {
+      const candidatePassedCount =
+        planMeta.candidatePassedCount != null
+          ? planMeta.candidatePassedCount
+          : 0;
       const baseActorCandidate =
         steps[1].actor && steps[1].actor !== "Chưa thực hiện"
           ? steps[1].actor
@@ -842,7 +853,9 @@ const RecruitmentPlanPage = () => {
 
       const detail = (
         <div className="timeline-desc-stack">
-          <span>Số lượng ứng viên ứng tuyển: {candidateCount}</span>
+          <span>
+            Số lượng ứng viên ứng tuyển: {candidatePassedCount}/{candidateCount}
+          </span>
 
           {selectedPlan?.recruitmentPlanId && (
             <button
@@ -850,7 +863,7 @@ const RecruitmentPlanPage = () => {
               className="timeline-link"
               onClick={handleOpenCandidateManagement}
             >
-              xem kết quả tuyển dụng
+              Xem kết quả tuyển dụng
             </button>
           )}
         </div>
@@ -881,7 +894,7 @@ const RecruitmentPlanPage = () => {
               className="timeline-link"
               onClick={handleOpenTrainingManagement}
             >
-              xem kết quả đào tạo
+              Xem kết quả đào tạo
             </button>
           )}
         </div>

@@ -98,6 +98,7 @@ export default function HRRequestModal({
           recruitmentPlanId: matched.recruitmentPlanId,
           inputRequired,
           candidateCount: 0,
+          candidatePassedCount: 0,
           trainingCount: 0,
           outputRequired,
           handoverCount: 0,
@@ -123,11 +124,18 @@ export default function HRRequestModal({
       })
       .then((list) => {
         const count = Array.isArray(list) ? list.length : 0;
+        const passedCount = Array.isArray(list)
+          ? list.filter((c) =>
+              typeof c.finalResult === "string" &&
+              c.finalResult.trim().toLowerCase() === "đạt"
+            ).length
+          : 0;
         setPlanMeta((prev) =>
           prev
             ? {
                 ...prev,
                 candidateCount: count,
+                candidatePassedCount: passedCount,
               }
             : prev
         );
@@ -138,6 +146,7 @@ export default function HRRequestModal({
             ? {
                 ...prev,
                 candidateCount: 0,
+                candidatePassedCount: 0,
               }
             : prev
         );
@@ -651,6 +660,10 @@ export default function HRRequestModal({
       const inputRequired = planMeta?.inputRequired || 0; // NV đầu vào (soLuong * 2)
       const candidateCount =
         planMeta?.candidateCount != null ? planMeta.candidateCount : 0;
+        const candidatePassedCount =
+        planMeta?.candidatePassedCount != null
+          ? planMeta.candidatePassedCount
+          : 0;
       const trainingCount =
         planMeta?.trainingCount != null ? planMeta.trainingCount : 0;
       const outputRequired = planMeta?.outputRequired || 0; // NV đầu ra
@@ -666,7 +679,9 @@ export default function HRRequestModal({
         // ✅ CHỈ CẦN CÓ ÍT NHẤT 1 ỨNG VIÊN ỨNG TUYỂN LÀ ĐƯỢC ĐÁNH "ĐÃ HOÀN THÀNH"
         const candidateDetail = (
           <div className="timeline-desc-stack">
-            <span>Số lượng ứng viên ứng tuyển: {candidateCount}</span>
+            <span>
+              Số lượng ứng viên ứng tuyển: {candidatePassedCount}/{candidateCount}
+            </span>
 
             {planMeta?.recruitmentPlanId && (
               <button
@@ -674,7 +689,7 @@ export default function HRRequestModal({
                 className="timeline-link"
                 onClick={handleOpenCandidateManagement}
               >
-                xem kết quả tuyển dụng
+                Xem kết quả tuyển dụng
               </button>
             )}
           </div>
@@ -702,7 +717,7 @@ export default function HRRequestModal({
                 className="timeline-link"
                 onClick={handleOpenTrainingManagement}
               >
-                xem kết quả đào tạo
+                Xem kết quả đào tạo
               </button>
             )}
           </div>
