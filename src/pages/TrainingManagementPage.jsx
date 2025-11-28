@@ -1,6 +1,7 @@
 // src/pages/TrainingManagementPage.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import api from "../services/api";
+import { useSearchParams } from "react-router-dom";
 
 import Layout from "../components/Layout";
 import Pagination from "../components/Pagination";
@@ -9,6 +10,10 @@ import EditTrainingModal from "../components/EditTrainingModal"; // <-- import m
 import { FiSearch } from "react-icons/fi";
 import "../styles/toast.css";
 import "../styles/training.css";
+
+// 🔹 NEW: Trợ lý AI
+import AIAssistantBubble from "../components/AIAssistantBubble";
+
 
 // Trả về class màu dựa trên trạng thái
 const getStatusClass = (status) => {
@@ -27,11 +32,11 @@ const getStatusClass = (status) => {
 // Trả về nhãn hiển thị, bạn có thể giữ nguyên text
 const getStatusLabel = (status) => status || "Đang thực tập";
 
-
 export default function TrainingManagementPage() {
   const [trainings, setTrainings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [searchParams] = useSearchParams();
 
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
@@ -87,16 +92,50 @@ export default function TrainingManagementPage() {
     fetchPlans();
   }, []);
 
+  useEffect(() => {
+    const planId = searchParams.get("planId");
+    const planName = searchParams.get("planName");
+
+    if (!planId) return;
+
+    setPlanFilter(planId);
+    setCurrentPage(1);
+
+    setPlanOptions((prev) => {
+      const exists = prev.some((plan) => String(plan.id ?? plan.planId) === planId);
+      if (exists) return prev;
+
+      const fallbackName = planName || `Kế hoạch #${planId}`;
+      const newPlan = {
+        id: Number(planId) || planId,
+        planId: Number(planId) || planId,
+        name: fallbackName,
+        planName: fallbackName,
+      };
+
+      return [newPlan, ...prev];
+    });
+  }, [searchParams]);
+
   const filteredTrainings = useMemo(
     () =>
       (trainings || []).filter((t) => {
         const keyword = searchTerm.trim().toLowerCase();
 
         if (keyword) {
-          const name = (t.traineeName || t.fullName || t.name || "").toLowerCase();
+          const name = (
+            t.traineeName ||
+            t.fullName ||
+            t.name ||
+            ""
+          ).toLowerCase();
           const email = (t.email || "").toLowerCase();
           const phone = (t.phoneNumber || t.phone || "").toLowerCase();
-          if (!name.includes(keyword) && !email.includes(keyword) && !phone.includes(keyword)) {
+          if (
+            !name.includes(keyword) &&
+            !email.includes(keyword) &&
+            !phone.includes(keyword)
+          ) {
             return false;
           }
         }
@@ -107,8 +146,13 @@ export default function TrainingManagementPage() {
         }
 
         if (planFilter) {
-          // sửa: dùng 't' chứ không phải biến 'c'
-          if (t.recruitmentPlanId?.toString() !== planFilter) {
+          const trainingPlanId =
+            t.recruitmentPlanId ??
+            t.planId ??
+            t.recruitmentPlan?.id ??
+            t.recruitmentPlan?.planId;
+
+          if (trainingPlanId?.toString() !== planFilter) {
             return false;
           }
         }
@@ -118,10 +162,11 @@ export default function TrainingManagementPage() {
     [trainings, searchTerm, internStatusFilter, planFilter]
   );
 
-  // Lưu ý: nếu bạn muốn giữ nguyên thứ tự API trả về (không resort khi chỉnh),
-  // thay phần sort bằng việc giữ nguyên order như dưới. Nếu muốn sort theo startDate,
-  // đổi lại thành sort như trước.
-  const filteredSorted = useMemo(() => [...filteredTrainings], [filteredTrainings]);
+  // giữ nguyên thứ tự API trả về
+  const filteredSorted = useMemo(
+    () => [...filteredTrainings],
+    [filteredTrainings]
+  );
 
   const totalPages = Math.ceil(filteredSorted.length / itemsPerPage) || 1;
   const indexOfLast = currentPage * itemsPerPage;
@@ -143,22 +188,24 @@ export default function TrainingManagementPage() {
   };
 
   const handleViewTraining = (training) => {
-  setEditingTraining(training);
-  setIsViewOnly(true); // Chỉ xem
-  setIsEditModalOpen(true);
-};
+    setEditingTraining(training);
+    setIsViewOnly(true); // Chỉ xem
+    setIsEditModalOpen(true);
+  };
 
-const handleEditTraining = (training) => {
-  setEditingTraining(training);
-  setIsViewOnly(false); // Có thể chỉnh sửa
-  setIsEditModalOpen(true);
-};
+  const handleEditTraining = (training) => {
+    setEditingTraining(training);
+    setIsViewOnly(false); // Có thể chỉnh sửa
+    setIsEditModalOpen(true);
+  };
 
   const handleSaveTraining = (updatedTraining) => {
     // merge vào object cũ, giữ nguyên thứ tự list
     setTrainings((prevTrainings) =>
       prevTrainings.map((t) =>
-        t.internId === updatedTraining.internId ? { ...t, ...updatedTraining } : t
+        t.internId === updatedTraining.internId
+          ? { ...t, ...updatedTraining }
+          : t
       )
     );
     showToast("Cập nhật điểm thành công!");
@@ -215,7 +262,9 @@ const handleEditTraining = (training) => {
                   setCurrentPage(1);
                 }}
               />
-              <span className="filter-icon"><FiSearch /></span>
+              <span className="filter-icon">
+                <FiSearch />
+              </span>
             </div>
 
             <div className="filter-item">
@@ -245,7 +294,10 @@ const handleEditTraining = (training) => {
               >
                 <option value="">Chọn kế hoạch tuyển dụng</option>
                 {planOptions.map((plan) => (
-                  <option key={plan.id || plan.planId} value={String(plan.id ?? plan.planId)}>
+                  <option
+                    key={plan.id || plan.planId}
+                    value={String(plan.id ?? plan.planId)}
+                  >
                     {plan.name ?? plan.planName}
                   </option>
                 ))}
@@ -255,7 +307,11 @@ const handleEditTraining = (training) => {
         </div>
 
         {/* BẢNG DỮ LIỆU */}
-        <div className={`table-container table-fade ${isAnimating ? "fade-out" : "fade-in"}`}>
+        <div
+          className={`table-container table-fade ${
+            isAnimating ? "fade-out" : "fade-in"
+          }`}
+        >
           {loading ? (
             <p className="loading-text">Đang tải dữ liệu...</p>
           ) : error ? (
@@ -300,8 +356,10 @@ const handleEditTraining = (training) => {
                   currentTrainings.map((t, index) => {
                     const stt = indexOfFirst + index + 1;
                     const name = t.traineeName || t.fullName || t.name || "NA";
-                    const startDate = t.startDate || t.beginDate || t.trainingStartDate || null;
-                    const internDays = t.trainingDays ?? t.soNgayThucTap ?? t.soNgayTT ?? "NA";
+                    const startDate =
+                      t.startDate || t.beginDate || t.trainingStartDate || null;
+                    const internDays =
+                      t.trainingDays ?? t.soNgayThucTap ?? t.soNgayTT ?? "NA";
                     const finalScore = t.finalScore ?? t.tongKet ?? "NA";
                     const teamEval = t.teamReview ?? t.danhGiaTeam ?? "NA";
                     const internStatus = t.internStatus || t.status || "NA";
@@ -317,7 +375,9 @@ const handleEditTraining = (training) => {
                           <div className="subject-body-row">
                             {(t.scores || []).map((s, i) => (
                               <div key={i} className="subject-body-cell">
-                                {s.totalScore != null ? Number(s.totalScore).toFixed(2) : "NA"}
+                                {s.totalScore != null
+                                  ? Number(s.totalScore).toFixed(2)
+                                  : "NA"}
                               </div>
                             ))}
 
@@ -326,20 +386,35 @@ const handleEditTraining = (training) => {
                             )}
                           </div>
                         </td>
-                       <td>{t.summaryResult != null ? Number(t.summaryResult).toFixed(2) : "NA"}</td> 
-                       <td>{t.teamReview != null ? Number(t.teamReview).toFixed(1) : "NA"}</td> 
-                       <td>
-                          <span className={`status-badge ${getStatusClass(t.internStatus)}`}>
+                        <td>
+                          {t.summaryResult != null
+                            ? Number(t.summaryResult).toFixed(2)
+                            : "NA"}
+                        </td>
+                        <td>
+                          {t.teamReview != null
+                            ? Number(t.teamReview).toFixed(1)
+                            : "NA"}
+                        </td>
+                        <td>
+                          <span
+                            className={`status-badge ${getStatusClass(
+                              t.internStatus
+                            )}`}
+                          >
                             {getStatusLabel(t.internStatus)}
                           </span>
                         </td>
                         <td className="actions-cell text-center">
                           <div className="btn-action-wrapper">
-                              <ActionButtons
-                                onView={() => handleViewTraining(t)}
-                                onEdit={() => handleEditTraining(t)}
-                                canEdit={t.internStatus !== "Đã dừng thực tập" && t.internStatus !== "Đã hoàn thành"}
-                              />
+                            <ActionButtons
+                              onView={() => handleViewTraining(t)}
+                              onEdit={() => handleEditTraining(t)}
+                              canEdit={
+                                t.internStatus !== "Đã dừng thực tập" &&
+                                t.internStatus !== "Đã hoàn thành"
+                              }
+                            />
                           </div>
                         </td>
                       </tr>
@@ -352,27 +427,27 @@ const handleEditTraining = (training) => {
         </div>
 
         {filteredSorted.length > 0 && (
-        <div className="pagination-bar">
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-          />
+          <div className="pagination-bar">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
 
-          <div className="mini-pagination">
-            <label className="mini-pagination-label">Hiển thị:</label>
-            <select
-              value={itemsPerPage}
-              onChange={handleChangeItemsPerPage}
-              className="mini-pagination-select"
-            >
-              <option value={10}>10</option>
-              <option value={15}>15</option>
-              <option value={20}>20</option>
-            </select>
+            <div className="mini-pagination">
+              <label className="mini-pagination-label">Hiển thị:</label>
+              <select
+                value={itemsPerPage}
+                onChange={handleChangeItemsPerPage}
+                className="mini-pagination-select"
+              >
+                <option value={10}>10</option>
+                <option value={15}>15</option>
+                <option value={20}>20</option>
+              </select>
+            </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
 
       {/* MODAL CHỈNH SỬA ĐIỂM */}
@@ -387,10 +462,18 @@ const handleEditTraining = (training) => {
       )}
 
       {toast && (
-        <div className={`toast-container ${toast.type === "success" ? "toast-success" : "toast-error"}`} role="status">
+        <div
+          className={`toast-container ${
+            toast.type === "success" ? "toast-success" : "toast-error"
+          }`}
+          role="status"
+        >
           {toast.msg}
         </div>
       )}
+
+      {/* 🔹 Trợ lý AI – bong bóng góc trái dưới */}
+      <AIAssistantBubble trainings={trainings} planOptions={planOptions} />
     </Layout>
   );
 }
