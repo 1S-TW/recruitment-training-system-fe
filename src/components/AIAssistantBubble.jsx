@@ -18,7 +18,8 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
         "Xin chào 👋 Mình là trợ lý AI của hệ thống đào tạo. Bạn có thể hỏi:\n" +
         "- Số lượng thực tập sinh hiện tại là bao nhiêu?\n" +
         "- Có bao nhiêu TTS đang thực tập?\n" +
-        "- Kết quả PASS/FAIL theo kế hoạch?...",
+        "- Kết quả PASS/FAIL theo kế hoạch?...\n" +
+        "- Tiến độ TTS theo từng môn Git, OOP, SQL, Web, Java...",
     },
   ]);
 
@@ -37,13 +38,71 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
     return p?.name || p?.planName || `Kế hoạch #${planId}`;
   };
 
-  // ====== Helper: baseline số ngày chuẩn cho từng môn ======
-  const COURSE_BASELINE_DAYS = {
-    "Git & GitHub": 2,
-    "Lập trình hướng đối tượng (OOP)": 7, // bạn có thể chỉnh 5/7 tuỳ rule
-    "Cơ sở dữ liệu (SQL)": 3,
-    "Web cơ bản (HTML - CSS - JavaScript)": 5,
-    "Java Core & Spring Boot": 7,
+  // ====== Chuỗi môn học & số ngày tích lũy chuẩn ======
+  // Tổng 22 ngày:
+  // Git: 2; OOP: 7; SQL: 10; Web: 15; Java: 22
+  const COURSE_SEQUENCE = [
+    { name: "Git & GitHub", cumulativeDays: 2 },
+    { name: "Lập trình hướng đối tượng (OOP)", cumulativeDays: 7 },
+    { name: "Cơ sở dữ liệu (SQL)", cumulativeDays: 10 },
+    { name: "Web cơ bản (HTML - CSS - JavaScript)", cumulativeDays: 15 },
+    { name: "Java Core & Spring Boot", cumulativeDays: 22 },
+  ];
+
+  // ====== Helper: xác định môn hiện tại & nhịp độ (NHANH/ĐÚNG/CHẬM) cho 1 TTS ======
+  const getProgressPhase = (training) => {
+    const trainingDaysRaw =
+      training.trainingDays ??
+      training.soNgayThucTap ??
+      training.soNgayTT ??
+      null;
+    const trainingDays =
+      trainingDaysRaw != null ? Number(trainingDaysRaw) : null;
+    if (trainingDays == null || Number.isNaN(trainingDays)) {
+      return null;
+    }
+
+    const scores = Array.isArray(training.scores) ? training.scores : [];
+
+    // Tìm môn cao nhất đã hoàn thành (đủ 3 đầu điểm)
+    let lastCompletedIndex = -1;
+
+    COURSE_SEQUENCE.forEach((course, index) => {
+      const s = scores.find(
+        (sc) => sc.courseName && sc.courseName.trim() === course.name
+      );
+      if (
+        s &&
+        s.theoryScore != null &&
+        s.practiceScore != null &&
+        s.attitudeScore != null
+      ) {
+        lastCompletedIndex = index;
+      }
+    });
+
+    // Nếu chưa có môn nào đủ 3 đầu điểm => chưa đánh giá tiến độ
+    if (lastCompletedIndex === -1) {
+      return null;
+    }
+
+    const currentCourse = COURSE_SEQUENCE[lastCompletedIndex];
+    const targetDays = currentCourse.cumulativeDays;
+
+    let status;
+    if (trainingDays > targetDays) {
+      status = "CHẬM";
+    } else if (trainingDays === targetDays) {
+      status = "ĐÚNG TIẾN ĐỘ";
+    } else {
+      status = "NHANH";
+    }
+
+    return {
+      trainingDays,
+      currentCourseName: currentCourse.name,
+      status,
+    };
   };
 
   // ====== Tính danh sách TTS chậm tiến độ theo từng kế hoạch ======
@@ -61,38 +120,13 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
 
       if (!planId) return;
 
-      const trainingDaysRaw =
-        t.trainingDays ?? t.soNgayThucTap ?? t.soNgayTT ?? null;
-      const trainingDays = trainingDaysRaw != null ? Number(trainingDaysRaw) : null;
-      if (trainingDays == null || Number.isNaN(trainingDays)) return;
+      const phase = getProgressPhase(t);
+      if (!phase) return; // không đánh giá được
 
-      const scores = Array.isArray(t.scores) ? t.scores : [];
-      const slowCourses = [];
+      if (phase.status !== "CHẬM") return; // chỉ lấy các bạn chậm tiến độ
 
-      scores.forEach((s) => {
-        const courseName = s.courseName?.trim();
-        if (!courseName) return;
-
-        const baseline = COURSE_BASELINE_DAYS[courseName];
-        if (!baseline) return;
-
-        // cần đủ 3 thành phần điểm
-        if (
-          s.theoryScore == null ||
-          s.practiceScore == null ||
-          s.attitudeScore == null
-        ) {
-          return;
-        }
-
-        if (trainingDays > baseline) {
-          slowCourses.push(courseName);
-        }
-      });
-
-      if (slowCourses.length === 0) return;
-
-      const internName = t.traineeName || t.fullName || t.name || "Không rõ tên";
+      const internName =
+        t.traineeName || t.fullName || t.name || "Không rõ tên";
 
       if (!byPlan[planId]) {
         byPlan[planId] = {
@@ -104,8 +138,8 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
 
       byPlan[planId].interns.push({
         name: internName,
-        slowCourses,
-        trainingDays,
+        currentCourseName: phase.currentCourseName,
+        trainingDays: phase.trainingDays,
       });
     });
 
@@ -124,8 +158,8 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
       type: "delayOverview",
       intro:
         "Chào anh/chị đẹp trai xinh gái 👋\n" +
-        "Dưới đây là các kế hoạch tuyển dụng đang có thực tập sinh CHẬM TIẾN ĐỘ:",
-      overview, // mảng {planName, interns: [{name, slowCourses, trainingDays}]}
+        "Dưới đây là các kế hoạch tuyển dụng đang có thực tập sinh CHẬM TIẾN ĐỘ (so với mốc 22 ngày cho 5 môn):",
+      overview, // mảng {planId, planName, interns: [{name, currentCourseName, trainingDays}]}
     };
 
     setMessages((prev) => [...prev, overviewMsg]);
@@ -228,7 +262,7 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
                   <tr>
                     <th style={thStyle}>STT</th>
                     <th style={thStyle}>Tên TTS</th>
-                    <th style={thStyle}>Môn chậm</th>
+                    <th style={thStyle}>Môn hiện tại</th>
                     <th style={thStyle}>Số ngày TT</th>
                   </tr>
                 </thead>
@@ -237,9 +271,7 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
                     <tr key={idx}>
                       <td style={tdStyle}>{idx + 1}</td>
                       <td style={tdStyle}>{intern.name}</td>
-                      <td style={tdStyle}>
-                        {intern.slowCourses.join(", ")}
-                      </td>
+                      <td style={tdStyle}>{intern.currentCourseName}</td>
                       <td style={tdStyle}>{intern.trainingDays}</td>
                     </tr>
                   ))}
@@ -248,10 +280,7 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
             </div>
           ))}
 
-          <p style={{ fontSize: "12px", color: "#6b7280", marginTop: 4 }}>
-            VD: hãy cho tôi tiến độ của thực tập sinh có trong kế hoạch tuyển
-            dụng "cc" của môn GIT
-          </p>
+
         </div>
       );
     }
@@ -305,7 +334,7 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
           <div className="ai-chat-input-row">
             <textarea
               className="ai-chat-input"
-              placeholder='Nhập câu hỏi… (VD: "Hãy cho tôi tiến độ của thực tập sinh có trong kế hoạch tuyển dụng cc của môn GIT")'
+              placeholder='Nhập câu hỏi… (VD: "Hãy cho tôi tiến độ của thực tập sinh có trong kế hoạch tuyển dụng cc của môn Git & GitHub")'
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
