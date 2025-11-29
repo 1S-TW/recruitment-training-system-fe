@@ -157,7 +157,7 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
       sender: "ai",
       type: "delayOverview",
       intro:
-        "Chào anh/chị đẹp trai xinh gái 👋\n" +
+        "Chào anh/chị 👋\n" +
         "Dưới đây là các kế hoạch tuyển dụng đang có thực tập sinh CHẬM TIẾN ĐỘ (so với mốc 22 ngày cho 5 môn):",
       overview, // mảng {planId, planName, interns: [{name, currentCourseName, trainingDays}]}
     };
@@ -225,62 +225,45 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
   // ====== Render 1 message ======
   const renderMessage = (m) => {
     if (m.type === "delayOverview") {
-      // style inline cho bảng, tránh phải sửa file CSS gốc
-      const tableStyle = {
-        width: "100%",
-        borderCollapse: "collapse",
-        marginTop: 4,
-        marginBottom: 8,
-        fontSize: "12px",
-      };
-      const thtdBase = {
-        border: "1px solid #e5e7eb",
-        padding: "4px 6px",
-        textAlign: "left",
-      };
-      const thStyle = {
-        ...thtdBase,
-        background: "#f3f4f6",
-        fontWeight: 600,
-      };
-      const tdStyle = thtdBase;
-
       return (
-        <div key={m.id} className="ai-chat-message ai-msg-ai">
+        <div key={m.id} className="ai-chat-message ai-msg-ai ai-card">
           {m.intro.split("\n").map((line, i) => (
             <p key={i}>{line}</p>
           ))}
 
           {m.overview.map((plan) => (
-            <div key={plan.planId} style={{ marginTop: 6 }}>
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                - Kế hoạch "{plan.planName}" có {plan.interns.length} bạn chậm
-                tiến độ:
+            <div key={plan.planId} className="ai-plan-block">
+              <div className="ai-plan-heading">
+                <span className="ai-pill">Kế hoạch</span>
+                <span className="ai-plan-name">{plan.planName}</span>
+                <span className="ai-plan-count">
+                  {plan.interns.length} bạn chậm tiến độ
+                </span>
               </div>
-              <table style={tableStyle}>
-                <thead>
-                  <tr>
-                    <th style={thStyle}>STT</th>
-                    <th style={thStyle}>Tên TTS</th>
-                    <th style={thStyle}>Môn hiện tại</th>
-                    <th style={thStyle}>Số ngày TT</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {plan.interns.map((intern, idx) => (
-                    <tr key={idx}>
-                      <td style={tdStyle}>{idx + 1}</td>
-                      <td style={tdStyle}>{intern.name}</td>
-                      <td style={tdStyle}>{intern.currentCourseName}</td>
-                      <td style={tdStyle}>{intern.trainingDays}</td>
+              <div className="ai-table-wrapper">
+                <table className="ai-table">
+                  <thead>
+                    <tr>
+                      <th>STT</th>
+                      <th>Tên TTS</th>
+                      <th>Môn hiện tại</th>
+                      <th>Số ngày TT</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {plan.interns.map((intern, idx) => (
+                      <tr key={idx}>
+                        <td>{idx + 1}</td>
+                        <td>{intern.name}</td>
+                        <td>{intern.currentCourseName}</td>
+                        <td>{intern.trainingDays}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           ))}
-
-
         </div>
       );
     }
@@ -311,10 +294,16 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
       {isOpen && (
         <div className="ai-chat-window">
           <div className="ai-chat-header">
-            <div>
-              <div className="ai-chat-title">Trợ lý AI</div>
-              <div className="ai-chat-subtitle">
-                Hỏi nhanh về thực tập sinh & đào tạo
+            <div className="ai-chat-header-left">
+              <div className="ai-chat-avatar">AI</div>
+              <div>
+                <div className="ai-chat-title">Trợ lý AI</div>
+                <div className="ai-chat-subtitle">
+                  Đồng hành cùng quản lý đào tạo
+                </div>
+                <div className="ai-badge-online">
+                  <span className="ai-dot" /> Luôn sẵn sàng hỗ trợ
+                </div>
               </div>
             </div>
             <button className="ai-chat-close" onClick={toggleOpen}>
