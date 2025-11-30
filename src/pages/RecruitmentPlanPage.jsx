@@ -8,6 +8,7 @@ import ActionButtons from "../components/ActionButtons.jsx";
 import AddPlanModal from "../components/AddPlanModal";
 import DatePicker from "../components/DatePicker";
 import Modal from "../components/Modal";
+import { useAuth } from "../contexts/AuthContext"; // ✅ 1. Import AuthContext
 import "../styles/plan.css";
 import { HiUserGroup } from "react-icons/hi";
 import { FiSearch } from "react-icons/fi";
@@ -21,7 +22,7 @@ const getStatusLabel = (status) => {
   switch (String(status || "").toUpperCase()) {
     case "NEW":
       return "Mới tạo";
-      case "FAILED":
+    case "FAILED":
       return "Thất bại";
     case "CONFIRMED":
       return "Đã xác nhận";
@@ -39,7 +40,7 @@ const getStatusClass = (status) => {
     case "NEW":
       return "status-new";
     case "CONFIRMED":
-      return "status-confirmed";   // ✅ CONFIRMED dùng class riêng
+      return "status-confirmed";
     case "FAILED":
       return "status-failed";
     case "REJECTED":
@@ -50,7 +51,6 @@ const getStatusClass = (status) => {
       return "status-unknown";
   }
 };
-
 
 const derivePlanStatus = (plan = {}, meta = {}) => {
   const base = String(plan.status || "").toUpperCase();
@@ -85,9 +85,6 @@ const derivePlanStatus = (plan = {}, meta = {}) => {
   return base;
 };
 
-// 🔹 TÍNH TÊN "NGƯỜI GỬI" CHO TỪNG KẾ HOẠCH
-// - Ưu tiên: người từ chối kế hoạch (rejectedByName) nếu trạng thái REJECTED/CANCELED
-// - Còn lại: người tạo nhu cầu (request.createdBy.fullName / createdByName)
 const getSenderName = (plan) => {
   if (!plan) return "Không rõ";
 
@@ -108,17 +105,15 @@ const getSenderName = (plan) => {
   return createdByName || "Không rõ";
 };
 
-// 🔹 GHÉP TÊN KẾ HOẠCH: "Kế hoạch tuyển dụng <shortName> tháng <MM>, <YYYY>"
 const buildFullPlanName = (shortName) => {
   const trimmed = (shortName || "").trim();
   if (!trimmed) return "";
   const now = new Date();
-  const month = now.getMonth() + 1; // 1–12
+  const month = now.getMonth() + 1;
   const year = now.getFullYear();
   return `Kế hoạch tuyển dụng ${trimmed} tháng ${month}, ${year}`;
 };
 
-// 🔹 TÁCH CHUỖI LÝ DO TỪ CHỐI (giống HRRequestModal)
 const parseRejectReason = (raw) => {
   if (!raw) return { by: "", reason: "" };
 
@@ -163,6 +158,19 @@ const INITIAL_PLAN_META = {
 };
 
 const RecruitmentPlanPage = () => {
+  const { user } = useAuth(); // ✅ Lấy user info
+  const role = user?.role;    // ✅ Lấy role
+
+  // ✅ PHÂN QUYỀN LOGIC:
+  // 1. Tạo mới: Chỉ Admin và QLDT được tạo. (LEAD, HR bị ẩn).
+  const canCreate = role === "SUPER_ADMIN" || role === "QLDT";
+
+  // 2. Tương tác (Xem/Sửa): Admin, QLDT, HR được click. (LEAD bị cấm click).
+  const canInteract = role !== "LEAD";
+
+  // 3. Duyệt/Từ chối (Modal): Chỉ Admin và HR được duyệt. (QLDT chỉ xem).
+  const canApproveReject = role === "SUPER_ADMIN" || role === "HR";
+
   const [selectedDate, setSelectedDate] = useState(null);
   const [plans, setPlans] = useState([]);
   const [filteredPlans, setFilteredPlans] = useState([]);
@@ -193,7 +201,6 @@ const RecruitmentPlanPage = () => {
   const [modalStep, setModalStep] = useState(0);
   const [rejectReason, setRejectReason] = useState("");
 
-  // 🔹 Meta riêng cho timeline kế hoạch (giống meta bên HRRequestModal)
   const [planMeta, setPlanMeta] = useState(INITIAL_PLAN_META);
 
   const location = useLocation();
@@ -278,7 +285,6 @@ const RecruitmentPlanPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ====== HÀM CHUYỂN SANG TRANG QUẢN LÝ ỨNG VIÊN (DÙNG TRONG TIMELINE) ======
   const handleOpenCandidateManagement = useCallback(() => {
     if (!selectedPlan?.recruitmentPlanId) return;
 
@@ -295,14 +301,12 @@ const RecruitmentPlanPage = () => {
 
     navigate(`/recruitment/candidates?${query.join("&")}`);
 
-    // đóng modal thủ công
     setModalStep(0);
     setSelectedPlan(null);
     setRejectReason("");
     setPlanMeta(INITIAL_PLAN_META);
   }, [navigate, selectedPlan]);
 
-  // ====== HÀM CHUYỂN SANG TRANG ĐÀO TẠO (DÙNG TRONG TIMELINE) ======
   const handleOpenTrainingManagement = useCallback(() => {
     if (!selectedPlan?.recruitmentPlanId) return;
 
@@ -319,14 +323,12 @@ const RecruitmentPlanPage = () => {
 
     navigate(`/training?${query.join("&")}`);
 
-    // đóng modal thủ công
     setModalStep(0);
     setSelectedPlan(null);
     setRejectReason("");
     setPlanMeta(INITIAL_PLAN_META);
   }, [navigate, selectedPlan]);
 
-  // ====== KHI MỞ MODAL CHI TIẾT KẾ HOẠCH → LẤY META (CANDIDATE / TRAINING / DELIVERED + HR REQUEST) ======
   useEffect(() => {
     if (!selectedPlan || modalStep !== 1) {
       setPlanMeta(INITIAL_PLAN_META);
@@ -341,19 +343,16 @@ const RecruitmentPlanPage = () => {
         const requests = [];
 
         if (planId) {
-          // đếm số TTS đã bàn giao
           requests.push(
             axiosAuth.get("/api/trainings/delivered-count-by-plan", {
               params: { planId },
             })
           );
-          // danh sách ứng viên theo kế hoạch
           requests.push(
             axiosAuth.get("/api/candidates", {
               params: { planId },
             })
           );
-          // đếm TTS tham gia đào tạo
           requests.push(
             axiosAuth.get("/api/trainings/count-by-plan", {
               params: { planId },
@@ -368,7 +367,6 @@ const RecruitmentPlanPage = () => {
         }
 
         if (requestId) {
-          // lấy thông tin nhu cầu để đọc status / rejectReason
           requests.push(axiosAuth.get(`/api/hr-request/${requestId}`));
         } else {
           requests.push(Promise.resolve({ data: null }));
@@ -447,8 +445,6 @@ const RecruitmentPlanPage = () => {
     }
   }, [planMeta, selectedPlan]);
 
-
-  // ====== LỌC KHI THAY ĐỔI BỘ LỌC ======
   useEffect(() => {
     let filtered = [...plans];
 
@@ -526,7 +522,6 @@ const RecruitmentPlanPage = () => {
     }, 180);
   };
 
-  // ====== MỞ MODAL TẠO KẾ HOẠCH ======
   const openEmptyAddModal = async () => {
     setForm({
       requestId: undefined,
@@ -553,7 +548,6 @@ const RecruitmentPlanPage = () => {
     setOpenAddModal(true);
   };
 
-  // Mở AddPlan từ URL ?requestId=...
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const reqId = params.get("requestId");
@@ -602,7 +596,6 @@ const RecruitmentPlanPage = () => {
     }
   };
 
-  // ====== TẠO KẾ HOẠCH ======
   const submitPlan = async () => {
     try {
       if (!form.requestId) {
@@ -618,7 +611,6 @@ const RecruitmentPlanPage = () => {
         return;
       }
 
-      // 🔹 GHÉP TIỀN TỐ + TÊN NHẬP + HẬU TỐ THÁNG/NĂM HIỆN TẠI
       const fullPlanName = buildFullPlanName(form.planName);
 
       const payload = {
@@ -721,7 +713,6 @@ const RecruitmentPlanPage = () => {
     }
   };
 
-  // ====== QUY TRÌNH THỰC HIỆN – 4 BƯỚC, LOGIC GIỐNG HRRequestModal (trừ Phê duyệt nhu cầu) ======
   const planProgressSteps = useMemo(() => {
     if (!selectedPlan) return [];
 
@@ -744,7 +735,6 @@ const RecruitmentPlanPage = () => {
     const rejectActor =
       plan.rejectedByName || approverName || createdBy || "Không rõ";
 
-    // Tổng NV đầu ra yêu cầu (từ nhu cầu gắn với kế hoạch)
     const techRows = plan.request?.quantityCandidates || [];
     const outputRequired = techRows.reduce(
       (sum, qc) => sum + (qc.soLuong || 0),
@@ -768,7 +758,6 @@ const RecruitmentPlanPage = () => {
     const hasRejectReason =
       !!(parsedReject.reason || planMeta.requestRejectReason);
 
-    // 4 bước: Phê duyệt kế hoạch → Quản lý ứng viên → Đào tạo → Bàn giao nhân sự
     const steps = [
       {
         key: "plan-approve",
@@ -800,7 +789,6 @@ const RecruitmentPlanPage = () => {
       },
     ];
 
-    // ===== B1. PHÊ DUYỆT KẾ HOẠCH =====
     if (
       planStatus === "CONFIRMED" ||
       planStatus === "COMPLETED" ||
@@ -824,7 +812,6 @@ const RecruitmentPlanPage = () => {
         detail: reason,
         rejectReason: reason,
       };
-      // Nếu kế hoạch đã bị từ chối thì các bước sau luôn pending với mô tả dừng
       steps[1] = {
         ...steps[1],
         detail: "Kế hoạch đã bị từ chối, không thực hiện quản lý ứng viên.",
@@ -840,7 +827,6 @@ const RecruitmentPlanPage = () => {
       return steps;
     }
 
-    // ===== B2. QUẢN LÝ ỨNG VIÊN (giống HRRequestModal: chỉ cần >0 là xanh) =====
     if (planStatus !== "NEW") {
       const candidatePassedCount =
         planMeta.candidatePassedCount != null
@@ -877,7 +863,6 @@ const RecruitmentPlanPage = () => {
       };
     }
 
-    // ===== B3. ĐÀO TẠO (chỉ cần có TTS đào tạo là xanh) =====
     if (planStatus !== "NEW") {
       const baseActorTraining =
         steps[2].actor && steps[2].actor !== "Chưa thực hiện"
@@ -908,7 +893,6 @@ const RecruitmentPlanPage = () => {
       };
     }
 
-    // ===== B4. BÀN GIAO NHÂN SỰ – LOGIC Y HỆT HRRequestModal =====
     if (outputRequired > 0) {
       const baseActorHandover =
         steps[3].actor && steps[3].actor !== "Chưa thực hiện"
@@ -926,7 +910,6 @@ const RecruitmentPlanPage = () => {
         !hasRejectReason &&
         handoverCount >= outputRequired
       ) {
-        // ✅ Bàn giao đủ số lượng yêu cầu → THÀNH CÔNG
         steps[3] = {
           ...steps[3],
           status: "success",
@@ -934,7 +917,6 @@ const RecruitmentPlanPage = () => {
           detail: `Đã bàn giao ${handoverCount} nhân sự`,
         };
       } else if (isFailure || (planStatus === "COMPLETED" && hasRejectReason)) {
-        // ✅ Kết thúc nhưng thiếu / không có TTS PASS → THẤT BẠI
         const baseDetail =
           handoverCount > 0
             ? `Chỉ bàn giao được ${handoverCount}/${outputRequired} nhân sự`
@@ -953,7 +935,6 @@ const RecruitmentPlanPage = () => {
           rejectReason: rejectText,
         };
       } else {
-        // ⏳ Chưa kết luận → Đang chờ nhưng vẫn hiển thị số đã bàn giao
         const text =
           handoverCount > 0
             ? `Đã bàn giao ${handoverCount} nhân sự`
@@ -1053,7 +1034,7 @@ const RecruitmentPlanPage = () => {
     );
   };
 
-    const derivedPlanStatus = selectedPlan
+  const derivedPlanStatus = selectedPlan
     ? derivePlanStatus(selectedPlan, planMeta)
     : "";
   const planStatusLabel = getStatusLabel(derivedPlanStatus);
@@ -1114,14 +1095,20 @@ const RecruitmentPlanPage = () => {
               />
             </div>
 
-            <div className="filter-item add-btn-wrapper">
-              <button
-                className="add-plan-btn modern-add"
-                onClick={openEmptyAddModal}
-              >
-                ＋ Thêm kế hoạch tuyển dụng
-              </button>
-            </div>
+            {/* ✅ SPACER: GIỮ BỐ CỤC KHI ẨN NÚT */}
+            <div style={{ flex: 1 }}></div>
+
+            {/* ✅ NÚT THÊM: CHỈ HIỆN VỚI ADMIN HOẶC QLDT */}
+            {canCreate && (
+              <div className="filter-item add-btn-wrapper">
+                <button
+                  className="add-plan-btn modern-add"
+                  onClick={openEmptyAddModal}
+                >
+                  ＋ Thêm kế hoạch tuyển dụng
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1176,10 +1163,24 @@ const RecruitmentPlanPage = () => {
                         </td>
                         <td>{getSenderName(plan)}</td>
                         <td className="actions-cell text-center">
-                          <ActionButtons
-                            onView={() => handleViewDetails(plan)}
-                            onEdit={() => {}}
-                          />
+                          {/* ✅ LEAD KHÔNG ĐƯỢC CLICK (NHƯNG VẪN HIỆN ICON MỜ) */}
+                          <div
+                            style={
+                              !canInteract
+                                ? {
+                                    pointerEvents: "none",
+                                    opacity: 0.4,
+                                    cursor: "not-allowed",
+                                  }
+                                : {}
+                            }
+                            title={!canInteract ? "Bạn không có quyền thao tác" : ""}
+                          >
+                            <ActionButtons
+                              onView={() => handleViewDetails(plan)}
+                              onEdit={() => {}}
+                            />
+                          </div>
                         </td>
                       </tr>
                     );
@@ -1313,21 +1314,24 @@ const RecruitmentPlanPage = () => {
             </div>
           </div>
 
+          {/* ✅ NÚT DUYỆT/TỪ CHỐI CHỈ HIỂN THỊ VỚI ADMIN & HR (QLDT KHÔNG THẤY) */}
           {selectedPlan.status === "NEW" ? (
-            <div className="modal-footer modal-footer-actions">
-              <button
-                className="modal-btn btn-reject"
-                onClick={handleStartReject}
-              >
-                Từ chối
-              </button>
-              <button
-                className="modal-btn btn-approve btn-approve-green"
-                onClick={handleApprove}
-              >
-                Phê duyệt
-              </button>
-            </div>
+            canApproveReject ? (
+              <div className="modal-footer modal-footer-actions">
+                <button
+                  className="modal-btn btn-reject"
+                  onClick={handleStartReject}
+                >
+                  Từ chối
+                </button>
+                <button
+                  className="modal-btn btn-approve btn-approve-green"
+                  onClick={handleApprove}
+                >
+                  Phê duyệt
+                </button>
+              </div>
+            ) : null
           ) : selectedPlan.status === "CANCELED" ||
             selectedPlan.status === "REJECTED" ? (
             <div className="rejection-card">

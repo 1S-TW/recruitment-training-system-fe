@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/HRRequestModal.css";
-import Modal from "./Modal"; // dùng lại Modal giống bên kế hoạch
+import Modal from "./Modal";
+import { useAuth } from "../contexts/AuthContext"; // ✅ 1. Import AuthContext
 
 export default function HRRequestModal({
   isOpen,
@@ -23,6 +24,8 @@ export default function HRRequestModal({
   const [planMeta, setPlanMeta] = useState(null);
 
   const navigate = useNavigate();
+  const { user } = useAuth(); // ✅ Lấy thông tin user
+  const role = user?.role; // ✅ Lấy role
 
   const handleGoToPlanPage = useCallback(() => {
     const planName = planMeta?.planName || "";
@@ -922,6 +925,11 @@ export default function HRRequestModal({
   const disableActions = loading || !isNew;
   const hasNote = note && note.trim().length > 0;
 
+  // ✅ LOGIC MỚI: Chỉ hiển thị nút duyệt/từ chối nếu role là Admin hoặc QLDT (LEAD bị ẩn)
+  const showActionButtons = 
+    request?.status === "NEW" && 
+    (role === "SUPER_ADMIN" || role === "QLDT");
+
   return (
     <>
       {/* ====== BƯỚC 1: CHI TIẾT YÊU CẦU NHÂN SỰ ====== */}
@@ -1089,35 +1097,33 @@ export default function HRRequestModal({
             <div className="hrmodal-footer">
               <div className="footer-left" />
               <div className="footer-actions">
-                <button
-                  className={`btn-reject-main ${
-                    disableActions ? "btn-disabled" : ""
-                  }`}
-                  onClick={handleStartReject}
-                  disabled={disableActions}
-                  title={
-                    !isNew
-                      ? "Chỉ trạng thái ĐÃ GỬI (NEW) mới được thao tác"
-                      : undefined
-                  }
-                >
-                  Từ chối
-                </button>
+                {/* ✅ CHỈ RENDER NẾU LÀ ADMIN HOẶC QLDT (LEAD BỊ ẨN) */}
+                {showActionButtons && (
+                  <>
+                    <button
+                      className={`btn-reject-main ${disableActions ? "btn-disabled" : ""}`}
+                      onClick={handleStartReject}
+                      disabled={disableActions}
+                    >
+                      Từ chối
+                    </button>
 
-                <button
-                  className={`btn-approve-main ${
-                    disableActions ? "btn-disabled" : ""
-                  }`}
-                  onClick={handleApprove}
-                  disabled={disableActions}
-                  title={
-                    !isNew
-                      ? "Chỉ trạng thái ĐÃ GỬI (NEW) mới được thao tác"
-                      : undefined
-                  }
-                >
-                  Phê duyệt và Khởi tạo
-                </button>
+                    <button
+                      className={`btn-approve-main ${disableActions ? "btn-disabled" : ""}`}
+                      onClick={handleApprove}
+                      disabled={disableActions}
+                    >
+                      Phê duyệt và Khởi tạo
+                    </button>
+                  </>
+                )}
+
+                {/* ✅ NẾU KHÔNG CÓ NÚT HÀNH ĐỘNG THÌ HIỆN NÚT ĐÓNG */}
+                {!showActionButtons && (
+                   <button className="btn-close-main" onClick={onClose}>
+                     Đóng
+                   </button>
+                )}
               </div>
             </div>
           </div>

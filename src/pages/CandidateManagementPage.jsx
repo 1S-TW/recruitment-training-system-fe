@@ -9,13 +9,24 @@ import AddResultModal from "../components/AddResultModal";
 import Layout from "../components/Layout";
 import Pagination from "../components/Pagination";
 import ActionButtons from "../components/ActionButtons.jsx";
+import { useAuth } from "../contexts/AuthContext"; // ✅ 1. Import AuthContext
 
 import "../styles/request.css";
 import "../styles/toast.css";
 import "../styles/CandidateManagementPage.css";
 import { HiUserGroup } from "react-icons/hi";
 import { FiSearch } from "react-icons/fi";
+
 export default function CandidateManagementPage() {
+  const { user } = useAuth(); // ✅ Lấy user info
+  const role = user?.role; // ✅ Lấy role
+
+  // ✅ PHÂN QUYỀN:
+  // - HR & Admin: Được thêm ứng viên.
+  // - QLDT: KHÔNG được thêm (ẩn nút).
+  // - LEAD: Không vào được trang này (xử lý ở Sidebar/Route).
+  const canAddCandidate = role === "SUPER_ADMIN" || role === "HR";
+
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -103,8 +114,6 @@ export default function CandidateManagementPage() {
     return normalized;
   }, [planOptions, prefilledPlan]);
 
-  // ✅ ĐÃ XÓA: State 'toast' và hàm 'showToast'
-
   const filteredCandidates = useMemo(
     () =>
       (candidates || []).filter((c) => {
@@ -166,7 +175,6 @@ export default function CandidateManagementPage() {
 
   const handleViewCandidate = (candidate) => {
     console.log("Xem ứng viên:", candidate);
-    // ✅ ĐÃ XÓA: showToast("Mở chi tiết ứng viên (TODO)", "success");
   };
 
   const handleEditCandidate = (candidate) => {
@@ -176,7 +184,6 @@ export default function CandidateManagementPage() {
 
   const handleAddSuccess = (newCandidate) => {
     setCandidates((prev) => [newCandidate, ...prev]);
-    // ✅ ĐÃ XÓA: showToast("Thêm ứng viên thành công!", "success");
     setCurrentPage(1);
   };
 
@@ -187,8 +194,8 @@ export default function CandidateManagementPage() {
       )
     );
     setShowEditModal(false);
-    // ✅ ĐÃ XÓA: showToast("Chấm điểm thành công!", "success");
   };
+
   const getStatusClass = (status) => {
     switch (status) {
       case "Chưa có kết quả":
@@ -279,33 +286,35 @@ export default function CandidateManagementPage() {
             </div>
 
             {/* Kế hoạch tuyển dụng */}
-<div className="filter-item">
-  <select
-    className="filter-select candidate-plan-select"
-    value={planFilter}
-    onChange={(e) => {
-      setPlanFilter(e.target.value);
-      setCurrentPage(1);
-    }}
-  >
-    <option value="">Chọn kế hoạch tuyển dụng</option>
-    {planSelectOptions.map((plan) => (
-      <option key={plan.id} value={`${plan.id}`}>
-        {plan.name}
-      </option>
-    ))}
-  </select>
-</div>
-
-            {/* Nút Thêm ứng viên */}
-            <div className="filter-item filter-right-group">
-              <button
-                type="button"
-                className="add-plan-btn clean"
-                onClick={() => setShowAddModal(true)}
+            <div className="filter-item">
+              <select
+                className="filter-select candidate-plan-select"
+                value={planFilter}
+                onChange={(e) => {
+                  setPlanFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
               >
-                ＋ Thêm ứng viên
-              </button>
+                <option value="">Chọn kế hoạch tuyển dụng</option>
+                {planSelectOptions.map((plan) => (
+                  <option key={plan.id} value={`${plan.id}`}>
+                    {plan.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* ✅ Nút Thêm ứng viên (Chỉ HR & Admin thấy, QLDT bị ẩn) */}
+            <div className="filter-item filter-right-group">
+              {canAddCandidate && (
+                <button
+                  type="button"
+                  className="add-plan-btn clean"
+                  onClick={() => setShowAddModal(true)}
+                >
+                  ＋ Thêm ứng viên
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -369,7 +378,6 @@ export default function CandidateManagementPage() {
                           </span>
                         </td>
                         <td className="actions-cell text-center">
-                          {/* Đã bỏ div wrapper thừa ở đây theo yêu cầu trước */}
                           <ActionButtons
                             onView={() => handleViewCandidate(c)}
                             onEdit={() => handleEditCandidate(c)}
@@ -384,7 +392,7 @@ export default function CandidateManagementPage() {
           )}
         </div>
 
-        {/* PAGINATION - chỉ hiện khi có dữ liệu */}
+        {/* PAGINATION */}
         {filteredSorted.length > 0 && (
           <div className="pagination-bar">
             <Pagination
