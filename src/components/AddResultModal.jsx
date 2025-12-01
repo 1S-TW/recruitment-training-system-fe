@@ -5,7 +5,7 @@ import api from "../services/api";
 import { useAuth } from "../contexts/AuthContext"; // ✅ 1. Import AuthContext
 import "../styles/AddResultModal.css";
 
-// Helper functions
+// ✅ Helper functions: Thêm lại hàm getPlanName bị thiếu
 const getPlanName = (candidate) => {
   if (!candidate) return "—";
   return candidate.recruitmentPlanName || "Không rõ kế hoạch";
@@ -34,6 +34,7 @@ const initialState = {
   phoneNumber: "",
   cvLink: "",
   interviewDate: "",
+  planId: "", // ✅ Thêm trường planId để sửa kế hoạch
 
   // Kết quả
   attendedInterview: "NO",
@@ -47,18 +48,17 @@ const initialState = {
 };
 
 export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }) {
-  // ✅ 2. Lấy Role từ Context
   const { user } = useAuth();
   const role = user?.role;
 
-  // ✅ 3. Định nghĩa quyền hạn
-  // HR & Admin được sửa thông tin cá nhân
+  // ✅ QUYỀN HẠN
+  const isViewOnlyMode = role === "LEAD";
   const canEditInfo = role === "SUPER_ADMIN" || role === "HR";
-  // QLDT & Admin được chấm điểm
   const canEditScore = role === "SUPER_ADMIN" || role === "QLDT";
 
-  // ✅ 4. Lọc danh sách trạng thái theo Role
   const getAvailableStatuses = () => {
+    if (isViewOnlyMode) return [];
+
     const allStatuses = [
       "Chưa có kết quả",
       "Đã có kết quả",
@@ -69,40 +69,46 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
     ];
 
     if (role === "SUPER_ADMIN") return allStatuses;
+    if (role === "QLDT") return ["Đã có kết quả", "Đã nhận việc", "Không nhận việc"];
+    if (role === "HR") return ["Chưa có kết quả", "Đã gửi mail cảm ơn", "Đã hẹn ngày thực tập"];
 
-    if (role === "QLDT") {
-      return ["Đã có kết quả", "Đã nhận việc", "Không nhận việc"];
-    }
-
-    if (role === "HR") {
-      return ["Chưa có kết quả", "Đã gửi mail cảm ơn", "Đã hẹn ngày thực tập"];
-    }
-
-    // Default fallback
     return [];
   };
 
   const availableStatuses = getAvailableStatuses();
 
-  // 1. HOOKS
+  // State
   const [formData, setFormData] = useState(initialState);
+  const [planOptions, setPlanOptions] = useState([]); // ✅ List kế hoạch để HR chọn
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState(null);
   const [errors, setErrors] = useState({});
   const [isFirstTime, setIsFirstTime] = useState(true);
   
   // --- LOGIC KHÓA FORM ---
-  // Nếu trạng thái là "Đã nhận việc" -> KHÓA TOÀN BỘ (Read-only) bất kể quyền
   const isLockedByFinalStatus = candidate?.status === "Đã nhận việc";
-  
-  // Nếu không đến phỏng vấn -> Khóa nhập điểm
   const isLockedByAttendance = formData.attendedInterview === "NO";
   
-  // Biến khóa dùng cho vùng chấm điểm (Kết hợp logic nghiệp vụ + Phân quyền)
-  const isResultLocked = isLockedByFinalStatus || isLockedByAttendance || !canEditScore;
+  // 1. Khóa Dropdown "Có đến phỏng vấn?":
+  const isAttendanceSelectLocked = isViewOnlyMode || isLockedByFinalStatus || !canEditScore;
 
-  // Biến khóa dùng cho vùng thông tin (Kết hợp logic nghiệp vụ + Phân quyền)
-  const isInfoLocked = isLockedByFinalStatus || !canEditInfo;
+  // 2. Khóa các ô Điểm:
+  const isResultLocked = isAttendanceSelectLocked || isLockedByAttendance;
+
+  // 3. Khóa Info (bao gồm Plan):
+  const isInfoLocked = isViewOnlyMode || isLockedByFinalStatus || !canEditInfo;
+
+  // 4. Khóa Status:
+  const isStatusLocked = isViewOnlyMode || isLockedByFinalStatus;
+
+  // --- LOAD DANH SÁCH KẾ HOẠCH (Cho HR sửa) ---
+  useEffect(() => {
+    if (isOpen && canEditInfo) {
+      api.get("/recruitment-plans/approved")
+        .then(res => setPlanOptions(res.data || []))
+        .catch(err => console.error("Lỗi tải kế hoạch:", err));
+    }
+  }, [isOpen, canEditInfo]);
 
   // --- NẠP DỮ LIỆU ---
   useEffect(() => {
@@ -114,6 +120,8 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
         phoneNumber: candidate.phoneNumber || candidate.phone || "",
         cvLink: candidate.cvLink || "",
         interviewDate: formatDateTimeLocal(candidate.interviewDate),
+        // ✅ Map planId từ candidate vào form
+        planId: candidate.recruitmentPlanId || "",
       };
 
       if (candidate.finalResult && candidate.finalResult !== "NA") {
@@ -140,7 +148,7 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
     }
   }, [isOpen, candidate]);
 
-  // --- VALIDATE FORM ---
+  // --- VALIDATE ---
   const validateForm = () => {
     const newErrors = {};
     const { fullName, email, phoneNumber, cvLink, interviewDate } = formData;
@@ -166,31 +174,27 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
     return Object.keys(newErrors).length === 0;
   };
 
-  // --- LOGIC HỖ TRỢ CHẤM ĐIỂM TỰ ĐỘNG (AUTO-GRADING) ---
+  // --- AUTO GRADING ---
   useEffect(() => {
-    // Nếu form đang bị khóa cứng hoặc người dùng không có quyền sửa điểm thì không tự nhảy
-    if (isLockedByFinalStatus || !canEditScore) return;
+    if (isResultLocked) return;
 
-    // Chỉ chạy khi cả 2 ô điểm đều đã có dữ liệu
     if (formData.testScore !== "" && formData.interviewScore !== "") {
         const test = Number(formData.testScore);
         const interview = Number(formData.interviewScore);
 
         if (!isNaN(test) && !isNaN(interview)) {
-             // Điều kiện ĐẠT: Test >= 70 VÀ Phỏng vấn >= 7
              if (test >= 70 && interview >= 7) {
                  setFormData((prev) => ({ ...prev, finalResult: "Đạt" }));
              } else {
-                 // Ngược lại: Tự động nhảy về KHÔNG ĐẠT
                  setFormData((prev) => ({ ...prev, finalResult: "Không đạt" }));
              }
         }
     }
-  }, [formData.testScore, formData.interviewScore, isLockedByFinalStatus, canEditScore]);
+  }, [formData.testScore, formData.interviewScore, isResultLocked]);
 
-  // --- LOGIC KHI "KHÔNG" ĐẾN PHỎNG VẤN ---
+  // --- RESET KHI CHỌN "KHÔNG ĐẾN" ---
   useEffect(() => {
-    if (isLockedByAttendance && !isLockedByFinalStatus && canEditScore) {
+    if (isLockedByAttendance && !isLockedByFinalStatus && canEditScore && !isViewOnlyMode) {
       setFormData((prev) => ({
         ...prev,
         testScore: "",
@@ -200,9 +204,8 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
         candidateStatus: "Chưa có kết quả"
       }));
     }
-  }, [isLockedByAttendance, isLockedByFinalStatus, canEditScore]);
+  }, [isLockedByAttendance, isLockedByFinalStatus, canEditScore, isViewOnlyMode]);
 
-  // --- CHECK ĐIỀU KIỆN TRẠNG THÁI ---
   const canSetResultStatus = useMemo(() => {
     return (
       (formData.testScore !== "" && formData.testScore !== null) &&
@@ -211,12 +214,10 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
     );
   }, [formData.testScore, formData.interviewScore, formData.finalResult]);
 
-  // --- AUTO UPDATE STATUS ---
+  // --- AUTO STATUS UPDATE ---
   useEffect(() => {
-    if (isLockedByFinalStatus) return;
+    if (isLockedByFinalStatus || isViewOnlyMode) return;
 
-    // Chỉ tự động cập nhật nếu QLDT hoặc Admin (người chấm điểm) đang thao tác
-    // HR không chấm điểm nên không cần auto-switch status này
     if (canEditScore) {
       if (canSetResultStatus) {
         if (isFirstTime && formData.candidateStatus === "Chưa có kết quả") {
@@ -228,11 +229,10 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
         }
       }
     }
-  }, [canSetResultStatus, isFirstTime, formData.candidateStatus, isLockedByFinalStatus, canEditScore]);
+  }, [canSetResultStatus, isFirstTime, formData.candidateStatus, isLockedByFinalStatus, canEditScore, isViewOnlyMode]);
 
   if (!isOpen || !candidate) return null;
 
-  // Handle Change chung
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -245,10 +245,9 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setApiError(null);
+    if (isViewOnlyMode) return; // Chặn LEAD
 
-    // QLDT không được sửa info -> không cần validate info quá chặt nếu họ chỉ chấm điểm
-    // Tuy nhiên validateForm check empty, nếu field có sẵn data thì sẽ pass.
+    setApiError(null);
     if (!validateForm()) return;
 
     setLoading(true);
@@ -293,7 +292,7 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
                     name="fullName"
                     value={formData.fullName} 
                     onChange={handleChange}
-                    disabled={isInfoLocked} // ✅ Áp dụng khóa
+                    disabled={isInfoLocked} 
                     error={errors.fullName}
                 />
                 <Input 
@@ -301,7 +300,7 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
                     name="phoneNumber"
                     value={formData.phoneNumber} 
                     onChange={handleChange}
-                    disabled={isInfoLocked} // ✅ Áp dụng khóa
+                    disabled={isInfoLocked}
                     error={errors.phoneNumber}
                 />
                 <Input 
@@ -310,7 +309,7 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
                     type="datetime-local" 
                     value={formData.interviewDate} 
                     onChange={handleChange}
-                    disabled={isInfoLocked} // ✅ Áp dụng khóa
+                    disabled={isInfoLocked}
                     error={errors.interviewDate}
                 />
               </div>
@@ -320,7 +319,7 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
                     name="email"
                     value={formData.email} 
                     onChange={handleChange}
-                    disabled={isInfoLocked} // ✅ Áp dụng khóa
+                    disabled={isInfoLocked}
                     error={errors.email}
                 />
                 <Input 
@@ -328,10 +327,43 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
                     name="cvLink"
                     value={formData.cvLink} 
                     onChange={handleChange}
-                    disabled={isInfoLocked} // ✅ Áp dụng khóa
+                    disabled={isInfoLocked}
                     error={errors.cvLink}
                 />
-                <Input label="Kế hoạch tuyển dụng" value={getPlanName(candidate)} readOnly />
+                
+                {/* ✅ SỬA KẾ HOẠCH (Dành cho HR/Admin) */}
+                <div className="form-group">
+                    <label>Kế hoạch tuyển dụng</label>
+                    {isInfoLocked ? (
+                        // Nếu bị khóa (QLDT/LEAD) -> Hiện Input Readonly
+                        <input 
+                            className="input-style" 
+                            value={getPlanName(candidate)} 
+                            readOnly 
+                            disabled 
+                        />
+                    ) : (
+                        // Nếu được sửa (HR/Admin) -> Hiện Select
+                        <select
+                            name="planId"
+                            value={formData.planId}
+                            onChange={handleChange}
+                            className="input-style"
+                        >
+                            <option value="" disabled>-- Chọn kế hoạch --</option>
+                            {/* Fallback: nếu list chưa load xong, hiện plan hiện tại */}
+                            {!planOptions.some(p => String(p.planId) === String(formData.planId)) && formData.planId && (
+                                <option value={formData.planId} disabled>{getPlanName(candidate)}</option>
+                            )}
+                            {planOptions.map(p => (
+                                <option key={p.planId} value={p.planId}>
+                                    {p.planName}
+                                </option>
+                            ))}
+                        </select>
+                    )}
+                </div>
+
               </div>
             </div>
 
@@ -347,7 +379,7 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
                   value={formData.attendedInterview}
                   onChange={handleChange}
                   className="input-style"
-                  disabled={isLockedByFinalStatus || !canEditScore} // ✅ Chỉ QLDT/Admin
+                  disabled={isAttendanceSelectLocked} 
                 >
                   <option value="NO">Không</option>
                   <option value="YES">Có</option>
@@ -362,7 +394,7 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
                 value={formData.testScore}
                 onChange={handleChange}
                 placeholder="0-100"
-                disabled={isResultLocked} // ✅ Bao gồm quyền canEditScore
+                disabled={isResultLocked} 
               />
 
               <Input
@@ -373,7 +405,7 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
                 value={formData.interviewScore}
                 onChange={handleChange}
                 placeholder="0-10"
-                disabled={isResultLocked} // ✅ Bao gồm quyền canEditScore
+                disabled={isResultLocked}
               />
             </div>
 
@@ -385,12 +417,11 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
                     value={formData.comment} 
                     onChange={handleChange} 
                     className="input-style"
-                    disabled={isResultLocked} // ✅ Bao gồm quyền canEditScore
+                    disabled={isResultLocked}
                     placeholder="Nhập nhận xét..."
                 />
             </div>
 
-            {/* --- Kết quả cuối cùng --- */}
             <div className="form-group full-width final-result-block">
               <label>Kết quả cuối cùng</label>
               <select
@@ -398,7 +429,7 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
                 value={formData.finalResult}
                 onChange={handleChange}
                 className="input-style final-result-select"
-                disabled={isResultLocked} // ✅ Bao gồm quyền canEditScore
+                disabled={isResultLocked}
               >
                 <option value="Đạt" className="text-pass">Đạt</option>
                 <option value="Không đạt" className="text-fail">Không đạt</option>
@@ -416,14 +447,12 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
                     value={formData.candidateStatus}
                     onChange={handleChange}
                     className="input-style"
-                    disabled={isLockedByFinalStatus} // Ai vào được modal đều sửa được status (trong phạm vi cho phép)
+                    disabled={isStatusLocked} 
                   >
-                    {/* ✅ Option riêng cho từng role */}
                     {availableStatuses.map(st => (
                       <option 
                         key={st} 
                         value={st}
-                        // Disable logic riêng: Đã nhận việc phải Đạt; Đã có kết quả phải đủ điểm
                         disabled={
                           (st === "Đã nhận việc" && formData.finalResult === 'Không đạt') ||
                           (st === "Đã có kết quả" && !canSetResultStatus)
@@ -432,8 +461,7 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
                         {st}
                       </option>
                     ))}
-
-                    {/* ✅ Luôn hiển thị trạng thái hiện tại (nếu nó không nằm trong list cho phép của role) để tránh lỗi UI */}
+                    
                     {!availableStatuses.includes(formData.candidateStatus) && (
                        <option value={formData.candidateStatus} disabled>
                          {formData.candidateStatus} (Hiện tại)
@@ -448,7 +476,7 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
                   name="note"
                   value={formData.note}
                   onChange={handleChange}
-                  disabled={isLockedByFinalStatus}
+                  disabled={isLockedByFinalStatus || isViewOnlyMode}
                 />
               </div>
             </div>
@@ -462,7 +490,7 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
                   value={formData.internshipDate}
                   onChange={handleChange}
                   required
-                  disabled={isLockedByFinalStatus}
+                  disabled={isLockedByFinalStatus || isViewOnlyMode}
                   error={errors.internshipDate}
                 />
               </div>
@@ -470,10 +498,15 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
           </div>
 
           <div className="modal-footer justify-end">
-            <button type="button" className="modal-btn btn-secondary" onClick={onClose} disabled={loading}>Hủy</button>
-            <button type="submit" className="modal-btn btn-save" disabled={loading || isLockedByFinalStatus}>
-              {loading ? "Đang lưu..." : "Lưu"}
+            <button type="button" className="modal-btn btn-secondary" onClick={onClose} disabled={loading}>
+                {isViewOnlyMode ? "Đóng" : "Hủy"}
             </button>
+            
+            {!isViewOnlyMode && (
+                <button type="submit" className="modal-btn btn-save" disabled={loading || isLockedByFinalStatus}>
+                  {loading ? "Đang lưu..." : "Lưu"}
+                </button>
+            )}
           </div>
         </form>
       </div>

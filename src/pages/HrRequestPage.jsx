@@ -66,17 +66,20 @@ const deriveRequestStatus = (req = {}) => {
   return raw;
 };
 
-export default function HRRequestPage() {
+export default function HrRequestPage() {
   const { requests, loading, error, refetch } = useHrRequests();
   const { user } = useAuth(); // ✅ Lấy user info
   const role = user?.role;    // ✅ Lấy role
 
-  // ✅ PHÂN QUYỀN:
-  // 1. Tạo mới: Admin và LEAD được tạo. QLDT chỉ xem/duyệt -> Ẩn nút.
+  // ================= PHÂN QUYỀN =================
+  
+  // 1. Quyền TẠO: Chỉ Admin và LEAD. (HR, QLDT bị ẩn nút)
   const canCreateRequest = role === "SUPER_ADMIN" || role === "LEAD";
   
-  // 2. Chỉnh sửa: Admin và LEAD được sửa. QLDT không được sửa.
+  // 2. Quyền SỬA: Chỉ Admin và LEAD. (HR, QLDT bị cấm sửa)
   const canEditRequestByRole = role === "SUPER_ADMIN" || role === "LEAD";
+
+  // ==============================================
 
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
@@ -182,7 +185,7 @@ export default function HRRequestPage() {
     setShowModal(true);
   };
 
-  const flashEditTooltip = (btnWrapperEl, message = "Chỉ trạng thái ĐÃ GỬI (NEW) mới được sửa") => {
+  const flashEditTooltip = (btnWrapperEl, message) => {
     const tip = btnWrapperEl?.querySelector(".action-tooltip");
     if (!tip) return;
     const original = tip.textContent;
@@ -258,14 +261,10 @@ export default function HRRequestPage() {
               />
             </div>
 
-            {/* ✅ SPACER DIV: 
-               Đẩy nút "Thêm" về sát phải. 
-               Nếu nút "Thêm" bị ẩn (do không có quyền), div này vẫn chiếm chỗ 
-               để giữ các input filter ở bên trái không bị vỡ layout.
-            */}
+            {/* SPACER DIV: Đẩy nút "Thêm" về sát phải */}
             <div style={{ flex: 1 }}></div>
 
-            {/* Nút Thêm Nhu Cầu */}
+            {/* Nút Thêm Nhu Cầu: Ẩn nếu không phải Admin/LEAD */}
             <div className="filter-item add-btn-wrapper">
               {canCreateRequest && (
                 <button className="add-plan-btn clean" onClick={openCreate}>
@@ -301,7 +300,8 @@ export default function HRRequestPage() {
                 ) : (
                   currentRequests.map((req, index) => {
                     const displayStatus = deriveRequestStatus(req);
-                    // ✅ Kiểm tra quyền sửa: Role phải được phép + Trạng thái phải là NEW
+                    
+                    // ✅ Logic nút sửa: Phải có role (Admin/Lead) VÀ Trạng thái là NEW
                     const canEditRow = canEditRequestByRole && isStatusEditable(req.status);
 
                     const rowAttrs = {
@@ -326,23 +326,26 @@ export default function HRRequestPage() {
                         <td>{req.createdByName || "Không rõ"}</td>
                         <td className="actions-cell text-center">
                           <ActionButtons
+                            // Nút Xem: Ai vào được trang này đều xem được
                             onView={() => setSelectedRequest(req)}
+                            
+                            // Nút Sửa:
                             onEdit={(e) => {
-                              // ✅ Chặn hành động nếu không có quyền
                               if (!canEditRow) {
                                 e?.preventDefault?.();
                                 const wrapper = e?.currentTarget?.closest(".btn-action-wrapper")
                                   || e?.target?.closest(".btn-action-wrapper");
                                 
+                                // Thông báo lỗi cụ thể khi hover/click vào nút bị disable
                                 const msg = !canEditRequestByRole 
                                   ? "Bạn không có quyền chỉnh sửa mục này" 
-                                  : "Chỉ trạng thái ĐÃ GỬI (NEW) mới được sửa";
+                                  : "Chỉ trạng thái ĐÃ GỬI mới được sửa";
                                 flashEditTooltip(wrapper, msg);
                                 return;
                               }
                               openEdit(req);
                             }}
-                            // ✅ Truyền prop để ActionButtons hiển thị trạng thái disabled (mờ đi)
+                            // Prop này để component ActionButtons render icon mờ/disabled
                             canEdit={canEditRow}
                           />
                         </td>
@@ -399,6 +402,7 @@ export default function HRRequestPage() {
         initialData={editData}
       />
 
+      {/* HRRequestModal: Nơi xử lý Duyệt/Từ chối */}
       <HRRequestModal
         isOpen={!!selectedRequest}
         onClose={() => setSelectedRequest(null)}

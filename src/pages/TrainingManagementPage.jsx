@@ -5,8 +5,9 @@ import api from "../services/api";
 import Layout from "../components/Layout";
 import Pagination from "../components/Pagination";
 import ActionButtons from "../components/ActionButtons.jsx";
-import EditTrainingModal from "../components/EditTrainingModal"; // <-- import modal
+import EditTrainingModal from "../components/EditTrainingModal"; 
 import { FiSearch } from "react-icons/fi";
+import { useAuth } from "../contexts/AuthContext"; // ✅ Import AuthContext
 import "../styles/toast.css";
 import "../styles/training.css";
 
@@ -24,11 +25,18 @@ const getStatusClass = (status) => {
   }
 };
 
-// Trả về nhãn hiển thị, bạn có thể giữ nguyên text
+// Trả về nhãn hiển thị
 const getStatusLabel = (status) => status || "Đang thực tập";
 
-
 export default function TrainingManagementPage() {
+  // ✅ 1. Lấy thông tin user để phân quyền
+  const { user } = useAuth();
+  const role = user?.role;
+
+  // ✅ 2. Định nghĩa quyền tương tác
+  // HR và LEAD chỉ được xem, không được chấm điểm/sửa
+  const canInteract = role !== "LEAD" && role !== "HR";
+
   const [trainings, setTrainings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -41,13 +49,11 @@ export default function TrainingManagementPage() {
   const [internStatusFilter, setInternStatusFilter] = useState("");
   const [planFilter, setPlanFilter] = useState("");
 
-  // plan options (select kế hoạch)
   const [planOptions, setPlanOptions] = useState([]);
 
   // --- STATE MODAL ---
   const [editingTraining, setEditingTraining] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-
   const [isViewOnly, setIsViewOnly] = useState(false);
 
   const [toast, setToast] = useState(null);
@@ -107,7 +113,6 @@ export default function TrainingManagementPage() {
         }
 
         if (planFilter) {
-          // sửa: dùng 't' chứ không phải biến 'c'
           if (t.recruitmentPlanId?.toString() !== planFilter) {
             return false;
           }
@@ -118,9 +123,6 @@ export default function TrainingManagementPage() {
     [trainings, searchTerm, internStatusFilter, planFilter]
   );
 
-  // Lưu ý: nếu bạn muốn giữ nguyên thứ tự API trả về (không resort khi chỉnh),
-  // thay phần sort bằng việc giữ nguyên order như dưới. Nếu muốn sort theo startDate,
-  // đổi lại thành sort như trước.
   const filteredSorted = useMemo(() => [...filteredTrainings], [filteredTrainings]);
 
   const totalPages = Math.ceil(filteredSorted.length / itemsPerPage) || 1;
@@ -142,20 +144,26 @@ export default function TrainingManagementPage() {
     }, 180);
   };
 
+  // ✅ Hàm Xem: Luôn mở ở chế độ viewOnly
   const handleViewTraining = (training) => {
-  setEditingTraining(training);
-  setIsViewOnly(true); // Chỉ xem
-  setIsEditModalOpen(true);
-};
+    setEditingTraining(training);
+    setIsViewOnly(true); 
+    setIsEditModalOpen(true);
+  };
 
-const handleEditTraining = (training) => {
-  setEditingTraining(training);
-  setIsViewOnly(false); // Có thể chỉnh sửa
-  setIsEditModalOpen(true);
-};
+  // ✅ Hàm Sửa: Kiểm tra quyền canInteract
+  const handleEditTraining = (training) => {
+    if (!canInteract) {
+      // Nếu không có quyền mà cố gọi -> chuyển sang chế độ Xem
+      handleViewTraining(training);
+      return;
+    }
+    setEditingTraining(training);
+    setIsViewOnly(false); // Cho phép sửa
+    setIsEditModalOpen(true);
+  };
 
   const handleSaveTraining = (updatedTraining) => {
-    // merge vào object cũ, giữ nguyên thứ tự list
     setTrainings((prevTrainings) =>
       prevTrainings.map((t) =>
         t.internId === updatedTraining.internId ? { ...t, ...updatedTraining } : t
@@ -268,7 +276,6 @@ const handleEditTraining = (training) => {
                   <th>Tên</th>
                   <th>Bắt đầu</th>
                   <th>Số ngày TT</th>
-                  {/* CỘT MÔN HỌC DẠNG SCROLL */}
                   <th className="subject-col">
                     <div className="subject-header-row">
                       {(currentTrainings[0]?.scores || []).map((s, i) => (
@@ -302,9 +309,9 @@ const handleEditTraining = (training) => {
                     const name = t.traineeName || t.fullName || t.name || "NA";
                     const startDate = t.startDate || t.beginDate || t.trainingStartDate || null;
                     const internDays = t.trainingDays ?? t.soNgayThucTap ?? t.soNgayTT ?? "NA";
-                    const finalScore = t.finalScore ?? t.tongKet ?? "NA";
-                    const teamEval = t.teamReview ?? t.danhGiaTeam ?? "NA";
-                    const internStatus = t.internStatus || t.status || "NA";
+                    // const finalScore = t.finalScore ?? t.tongKet ?? "NA"; // Unused
+                    // const teamEval = t.teamReview ?? t.danhGiaTeam ?? "NA"; // Unused
+                    // const internStatus = t.internStatus || t.status || "NA"; // Unused in display logic below
 
                     return (
                       <tr key={t.internId || t.trainingId || t.id || stt}>
@@ -326,9 +333,9 @@ const handleEditTraining = (training) => {
                             )}
                           </div>
                         </td>
-                       <td>{t.summaryResult != null ? Number(t.summaryResult).toFixed(2) : "NA"}</td> 
-                       <td>{t.teamReview != null ? Number(t.teamReview).toFixed(1) : "NA"}</td> 
-                       <td>
+                        <td>{t.summaryResult != null ? Number(t.summaryResult).toFixed(2) : "NA"}</td> 
+                        <td>{t.teamReview != null ? Number(t.teamReview).toFixed(1) : "NA"}</td> 
+                        <td>
                           <span className={`status-badge ${getStatusClass(t.internStatus)}`}>
                             {getStatusLabel(t.internStatus)}
                           </span>
@@ -338,7 +345,10 @@ const handleEditTraining = (training) => {
                               <ActionButtons
                                 onView={() => handleViewTraining(t)}
                                 onEdit={() => handleEditTraining(t)}
-                                canEdit={t.internStatus !== "Đã dừng thực tập" && t.internStatus !== "Đã hoàn thành"}
+                                // ✅ Logic hiển thị nút Sửa:
+                                // 1. Phải có quyền canInteract (QLDT, Admin)
+                                // 2. Trạng thái không phải "Đã dừng" hoặc "Đã hoàn thành"
+                                canEdit={canInteract && t.internStatus !== "Đã dừng thực tập" && t.internStatus !== "Đã hoàn thành"}
                               />
                           </div>
                         </td>
@@ -382,7 +392,7 @@ const handleEditTraining = (training) => {
           onClose={() => setIsEditModalOpen(false)}
           trainingData={editingTraining}
           onSave={handleSaveTraining}
-          isViewOnly={isViewOnly} // <-- thêm prop
+          isViewOnly={isViewOnly} // ✅ Truyền prop này để modal biết khóa ô input/nút lưu
         />
       )}
 

@@ -19,13 +19,16 @@ import { FiSearch } from "react-icons/fi";
 
 export default function CandidateManagementPage() {
   const { user } = useAuth(); // ✅ Lấy user info
-  const role = user?.role; // ✅ Lấy role
+  const role = user?.role;    // ✅ Lấy role
 
   // ✅ PHÂN QUYỀN:
-  // - HR & Admin: Được thêm ứng viên.
-  // - QLDT: KHÔNG được thêm (ẩn nút).
-  // - LEAD: Không vào được trang này (xử lý ở Sidebar/Route).
+  // 1. Thêm mới: Chỉ HR & Admin. (QLDT & LEAD bị ẩn nút)
   const canAddCandidate = role === "SUPER_ADMIN" || role === "HR";
+
+  // 2. Quyền thao tác Sửa (Edit):
+  // LEAD: Chỉ xem, không được sửa -> canInteract = false
+  // HR, QLDT, ADMIN: Được sửa -> canInteract = true
+  const canInteract = role !== "LEAD";
 
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -174,10 +177,13 @@ export default function CandidateManagementPage() {
   };
 
   const handleViewCandidate = (candidate) => {
-    console.log("Xem ứng viên:", candidate);
+    // Chỉ xem, Modal sẽ tự khóa input dựa trên role LEAD trong đó
+    setSelectedCandidate(candidate);
+    setShowEditModal(true); 
   };
 
   const handleEditCandidate = (candidate) => {
+    if (!canInteract) return; // Chặn nếu là LEAD
     setSelectedCandidate(candidate);
     setShowEditModal(true);
   };
@@ -213,6 +219,20 @@ export default function CandidateManagementPage() {
       default:
         return "status-none";
     }
+  };
+
+  // Helper để hiển thị tooltip khi bị disable
+  const flashEditTooltip = (btnWrapperEl, message = "Bạn không có quyền thực hiện thao tác này") => {
+    const tip = btnWrapperEl?.querySelector(".action-tooltip");
+    if (!tip) return;
+    const original = tip.textContent;
+    tip.textContent = message;
+    tip.style.opacity = "1";
+    tip.style.transform = "translateX(-50%) scale(1)";
+    setTimeout(() => {
+      tip.textContent = original;
+      tip.removeAttribute("style");
+    }, 1500);
   };
 
   return (
@@ -304,7 +324,7 @@ export default function CandidateManagementPage() {
               </select>
             </div>
 
-            {/* ✅ Nút Thêm ứng viên (Chỉ HR & Admin thấy, QLDT bị ẩn) */}
+            {/* ✅ Nút Thêm ứng viên: Chỉ HR & Admin thấy */}
             <div className="filter-item filter-right-group">
               {canAddCandidate && (
                 <button
@@ -379,8 +399,23 @@ export default function CandidateManagementPage() {
                         </td>
                         <td className="actions-cell text-center">
                           <ActionButtons
+                            // LEAD vẫn được xem
                             onView={() => handleViewCandidate(c)}
-                            onEdit={() => handleEditCandidate(c)}
+                            
+                            // Sửa: Kiểm tra quyền canInteract
+                            onEdit={(e) => {
+                              if (!canInteract) {
+                                e?.preventDefault?.();
+                                const wrapper = e?.currentTarget?.closest(".btn-action-wrapper")
+                                  || e?.target?.closest(".btn-action-wrapper");
+                                flashEditTooltip(wrapper, "Bạn không có quyền chỉnh sửa");
+                                return;
+                              }
+                              handleEditCandidate(c);
+                            }}
+                            
+                            // Prop để hiện icon mờ/cấm nếu không có quyền
+                            canEdit={canInteract}
                           />
                         </td>
                       </tr>

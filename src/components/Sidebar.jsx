@@ -1,15 +1,17 @@
+// src/components/Sidebar.jsx
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, BookOpen, Users } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useAuth } from "../contexts/AuthContext"; // Import AuthContext
+// import { useAuth } from "../contexts/AuthContext"; // ❌ Bỏ dòng này nếu không dùng user
 
 export default function Sidebar() {
   const location = useLocation();
   const [openSubmenu, setOpenSubmenu] = useState(null);
-  const { user } = useAuth(); // Lấy user hiện tại
-  const role = user?.role; // Lấy role
+  
+  // ❌ Bỏ lấy role vì hiện tại sidebar hiển thị full cho mọi người
+  // const { user } = useAuth();
+  // const role = user?.role;
 
-  // Định nghĩa menu gốc
   const baseMenu = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/" },
     { icon: BookOpen, label: "Đào tạo", path: "/training" },
@@ -25,32 +27,26 @@ export default function Sidebar() {
     },
   ];
 
-  // Lọc menu theo Role
+  // Lọc menu (Logic hiện tại là cho phép tất cả, nên chỉ map đơn giản)
   const filteredMenu = baseMenu.map(item => {
-    // 1. Xử lý quyền truy cập cấp cao (Item cha)
-    // LEAD và HR không được vào Đào tạo
+    // 1. Module Đào tạo: Giữ nguyên (hiện cho tất cả)
     if (item.path === "/training") {
-      if (role === "LEAD" || role === "HR") return null;
+      return item;
     }
 
-    // 2. Xử lý Submenu (Tuyển dụng)
+    // 2. Submenu Tuyển dụng
     if (item.submenu) {
-      const newSub = item.submenu.filter(sub => {
-        // HR: Ẩn "Nhu cầu nhân sự"
-        if (role === "HR" && sub.path === "/recruitment/needs") return false;
-        // LEAD: Ẩn "Quản lý ứng viên"
-        if (role === "LEAD" && sub.path === "/recruitment/candidates") return false;
-        return true;
-      });
-      // Nếu lọc xong mà rỗng thì ẩn luôn item cha, ngược lại cập nhật submenu mới
+      // ❌ Bỏ hàm filter(sub => true) gây lỗi 'sub is defined but never used'
+      // Vì không lọc gì cả nên lấy trực tiếp item.submenu
+      const newSub = item.submenu;
+      
       if (newSub.length === 0) return null;
       return { ...item, submenu: newSub };
     }
 
     return item;
-  }).filter(Boolean); // Loại bỏ các item null
+  }).filter(Boolean);
 
-  // ... (Giữ nguyên phần logic useEffect và toggleSubmenu)
   useEffect(() => {
     const activeMenu = filteredMenu.find(
       (item) => item.submenu && location.pathname.startsWith(item.path)
@@ -58,7 +54,7 @@ export default function Sidebar() {
     if (activeMenu) {
       setOpenSubmenu(activeMenu.label);
     }
-  }, [location.pathname, filteredMenu]); // Thêm dependency filteredMenu
+  }, [location.pathname, filteredMenu]);
 
   const toggleSubmenu = (label) => {
     setOpenSubmenu(openSubmenu === label ? null : label);
@@ -66,7 +62,6 @@ export default function Sidebar() {
 
   return (
     <aside className="sidebar">
-      {/* ... (Giữ nguyên phần Logo) ... */}
       <div className="sidebar__logo">
         <div className="brand">
           <div className="brand__mark"><span>LMS</span></div>

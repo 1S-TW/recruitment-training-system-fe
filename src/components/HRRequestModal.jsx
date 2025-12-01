@@ -25,7 +25,7 @@ export default function HRRequestModal({
 
   const navigate = useNavigate();
   const { user } = useAuth(); // ✅ Lấy thông tin user
-  const role = user?.role; // ✅ Lấy role
+  const role = user?.role;    // ✅ Lấy role
 
   const handleGoToPlanPage = useCallback(() => {
     const planName = planMeta?.planName || "";
@@ -925,10 +925,10 @@ export default function HRRequestModal({
   const disableActions = loading || !isNew;
   const hasNote = note && note.trim().length > 0;
 
-  // ✅ LOGIC MỚI: Chỉ hiển thị nút duyệt/từ chối nếu role là Admin hoặc QLDT (LEAD bị ẩn)
+  // ✅ LOGIC CHUẨN: Chỉ Admin hoặc HR mới được Duyệt/Từ chối.
   const showActionButtons = 
     request?.status === "NEW" && 
-    (role === "SUPER_ADMIN" || role === "QLDT");
+    (role === "SUPER_ADMIN" || role === "HR");
 
   return (
     <>
@@ -1097,7 +1097,7 @@ export default function HRRequestModal({
             <div className="hrmodal-footer">
               <div className="footer-left" />
               <div className="footer-actions">
-                {/* ✅ CHỈ RENDER NẾU LÀ ADMIN HOẶC QLDT (LEAD BỊ ẨN) */}
+                {/* ✅ CHỈ RENDER NẾU LÀ ADMIN HOẶC HR (LEAD & QLDT BỊ ẨN) */}
                 {showActionButtons && (
                   <>
                     <button
