@@ -1,131 +1,156 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form, Spinner as BootstrapSpinner, Alert } from 'react-bootstrap';
 import { assignRole } from '../../services/adminService';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
+import Modal from '../Modal'; 
+import "../../styles/editmodal.css"; 
 
-/**
- * Props:
- * - show: (boolean) Hiển thị modal hay không
- * - handleClose: (function) Hàm để đóng modal
- * - user: (object) Đối tượng user đang được sửa
- * - availableRoles: (string[]) Mảng các role (['SUPER_ADMIN', 'HR', ...])
- * - onSaveSuccess: (function) Hàm callback khi lưu thành công
- */
 const EditUserModal = ({ show, handleClose, user, availableRoles, onSaveSuccess }) => {
-  // Lấy user admin hiện tại từ context, để check xem có đang tự sửa mình không
-  const { user: adminUser } = useAuth();
-  const { showNotification } = useNotification();
+  const [selectedRole, setSelectedRole] = useState(user?.currentRoleName || '');
   
-  // State nội bộ của modal
-  const [selectedRole, setSelectedRole] = useState('');
+  // ✅ Fix: Đảm bảo luôn là boolean, tránh undefined
+  const [status, setStatus] = useState(user?.status ?? true);
+  
   const [loading, setLoading] = useState(false);
-  const [apiError, setApiError] = useState(null);
+  const [localError, setLocalError] = useState(null);
+  
+  const { showNotification } = useNotification();
+  const { user: adminUser } = useAuth();
 
-  // Yêu cầu (chỉn chu): Khi mở modal (hoặc user thay đổi),
-  // state `selectedRole` phải được cập nhật theo user đó.
+  // ✅ Fix: Khi prop 'user' thay đổi, cập nhật lại state an toàn
   useEffect(() => {
     if (user) {
-      setSelectedRole(user.currentRoleName || ''); // Nếu user chưa có role, gán là chuỗi rỗng
+      setSelectedRole(user.currentRoleName || '');
+      // Nếu user.status là null/undefined thì mặc định là true
+      setStatus(user.status ?? true); 
+      setLocalError(null);
     }
-    setApiError(null); // Xóa lỗi cũ (nếu có)
-  }, [user]); // Chạy lại mỗi khi 'user' (prop) thay đổi
+  }, [user]);
 
-  // Hàm xử lý khi nhấn nút "Lưu thay đổi"
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (adminUser && adminUser.email === user.email) {
+       setLocalError('Bạn không thể tự thay đổi quyền của chính mình.');
+       return;
+    }
+    
+    // Kiểm tra xem có thay đổi gì không
+    if (selectedRole === (user.currentRoleName || '') && status === user.status) {
+      handleClose();
+      return;
+    }
+
     setLoading(true);
-    setApiError(null);
-    
-    // Kiểm tra xem có đang tự sửa role của chính mình không
-    if (adminUser.email === user.email) {
-      setApiError('Bạn không thể tự thay đổi role của chính mình.');
-      setLoading(false);
-      return;
-    }
-    
-    // Kiểm tra xem role có thực sự thay đổi không
-    const originalRole = user.currentRoleName || '';
-    if (selectedRole === originalRole) {
-      handleClose(); // Nếu không đổi gì, chỉ cần đóng lại
-      setLoading(false);
-      return;
-    }
+    setLocalError(null);
 
     try {
-      // Gọi API: PUT /api/admin/users/{userId}/role
-      await assignRole(user.id, selectedRole);
+      await assignRole(user.id, selectedRole, status);
       
-      showNotification('Cập nhật role thành công!', 'success');
+      showNotification('Cập nhật thành công!', 'success');
       
-      // Báo cho component cha (UserManagement) biết là đã lưu
-      // để cập nhật lại bảng mà không cần reload
-      onSaveSuccess({ ...user, currentRoleName: selectedRole });
-
+      onSaveSuccess({ 
+        ...user, 
+        currentRoleName: selectedRole, 
+        status: status 
+      });
     } catch (err) {
-      const errorMsg = err.response?.data?.message || 'Lỗi khi cập nhật role';
-      setApiError(errorMsg);
+      const msg = err.response?.data?.message || err.message || "Có lỗi xảy ra";
+      setLocalError(msg);
     } finally {
       setLoading(false);
     }
   };
   
-  // Kiểm tra an toàn, nếu không có user thì không render gì
-  if (!user) return null;
+  if (!show || !user) return null;
 
   return (
-    <Modal show={show} onHide={handleClose} centered>
-      <Modal.Header closeButton>
-        <Modal.Title>Chỉnh sửa Role</Modal.Title>
-      </Modal.Header>
-      
-      <Modal.Body>
-        {/* Hiển thị lỗi API nếu có */}
-        {apiError && <Alert variant="danger">{apiError}</Alert>}
+    <Modal 
+      title="Chỉnh sửa tài khoản" 
+      onClose={handleClose} 
+      width={500}
+    >
+      <form onSubmit={handleSubmit} className="modal-form-custom">
+        
+        {localError && (
+          <div className="error-alert">
+            {localError}
+          </div>
+        )}
 
-        <Form>
-          {/* Yêu cầu: Các trường này ở chế độ "chỉ đọc" */}
-          <Form.Group className="mb-3" controlId="formFullName">
-            <Form.Label>Họ và Tên</Form.Label>
-            <Form.Control type="text" value={user.fullName} readOnly disabled />
-          </Form.Group>
+        <div className="form-group">
+          <label className="form-label">Họ và tên</label>
+          <input 
+            type="text" 
+            className="input-style" 
+            value={user.fullName || ''} 
+            readOnly 
+            disabled 
+          />
+        </div>
 
-          <Form.Group className="mb-3" controlId="formEmail">
-            <Form.Label>Email</Form.Label>
-            <Form.Control type="email" value={user.email} readOnly disabled />
-          </Form.Group>
+        <div className="form-group">
+          <label className="form-label">Email</label>
+          <input 
+            type="text" 
+            className="input-style" 
+            value={user.email || ''} 
+            readOnly 
+            disabled 
+          />
+        </div>
 
-          {/* Yêu cầu: Dropdown để chọn Role */}
-          <Form.Group className="mb-3" controlId="formRole">
-            <Form.Label>Phân Quyền (Role)</Form.Label>
-            <Form.Select 
-              value={selectedRole} 
-              onChange={(e) => setSelectedRole(e.target.value)}
-              // Vô hiệu hóa nếu user đang tự sửa mình
-              disabled={adminUser.email === user.email} 
-            >
-              <option value="">-- Chưa gán Role --</option>
-              {availableRoles.map(role => (
-                <option key={role} value={role}>
-                  {role}
-                </option>
-              ))}
-            </Form.Select>
-          </Form.Group>
-        </Form>
-      </Modal.Body>
+        <div className="form-group">
+          <label className="form-label">Vai trò (Role) <span style={{color: '#ef4444'}}>*</span></label>
+          <select
+            className="input-style"
+            value={selectedRole}
+            onChange={(e) => setSelectedRole(e.target.value)}
+            disabled={loading}
+          >
+            <option value="">-- Chưa gán Role --</option>
+            {availableRoles.map(role => (
+              <option key={role} value={role}>
+                {role}
+              </option>
+            ))}
+          </select>
+        </div>
 
-      <Modal.Footer>
-        <Button variant="secondary" onClick={handleClose} disabled={loading}>
-          Hủy
-        </Button>
-        <Button 
-          variant="primary" 
-          onClick={handleSubmit} 
-          disabled={loading || (adminUser.email === user.email)}
-        >
-          {loading ? <BootstrapSpinner as="span" animation="border" size="sm" /> : 'Lưu thay đổi'}
-        </Button>
-      </Modal.Footer>
+        <div className="form-group">
+          <label className="form-label">Trạng thái hoạt động</label>
+          <select
+            className="input-style"
+            // ✅ Fix quan trọng: Dùng String(status) an toàn hơn .toString()
+            value={String(status)} 
+            onChange={(e) => setStatus(e.target.value === 'true')}
+            disabled={loading}
+          >
+            <option value="true">Hoạt động</option>
+            <option value="false">Đã khóa</option>
+          </select>
+        </div>
+
+        <div className="modal-footer">
+          <button 
+            type="button" 
+            className="modal-btn btn-secondary" 
+            onClick={handleClose} 
+            disabled={loading}
+          >
+            Hủy
+          </button>
+          
+          <button 
+            type="submit" 
+            className="modal-btn btn-save" 
+            disabled={loading}
+          >
+            {loading ? 'Đang lưu...' : 'Lưu thay đổi'}
+          </button>
+        </div>
+
+      </form>
     </Modal>
   );
 };

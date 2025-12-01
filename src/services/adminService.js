@@ -10,29 +10,27 @@ export const getAllUsers = async () => {
 };
 
 /**
- * Cập nhật role cho 1 user (cho Admin)
+ * Cập nhật role VÀ status cho 1 user
  * Backend API: PUT /api/admin/users/{userId}/role
  * @param {string} userId - ID của user (UUID)
- * @param {string} roleName - Role mới (ví dụ: "HR", "QLDT", hoặc "")
+ * @param {string} roleName - Role mới
+ * @param {boolean} status - Trạng thái hoạt động (true/false)
  */
-export const assignRole = async (userId, roleName) => {
-
-  // --- BẮT ĐẦU SỬA ---
-  // Nếu roleName là chuỗi rỗng "" (từ dropdown),
-  // chúng ta gán nó là `null` để backend hiểu là "xóa role".
+export const assignRole = async (userId, roleName, status) => {
   const roleToSend = roleName || null;
 
-  const response = await api.put(`/admin/users/${userId}/role`, { roleName: roleToSend });
-  // --- KẾT THÚC SỬA ---
+  // ✅ Gửi cả roleName và status xuống backend
+  const response = await api.put(`/admin/users/${userId}/role`, { 
+    roleName: roleToSend,
+    status: status 
+  });
 
-  return response.data; // Trả về "Cập nhật role thành công."
+  return response.data; 
 };
 
 /**
  * Lấy danh sách tất cả các Role có sẵn trong hệ thống
  */
 export const getAvailableRoles = async () => {
-  // Giả lập API gọi từ DataInitializer.java (Backend)
-  // Đây là 4 roles chúng ta đã định nghĩa
   return Promise.resolve(['SUPER_ADMIN', 'LEAD', 'QLDT', 'HR']);
 };

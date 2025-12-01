@@ -1,4 +1,3 @@
-// src/routes/AppRoutes.jsx
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -6,6 +5,7 @@ import { useAuth } from "../contexts/AuthContext";
 // ✅ ProtectedRoute ở cùng thư mục routes
 import ProtectedRoute from "./ProtectedRoute";
 
+// Các trang
 import LoginPage from "../pages/LoginPage";
 import Register from "../pages/Register";
 import ForgotPassword from "../pages/ForgotPassword";
@@ -16,10 +16,13 @@ import VerifyEmail from "../pages/VerifyEmail";
 import ResetPassword from "../pages/ResetPassword";
 import ForbiddenPage from "../pages/ForbiddenPage";
 
+// 👇 Import trang quản lý Admin
+import UserManagement from "../pages/admin/UserManagement";
+
 // 👇 page quản lý ứng viên
 import CandidateManagementPage from "../pages/CandidateManagementPage";
 
-// 👇 CHỈ THÊM DÒNG NÀY: page Quản lý đào tạo
+// 👇 page Quản lý đào tạo
 import TrainingManagementPage from "../pages/TrainingManagementPage";
 
 /**
@@ -41,7 +44,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       {/* ======================= */}
-      {/*   ROUTE DÀNH CHO KHÁCH  */}
+      {/* ROUTE DÀNH CHO KHÁCH  */}
       {/* ======================= */}
       <Route
         path="/login"
@@ -86,7 +89,7 @@ const AppRoutes = () => {
       <Route path="/forbidden" element={<ForbiddenPage />} />
 
       {/* ======================= */}
-      {/*   ROUTE CẦN ĐĂNG NHẬP   */}
+      {/* ROUTE CẦN ĐĂNG NHẬP   */}
       {/* ======================= */}
 
       {/* Trang Dashboard/Home */}
@@ -139,8 +142,22 @@ const AppRoutes = () => {
         }
       />
 
+      {/* 👇 ROUTE ADMIN: QUẢN LÝ TÀI KHOẢN (Chỉ SUPER_ADMIN) */}
+      {/* Quan trọng: Phải có dòng này thì mới vào được trang UserManagement */}
+      <Route
+        path="/admin/users"
+        element={
+          <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
+            <UserManagement />
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Redirect tiện ích: gõ /admin tự nhảy về /admin/users */}
+      <Route path="/admin" element={<Navigate to="/admin/users" replace />} />
+
       {/* ======================= */}
-      {/*   ROUTE MẶC ĐỊNH        */}
+      {/* ROUTE MẶC ĐỊNH        */}
       {/* ======================= */}
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

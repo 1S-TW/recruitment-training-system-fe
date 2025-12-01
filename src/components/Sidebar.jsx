@@ -1,19 +1,28 @@
 // src/components/Sidebar.jsx
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, BookOpen, Users } from "lucide-react";
+import { LayoutDashboard, BookOpen, Users, UserCog } from "lucide-react"; // ✅ Thêm icon UserCog
 import { useState, useEffect } from "react";
-// import { useAuth } from "../contexts/AuthContext"; // ❌ Bỏ dòng này nếu không dùng user
+import { useAuth } from "../contexts/AuthContext"; // ✅ Bật lại AuthContext để check quyền
 
 export default function Sidebar() {
   const location = useLocation();
   const [openSubmenu, setOpenSubmenu] = useState(null);
   
-  // ❌ Bỏ lấy role vì hiện tại sidebar hiển thị full cho mọi người
-  // const { user } = useAuth();
-  // const role = user?.role;
+  // ✅ Lấy role của user đang đăng nhập
+  const { user } = useAuth();
+  const role = user?.role;
 
   const baseMenu = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+    
+    // 👇 MỤC MỚI: QUẢN LÝ TÀI KHOẢN (Chỉ SUPER_ADMIN thấy)
+    { 
+      icon: UserCog, 
+      label: "Quản lý tài khoản", 
+      path: "/admin/users",
+      requiredRole: "SUPER_ADMIN" 
+    },
+
     { icon: BookOpen, label: "Đào tạo", path: "/training" },
     {
       icon: Users,
@@ -27,25 +36,21 @@ export default function Sidebar() {
     },
   ];
 
-  // Lọc menu (Logic hiện tại là cho phép tất cả, nên chỉ map đơn giản)
+  // Lọc menu dựa trên Role
   const filteredMenu = baseMenu.map(item => {
-    // 1. Module Đào tạo: Giữ nguyên (hiện cho tất cả)
-    if (item.path === "/training") {
+    // 1. Nếu menu yêu cầu role mà user không có -> ẩn đi
+    if (item.requiredRole && item.requiredRole !== role) {
+      return null;
+    }
+
+    // 2. Xử lý Submenu
+    if (item.submenu) {
+      // Giữ nguyên submenu
       return item;
     }
 
-    // 2. Submenu Tuyển dụng
-    if (item.submenu) {
-      // ❌ Bỏ hàm filter(sub => true) gây lỗi 'sub is defined but never used'
-      // Vì không lọc gì cả nên lấy trực tiếp item.submenu
-      const newSub = item.submenu;
-      
-      if (newSub.length === 0) return null;
-      return { ...item, submenu: newSub };
-    }
-
     return item;
-  }).filter(Boolean);
+  }).filter(Boolean); // Loại bỏ các item null
 
   useEffect(() => {
     const activeMenu = filteredMenu.find(
