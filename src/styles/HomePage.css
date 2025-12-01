@@ -140,3 +140,67 @@
     border: 1px dashed #e5e7eb;
     color: #6b7280;
 }
+
+/* ⭐️ THÊM MỚI: STYLE CHO FILTER SUMMARY */
+.filter-summary {
+    padding: 15px;
+    background-color: #f0f4ff; /* Nền xanh nhạt */
+    border-radius: 8px;
+    border: 1px solid #c7d2fe;
+    color: #1e3a8a;
+    margin-bottom: 20px;
+}
+.filter-summary p {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* ⭐️ THÊM MỚI: Lưới Chỉ số (Dùng CSS Grid) */
+.metrics-grid {
+    display: grid;
+    /* Dùng auto-fit và minmax để tự động chia cột và responsive */
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.metric-card {
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s;
+}
+
+.metric-card:hover {
+    transform: translateY(-3px); /* Hiệu ứng nhấc lên khi rê chuột */
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* ⭐️ THÊM MỚI: Định kiểu nội dung trong Card */
+.metric-label {
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+}
+.metric-label .icon {
+    margin-right: 8px;
+    font-size: 18px;
+}
+
+.metric-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.metric-unit {
+    font-size: 16px;
+    font-weight: 500;
+    color: #4b5563;
+    margin-left: 5px;
+}

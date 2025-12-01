@@ -51,6 +51,16 @@ function HomePage() {
   const isQuarterDisabled = activeFilter === 'Theo tháng' || activeFilter === 'Theo năm' || activeFilter === 'Tất cả';
   const isYearDisabled = activeFilter === 'Tất cả';
   
+  // ⭐️ THÊM MỚI: Danh sách tiêu đề và biểu tượng cho các chỉ số
+const metricLabels = [
+  { label: "Số thực tập sinh nhập học", icon: "🧑‍💻" },
+  { label: "Số thực tập sinh tốt nghiệp", icon: "🎓" },
+  { label: "Số thực tập sinh Fail", icon: "❌" },
+  { label: "Tỷ lệ Pass/Fail", icon: "📊" },
+  { label: "Số thực tập sinh đang thực tập", icon: "💼" },
+  { label: "Số thực tập sinh nghỉ thực tập", icon: "🚪" },
+  { label: "Điểm tốt nghiệp trung bình", icon: "⭐" },
+];
 
   return (
      <Layout>
@@ -153,14 +163,40 @@ function HomePage() {
                 
               </div> {/* /filter-options */}
 
-              {/* KHUNG HIỂN THỊ KẾT QUẢ ĐÀO TẠO (Dashboard chính sẽ ở đây) */}
-              <div className="metrics-display">
-                <p> 
-                  {selectedMonth > 0 && <span> Tháng {selectedMonth} </span>}
-                  {selectedQuarter > 0 && <span> Quý {selectedQuarter} </span>}
-                  {selectedYear > 0 && <span> Năm {selectedYear} </span>}
+             {/* KHUNG TÓM TẮT BỘ LỌC */}
+              <div className="filter-summary">
+                
+                <p style={{ fontWeight: 'bold' }}>
+                    {activeFilter === 'Theo tháng' && selectedMonth > 0 && <span>Đang lọc theo: Tháng {selectedMonth} Năm {selectedYear}</span>}
+                    {activeFilter === 'Theo quý' && selectedQuarter > 0 && <span>Đang lọc theo: Quý {selectedQuarter} Năm {selectedYear}</span>}
+                    {activeFilter === 'Theo năm' && <span>Đang lọc theo: Năm {selectedYear}</span>}
+                    {activeFilter === 'Tất cả' && <span>Tất cả dữ liệu</span>}
+                    
+                    {/* Thông báo nếu chưa chọn tháng/quý */}
+                    {((activeFilter === 'Theo tháng' && selectedMonth === 0) || (activeFilter === 'Theo quý' && selectedQuarter === 0)) && <span>Vui lòng chọn giá trị lọc.</span>}
                 </p>
               </div>
+              
+              {/* KHUNG HIỂN THỊ CÁC CHỈ SỐ KPI (metrics-grid) */}
+              <div className="metrics-grid">
+                  {metricLabels.map((metric, index) => (
+                      <div key={index} className="metric-card">
+                          <span className="metric-label">
+                            <span className="icon">{metric.icon}</span> 
+                            {metric.label}
+                          </span>
+                          <div className="metric-value-wrapper">
+                              {/* PLACEHOLDER */}
+                              <span className="metric-value">--</span>
+                              <span className="metric-unit">/ --</span>
+                          </div>
+                      </div>
+                  ))}
+                  {/* Thêm một card rỗng để lấp đầy khoảng trống (nếu số lượng lẻ) */}
+                  {metricLabels.length % 2 !== 0 && (
+                      <div className="metric-card" style={{ visibility: 'hidden' }}></div>
+                  )}
+            </div>
               
             </div>
           )} {/* /Conditional Rendering */}
