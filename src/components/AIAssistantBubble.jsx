@@ -2,33 +2,19 @@
 import React, { useEffect, useState } from "react";
 import api from "../services/api";
 import "../styles/ai-assistant.css";
+import assistantAvatar from "../assets/tro-ly-phuc.png";
 
 export default function AIAssistantBubble({ trainings = [], planOptions = [] }) {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // messages: hỗ trợ cả text thường và message dạng "overview" (bảng)
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      sender: "ai",
-      type: "text",
-      text:
-        "Xin chào 👋 Mình là trợ lý AI của hệ thống đào tạo. Bạn có thể hỏi:\n" +
-        "- Số lượng thực tập sinh hiện tại là bao nhiêu?\n" +
-        "- Có bao nhiêu TTS đang thực tập?\n" +
-        "- Kết quả PASS/FAIL theo kế hoạch?...\n" +
-        "- Tiến độ TTS theo từng môn Git, OOP, SQL, Web, Java...",
-    },
-  ]);
+  const [messages, setMessages] = useState([]);
 
-  // để chỉ auto khởi tạo 1 lần
   const [hasInitOverview, setHasInitOverview] = useState(false);
 
   const toggleOpen = () => setIsOpen((prev) => !prev);
 
-  // ====== Helper: lấy tên kế hoạch theo planId từ planOptions ======
   const getPlanNameById = (planId) => {
     if (!planId) return null;
     const p = (planOptions || []).find(
@@ -38,9 +24,6 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
     return p?.name || p?.planName || `Kế hoạch #${planId}`;
   };
 
-  // ====== Chuỗi môn học & số ngày tích lũy chuẩn ======
-  // Tổng 22 ngày:
-  // Git: 2; OOP: 7; SQL: 10; Web: 15; Java: 22
   const COURSE_SEQUENCE = [
     { name: "Git & GitHub", cumulativeDays: 2 },
     { name: "Lập trình hướng đối tượng (OOP)", cumulativeDays: 7 },
@@ -49,54 +32,33 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
     { name: "Java Core & Spring Boot", cumulativeDays: 22 },
   ];
 
-  // ====== Helper: xác định môn hiện tại & nhịp độ (NHANH/ĐÚNG/CHẬM) cho 1 TTS ======
   const getProgressPhase = (training) => {
-    const trainingDaysRaw =
+    const trainingDays = Number(
       training.trainingDays ??
-      training.soNgayThucTap ??
-      training.soNgayTT ??
-      null;
-    const trainingDays =
-      trainingDaysRaw != null ? Number(trainingDaysRaw) : null;
-    if (trainingDays == null || Number.isNaN(trainingDays)) {
-      return null;
-    }
+        training.soNgayThucTap ??
+        training.soNgayTT ??
+        null
+    );
+
+    if (!trainingDays || Number.isNaN(trainingDays)) return null;
 
     const scores = Array.isArray(training.scores) ? training.scores : [];
 
-    // Tìm môn cao nhất đã hoàn thành (đủ 3 đầu điểm)
     let lastCompletedIndex = -1;
-
-    COURSE_SEQUENCE.forEach((course, index) => {
-      const s = scores.find(
-        (sc) => sc.courseName && sc.courseName.trim() === course.name
-      );
-      if (
-        s &&
-        s.theoryScore != null &&
-        s.practiceScore != null &&
-        s.attitudeScore != null
-      ) {
-        lastCompletedIndex = index;
-      }
+    COURSE_SEQUENCE.forEach((c, idx) => {
+      const s = scores.find((sc) => sc.courseName === c.name);
+      if (s?.theoryScore && s?.practiceScore && s?.attitudeScore)
+        lastCompletedIndex = idx;
     });
 
-    // Nếu chưa có môn nào đủ 3 đầu điểm => chưa đánh giá tiến độ
-    if (lastCompletedIndex === -1) {
-      return null;
-    }
+    if (lastCompletedIndex === -1) return null;
 
     const currentCourse = COURSE_SEQUENCE[lastCompletedIndex];
     const targetDays = currentCourse.cumulativeDays;
 
-    let status;
-    if (trainingDays > targetDays) {
-      status = "CHẬM";
-    } else if (trainingDays === targetDays) {
-      status = "ĐÚNG TIẾN ĐỘ";
-    } else {
-      status = "NHANH";
-    }
+    let status = "ĐÚNG TIẾN ĐỘ";
+    if (trainingDays > targetDays) status = "CHẬM";
+    if (trainingDays < targetDays) status = "NHANH";
 
     return {
       trainingDays,
@@ -105,9 +67,8 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
     };
   };
 
-  // ====== Tính danh sách TTS chậm tiến độ theo từng kế hoạch ======
   const buildDelayOverviewByPlan = () => {
-    if (!Array.isArray(trainings) || trainings.length === 0) return [];
+    if (!trainings || trainings.length === 0) return [];
 
     const byPlan = {};
 
@@ -121,9 +82,7 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
       if (!planId) return;
 
       const phase = getProgressPhase(t);
-      if (!phase) return; // không đánh giá được
-
-      if (phase.status !== "CHẬM") return; // chỉ lấy các bạn chậm tiến độ
+      if (!phase || phase.status !== "CHẬM") return;
 
       const internName =
         t.traineeName || t.fullName || t.name || "Không rõ tên";
@@ -146,9 +105,10 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
     return Object.values(byPlan);
   };
 
-  // ====== Auto bật chat + gửi message overview dạng bảng khi có dữ liệu ======
+  // ================== TỰ BẬT POPUP VÀ HIỂN THỊ TTS CHẬM TIẾN ==================
   useEffect(() => {
     if (hasInitOverview) return;
+
     const overview = buildDelayOverviewByPlan();
     if (!overview || overview.length === 0) return;
 
@@ -159,24 +119,71 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
       intro:
         "Chào anh/chị 👋\n" +
         "Dưới đây là các kế hoạch tuyển dụng đang có thực tập sinh CHẬM TIẾN ĐỘ (so với mốc 22 ngày cho 5 môn):",
-      overview, // mảng {planId, planName, interns: [{name, currentCourseName, trainingDays}]}
+      overview,
     };
 
-    setMessages((prev) => [...prev, overviewMsg]);
-    setIsOpen(true); // auto bật cửa sổ
+    // Chèn OVERVIEW lên đầu danh sách
+    setMessages((prev) => [overviewMsg, ...prev]);
+    setIsOpen(true);
     setHasInitOverview(true);
   }, [trainings, planOptions, hasInitOverview]);
 
-  // ====== Gửi câu hỏi lên BE AI ======
+  // ================== MESSAGE CHÀO ==================
+  useEffect(() => {
+    // chỉ thêm message chào nếu hiện chưa có message nào
+    if (messages.length > 0) return;
+
+    const welcomeMsg = {
+      id: 999999,
+      sender: "ai",
+      type: "text",
+      text:
+        "Xin chào 👋 Mình là trợ lý AI của hệ thống đào tạo. Bạn có thể:\n" +
+        "1. thống kê trạng thái tts\n" +
+        "2. tổng số tts\n" +
+        "3. thống kê kết quả thực tập (PASS/FAIL)\n" +
+        "4. điểm trung bình TTS đã hoàn thành trong một kế hoạch (gõ: 4 [mã/ký tự kế hoạch], ví dụ: '4 15' hoặc '4 qq')",
+    };
+
+    setMessages([welcomeMsg]);
+  }, [messages.length]);
+
+  // ========= MAP PHÍM TẮT "1" / "2" / "3" / "4" =========
+  const resolveShortcut = (raw) => {
+    const trimmed = raw.trim();
+
+    if (trimmed === "1") return "thống kê trạng thái tts";
+    if (trimmed === "2") return "tổng số tts";
+    if (trimmed === "3")
+      return "thống kê kết quả thực tập theo PASS/FAIL";
+
+    // 4 [planId or keyword] -> tính điểm TB theo kế hoạch
+    const match4 = trimmed.match(/^4\s+(.+)$/);
+    if (match4) {
+      const key = match4[1].trim();
+      if (/^\d+$/.test(key)) {
+        // toàn số → coi là id
+        return `điểm trung bình của các thực tập sinh đã hoàn thành trong kế hoạch có id ${key}`;
+      }
+      // còn lại → coi là từ khóa trong tên kế hoạch
+      return `điểm trung bình của các thực tập sinh đã hoàn thành trong kế hoạch có từ khóa "${key}"`;
+    }
+
+    return raw; // không phải phím tắt → giữ nguyên
+  };
+
+  // ================== GỬI TIN ==================
   const handleSend = async () => {
-    const content = input.trim();
-    if (!content || loading) return;
+    const raw = input.trim();
+    if (!raw || loading) return;
+
+    const content = resolveShortcut(raw);
 
     const userMsg = {
       id: Date.now(),
       sender: "user",
       type: "text",
-      text: content,
+      text: content, // hiển thị luôn câu hỏi đã map
     };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
@@ -199,7 +206,6 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
 
       setMessages((prev) => [...prev, aiMsg]);
     } catch (err) {
-      console.error("Lỗi gọi AI:", err);
       setMessages((prev) => [
         ...prev,
         {
@@ -207,7 +213,7 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
           sender: "ai",
           type: "text",
           text:
-            "Xin lỗi, hiện tại mình không trả lời được. Bạn thử lại sau nhé.",
+            "Bé chưa hiểu câu hỏi của anh/chị ạ, anh/chị hãy ghi rõ câu hỏi hơn giúp bé với ạ ❤️",
         },
       ]);
     } finally {
@@ -222,7 +228,7 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
     }
   };
 
-  // ====== Render 1 message ======
+  // ================== RENDER MESSAGE ==================
   const renderMessage = (m) => {
     if (m.type === "delayOverview") {
       return (
@@ -240,6 +246,7 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
                   {plan.interns.length} bạn chậm tiến độ
                 </span>
               </div>
+
               <div className="ai-table-wrapper">
                 <table className="ai-table">
                   <thead>
@@ -268,7 +275,6 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
       );
     }
 
-    // message text bình thường
     return (
       <div
         key={m.id}
@@ -285,19 +291,22 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
 
   return (
     <>
-      {/* Nút tròn mở chat */}
+      {/* === Nút mở chat === */}
       <button className="ai-bubble-btn" onClick={toggleOpen}>
-        AI
+        <img src={assistantAvatar} className="ai-bubble-avatar" />
       </button>
 
-      {/* Hộp chat */}
+      {/* === Khung chat === */}
       {isOpen && (
         <div className="ai-chat-window">
           <div className="ai-chat-header">
             <div className="ai-chat-header-left">
-              <div className="ai-chat-avatar">AI</div>
+              <div className="ai-chat-avatar">
+                <img src={assistantAvatar} />
+              </div>
+
               <div>
-                <div className="ai-chat-title">Trợ lý AI</div>
+                <div className="ai-chat-title">Trợ lý Phúc</div>
                 <div className="ai-chat-subtitle">
                   Đồng hành cùng quản lý đào tạo
                 </div>
@@ -306,6 +315,7 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
                 </div>
               </div>
             </div>
+
             <button className="ai-chat-close" onClick={toggleOpen}>
               ✕
             </button>
@@ -323,7 +333,7 @@ export default function AIAssistantBubble({ trainings = [], planOptions = [] }) 
           <div className="ai-chat-input-row">
             <textarea
               className="ai-chat-input"
-              placeholder='Nhập câu hỏi… (VD: "Hãy cho tôi tiến độ của thực tập sinh có trong kế hoạch tuyển dụng cc của môn Git & GitHub")'
+              placeholder="Nhập câu hỏi…"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
