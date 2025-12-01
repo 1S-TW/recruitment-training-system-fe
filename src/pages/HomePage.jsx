@@ -65,7 +65,7 @@ const metricLabels = [
   return (
      <Layout>
       <div className="home-page">
-        <h1>Welcome to the Recruitment and Training Management System</h1>
+        <h1>Chào mừng bạn đến với trang quản trị</h1>
       
       <div className="home-page fade-slide">
 
@@ -167,8 +167,8 @@ const metricLabels = [
               <div className="filter-summary">
                 
                 <p style={{ fontWeight: 'bold' }}>
-                    {activeFilter === 'Theo tháng' && selectedMonth > 0 && <span>Đang lọc theo: Tháng {selectedMonth} Năm {selectedYear}</span>}
-                    {activeFilter === 'Theo quý' && selectedQuarter > 0 && <span>Đang lọc theo: Quý {selectedQuarter} Năm {selectedYear}</span>}
+                    {activeFilter === 'Theo tháng' && selectedMonth > 0 && <span> Tháng {selectedMonth} Năm {selectedYear}</span>}
+                    {activeFilter === 'Theo quý' && selectedQuarter > 0 && <span> Quý {selectedQuarter} Năm {selectedYear}</span>}
                     {activeFilter === 'Theo năm' && <span>Đang lọc theo: Năm {selectedYear}</span>}
                     {activeFilter === 'Tất cả' && <span>Tất cả dữ liệu</span>}
                     

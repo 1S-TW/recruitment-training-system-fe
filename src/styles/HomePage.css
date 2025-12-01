@@ -30,14 +30,14 @@
 /* Hiệu ứng HOVER cho TAB LỚN (khi chưa active) */
 .tab:hover {
   background: #e0e0e0; 
-  color: #111827;
+  color: #000102;
   transform: translateY(-2px); 
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
 }
 
 /* Trạng thái ACTIVE cho TAB LỚN */
 .tab.active {
-  background: #111827; /* Màu nền đen/xanh đậm */
+  background: #364d7e; /* Màu nền đen/xanh đậm */
   color: #ffffff;      /* Chữ trắng */
   cursor: default;     /* Không đổi con trỏ chuột khi active */
   transform: none;     /* Bỏ hiệu ứng dịch chuyển */
@@ -97,7 +97,7 @@
 
 /* Trạng thái ACTIVE cho tab nhỏ (Màu cam đậm) */
 .filter-tab.active-filter {
-  background-color: #f59e0b; /* Màu cam đậm */
+  background-color: #e49c1f; /* Màu cam đậm */
   color: #ffffff;            /* Chữ trắng */
   cursor: default;
 }
@@ -143,12 +143,13 @@
 
 /* ⭐️ THÊM MỚI: STYLE CHO FILTER SUMMARY */
 .filter-summary {
-    padding: 15px;
-    background-color: #f0f4ff; /* Nền xanh nhạt */
-    border-radius: 8px;
-    border: 1px solid #c7d2fe;
-    color: #1e3a8a;
-    margin-bottom: 20px;
+    padding: 15px; 
+    background-color: #f0f4ff; 
+    border-radius: 8px; 
+    border: 1px solid #c7d2fe; 
+    color: #1e3a8a; 
+    margin-bottom: 20px; 
+    display: inline-block; 
 }
 .filter-summary p {
     margin: 0;
@@ -204,3 +205,4 @@
     color: #4b5563;
     margin-left: 5px;
 }
+
