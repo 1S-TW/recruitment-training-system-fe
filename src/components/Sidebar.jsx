@@ -1,8 +1,8 @@
 // src/components/Sidebar.jsx
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, BookOpen, Users, UserCog } from "lucide-react"; // ✅ Thêm icon UserCog
+import { LayoutDashboard, BookOpen, Users, UserCog, Book } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useAuth } from "../contexts/AuthContext"; // ✅ Bật lại AuthContext để check quyền
+import { useAuth } from "../contexts/AuthContext";
 
 export default function Sidebar() {
   const location = useLocation();
@@ -14,8 +14,16 @@ export default function Sidebar() {
 
   const baseMenu = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+
+    // 👇 CẬP NHẬT: Cho phép cả SUPER_ADMIN và QLDT truy cập
+    { 
+      icon: Book, 
+      label: "Quản lý môn học", 
+      path: "/admin/courses", 
+      requiredRole: ["SUPER_ADMIN", "QLDT"] // ✅ Sử dụng mảng role
+    },
     
-    // 👇 MỤC MỚI: QUẢN LÝ TÀI KHOẢN (Chỉ SUPER_ADMIN thấy)
+    // 👇 Mục này vẫn chỉ dành cho ADMIN
     { 
       icon: UserCog, 
       label: "Quản lý tài khoản", 
@@ -38,14 +46,20 @@ export default function Sidebar() {
 
   // Lọc menu dựa trên Role
   const filteredMenu = baseMenu.map(item => {
-    // 1. Nếu menu yêu cầu role mà user không có -> ẩn đi
-    if (item.requiredRole && item.requiredRole !== role) {
-      return null;
+    // 1. Cập nhật logic: Hỗ trợ requiredRole là Mảng hoặc Chuỗi đơn
+    if (item.requiredRole) {
+      const allowedRoles = Array.isArray(item.requiredRole) 
+        ? item.requiredRole 
+        : [item.requiredRole];
+      
+      // Nếu role hiện tại KHÔNG nằm trong danh sách cho phép -> ẩn
+      if (!allowedRoles.includes(role)) {
+        return null;
+      }
     }
 
-    // 2. Xử lý Submenu
+    // 2. Giữ nguyên submenu
     if (item.submenu) {
-      // Giữ nguyên submenu
       return item;
     }
 

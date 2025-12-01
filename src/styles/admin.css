@@ -709,4 +709,64 @@ margin-bottom: 20px; /* đẩy nút lên trên */
   align-items: center;
   position: relative;
 }
+/* ===================== COURSE TABLE CUSTOMIZATION ===================== */
 
+/* Tinh chỉnh bảng Môn học: Tối ưu không gian cho cột Mô tả */
+.styled-table.course-table {
+  table-layout: fixed; /* Cố định khung để tính toán width chính xác */
+}
+
+/* 1. STT: Nhỏ gọn hết mức */
+.styled-table.course-table th:nth-child(1), 
+.styled-table.course-table td:nth-child(1) {
+  width: 50px; 
+  text-align: center;
+}
+
+/* 2. Tên môn học: Vừa đủ hiển thị */
+.styled-table.course-table th:nth-child(2), 
+.styled-table.course-table td:nth-child(2) {
+  width: 180px; 
+  text-align: left;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* 3. Số ngày học: Thu hẹp lại, nhường đất cho Mô tả */
+.styled-table.course-table th:nth-child(3), 
+.styled-table.course-table td:nth-child(3) {
+  width: 110px;
+  text-align: center;
+}
+
+/* 4. MÔ TẢ: QUAN TRỌNG NHẤT */
+.styled-table.course-table th:nth-child(4), 
+.styled-table.course-table td:nth-child(4) {
+  width: 50%; /* Chiếm toàn bộ không gian còn lại */
+  text-align: center !important; /* Căn trái bắt buộc để dễ đọc */
+  vertical-align: middle; /* Căn trên để đẹp hơn khi nội dung dài */
+  white-space: normal; /* Cho phép xuống dòng tự nhiên */
+  padding: 12px 16px; /* Tăng khoảng cách cho thoáng mắt */
+  line-height: 1.5; /* Giãn dòng giúp chữ không bị díu */
+  color: #374151;
+}
+
+/* 5. Hành động: Đủ rộng cho 2 nút nằm ngang */
+.styled-table.course-table th:nth-child(5), 
+.styled-table.course-table td:nth-child(5) {
+  width: 130px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Style riêng cho nút Xóa màu đỏ nhạt (nếu chưa có) */
+.btn-reject-red {
+  color: #ef4444;
+  background-color: #fee2e2;
+  transition: all 0.2s;
+}
+.btn-reject-red:hover {
+  background-color: #fecaca;
+  color: #dc2626;
+  transform: translateY(-1px);
+}

@@ -16,15 +16,11 @@ import VerifyEmail from "../pages/VerifyEmail";
 import ResetPassword from "../pages/ResetPassword";
 import ForbiddenPage from "../pages/ForbiddenPage";
 
-// 👇 Import trang quản lý Admin
+
 import UserManagement from "../pages/admin/UserManagement";
-
-// 👇 page quản lý ứng viên
 import CandidateManagementPage from "../pages/CandidateManagementPage";
-
-// 👇 page Quản lý đào tạo
 import TrainingManagementPage from "../pages/TrainingManagementPage";
-
+import CourseManagement from "../pages/admin/CourseManagement";
 /**
  * Route dành cho khách (chưa login).
  * Nếu đã đăng nhập thì redirect ra ngoài (về trang chính).
@@ -152,7 +148,14 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-      
+      <Route
+  path="/admin/courses"
+  element={
+    <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'QLDT']}>
+      <CourseManagement />
+    </ProtectedRoute>
+  }
+/>
       {/* Redirect tiện ích: gõ /admin tự nhảy về /admin/users */}
       <Route path="/admin" element={<Navigate to="/admin/users" replace />} />
 
