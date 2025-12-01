@@ -1,35 +1,72 @@
 // src/pages/CandidateManagementPage.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import api from "../services/api"; // Dùng axios instance chung
-
-import AddCandidateModal from "../components/AddCandidateModal";
-import AddResultModal from "../components/AddResultModal";
+import api from "../services/api";
 
 import Layout from "../components/Layout";
 import Pagination from "../components/Pagination";
 import ActionButtons from "../components/ActionButtons.jsx";
+import AddCandidateModal from "../components/AddCandidateModal";
+import AddResultModal from "../components/AddResultModal";
 
+import { HiUserGroup } from "react-icons/hi";
+import { FiSearch } from "react-icons/fi";
 import "../styles/request.css";
 import "../styles/toast.css";
 import "../styles/CandidateManagementPage.css";
-import { HiUserGroup } from "react-icons/hi";
-import { FiSearch } from "react-icons/fi";
+
+// --- STATUS HELPER ---
+const getStatusClass = (status) => {
+  switch (status) {
+    case "Chưa có kết quả":
+      return "status-none";
+    case "Đã có kết quả":
+      return "status-done";
+    case "Không nhận việc":
+      return "status-refuse";
+    case "Đã gửi mail cảm ơn":
+      return "status-mail";
+    case "Đã nhận việc":
+      return "status-accept";
+    case "Đã thông báo thời gian TT":
+      return "status-inform";
+    default:
+      return "status-none";
+  }
+};
+
 export default function CandidateManagementPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [candidates, setCandidates] = useState([]);
+  const [planOptions, setPlanOptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [planOptions, setPlanOptions] = useState([]);
 
-  const [prefilledPlan, setPrefilledPlan] = useState(null);
+  // --- FILTER + PAGINATION STATE ---
+  const [searchInput, setSearchInput] = useState(searchParams.get("name") || "");
+  const [searchTerm, setSearchTerm] = useState(searchParams.get("name") || "");
+  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "");
+  const [planFilter, setPlanFilter] = useState(searchParams.get("plan") || "");
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(Number(searchParams.get("page")) || 1);
+  const [isAnimating, setIsAnimating] = useState(false);
 
-  const [searchParams] = useSearchParams();
-
-  // --- State cho 2 Modal ---
+  // --- MODAL STATE ---
+  const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedCandidate, setSelectedCandidate] = useState(null);
+  const [isViewOnly, setIsViewOnly] = useState(false);
 
+  // --- TOAST ---
+  const [toast, setToast] = useState(null);
+  const showToast = (msg, type = "success") => {
+    setToast({ msg, type });
+    window.clearTimeout(showToast._t);
+    showToast._t = window.setTimeout(() => setToast(null), 2500);
+  };
+
+  // --- FETCH DATA ---
   const fetchCandidates = async () => {
     setLoading(true);
     setError(null);
@@ -45,114 +82,87 @@ export default function CandidateManagementPage() {
     }
   };
 
-  const fetchConfirmedPlans = async () => {
+  const fetchPlans = async () => {
     try {
       const res = await api.get("/recruitment-plans/approved");
       setPlanOptions(Array.isArray(res.data) ? res.data : []);
     } catch (e) {
-      console.error("Lỗi tải kế hoạch tuyển dụng CONFIRMED:", e);
+      console.error("Lỗi tải kế hoạch tuyển dụng:", e);
       setPlanOptions([]);
     }
   };
 
   useEffect(() => {
     fetchCandidates();
-    fetchConfirmedPlans();
+    fetchPlans();
   }, []);
 
+  // --- SYNC URL PARAMS WHEN PAGE LOAD ---
   useEffect(() => {
-    const planId = searchParams.get("planId");
-    const planName = searchParams.get("planName");
+    setSearchInput(searchParams.get("name") || "");
+    setSearchTerm(searchParams.get("name") || "");
+    setStatusFilter(searchParams.get("status") || "");
+    setPlanFilter(searchParams.get("plan") || "");
+    setCurrentPage(Number(searchParams.get("page")) || 1);
+  }, []);
 
-    if (planId) {
-      setPlanFilter(planId);
-      setCurrentPage(1);
-
-      if (planName) {
-        setPrefilledPlan({ id: planId, name: planName });
-      }
-    }
-  }, [searchParams]);
-
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isAnimating, setIsAnimating] = useState(false);
-
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [planFilter, setPlanFilter] = useState("");
-
-  const normalizePlan = (raw) => {
-    const id = raw.id ?? raw.recruitmentPlanId ?? raw.planId ?? null;
-    const name = raw.name ?? raw.planName ?? raw.title ?? "Kế hoạch không tên";
-    return { id, name };
+  const updateSearchParams = ({ name, status, plan, page }) => {
+    const newParams = {
+      ...Object.fromEntries([...searchParams]),
+      ...(name !== undefined ? { name } : {}),
+      ...(status !== undefined ? { status } : {}),
+      ...(plan !== undefined ? { plan } : {}),
+      ...(page !== undefined ? { page } : {}),
+    };
+    if (!newParams.name) delete newParams.name;
+    if (!newParams.status) delete newParams.status;
+    if (!newParams.plan) delete newParams.plan;
+    if (!newParams.page) delete newParams.page;
+    setSearchParams(newParams);
   };
 
-  const planSelectOptions = useMemo(() => {
-    const normalized = planOptions
-      .map(normalizePlan)
-      .filter((plan) => plan.id !== null && plan.id !== undefined);
+  // --- DEBOUNCE SEARCH ---
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchTerm(searchInput);
+      updateSearchParams({ name: searchInput, page: 1 });
+      setCurrentPage(1);
+    }, 500);
 
-    if (
-      prefilledPlan &&
-      !normalized.some((plan) => String(plan.id) === String(prefilledPlan.id))
-    ) {
-      return [...normalized, prefilledPlan];
-    }
+    return () => clearTimeout(handler);
+  }, [searchInput]);
 
-    return normalized;
-  }, [planOptions, prefilledPlan]);
+  // --- FILTERED DATA ---
+  const filteredCandidates = useMemo(() => {
+    return (candidates || []).filter((c) => {
+      const keyword = searchTerm.trim().toLowerCase();
+      if (keyword) {
+        const name = (c.fullName || c.name || "").toLowerCase();
+        const email = (c.email || "").toLowerCase();
+        const phone = (c.phone || c.phoneNumber || "").toLowerCase();
+        if (!name.includes(keyword) && !email.includes(keyword) && !phone.includes(keyword)) return false;
+      }
+      if (statusFilter) {
+        if ((c.status || "").toLowerCase() !== statusFilter.toLowerCase()) return false;
+      }
+      if (planFilter) {
+        if (String(c.recruitmentPlanId) !== planFilter) return false;
+      }
+      return true;
+    });
+  }, [candidates, searchTerm, statusFilter, planFilter]);
 
-  // ✅ ĐÃ XÓA: State 'toast' và hàm 'showToast'
-
-  const filteredCandidates = useMemo(
-    () =>
-      (candidates || []).filter((c) => {
-        const keyword = searchTerm.trim().toLowerCase();
-        if (keyword) {
-          const name = (c.fullName || c.name || "").toLowerCase();
-          const email = (c.email || "").toLowerCase();
-          const phone = (c.phone || c.phoneNumber || "").toLowerCase();
-          if (
-            !name.includes(keyword) &&
-            !email.includes(keyword) &&
-            !phone.includes(keyword)
-          ) {
-            return false;
-          }
-        }
-        if (statusFilter) {
-          const status = (c.status || "").toLowerCase();
-          if (status !== statusFilter.toLowerCase()) return false;
-        }
-        if (planFilter) {
-          if (c.recruitmentPlanId?.toString() !== planFilter) {
-            return false;
-          }
-        }
-        return true;
-      }),
-    [candidates, searchTerm, statusFilter, planFilter]
-  );
-
-  const filteredSorted = useMemo(
-    () =>
-      [...filteredCandidates].sort((a, b) => {
-        const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return db - da;
-      }),
-    [filteredCandidates]
-  );
-
+  const filteredSorted = useMemo(() => [...filteredCandidates], [filteredCandidates]);
   const totalPages = Math.ceil(filteredSorted.length / itemsPerPage) || 1;
   const indexOfLast = currentPage * itemsPerPage;
   const indexOfFirst = indexOfLast - itemsPerPage;
   const currentCandidates = filteredSorted.slice(indexOfFirst, indexOfLast);
 
+  // --- HANDLERS ---
   const handleChangeItemsPerPage = (e) => {
     setItemsPerPage(Number(e.target.value));
     setCurrentPage(1);
+    updateSearchParams({ page: 1 });
   };
 
   const handlePageChange = (page) => {
@@ -160,78 +170,46 @@ export default function CandidateManagementPage() {
     setIsAnimating(true);
     setTimeout(() => {
       setCurrentPage(page);
+      updateSearchParams({ page });
       setIsAnimating(false);
     }, 180);
   };
 
   const handleViewCandidate = (candidate) => {
-    console.log("Xem ứng viên:", candidate);
-    // ✅ ĐÃ XÓA: showToast("Mở chi tiết ứng viên (TODO)", "success");
+    setSelectedCandidate(candidate);
+    setIsViewOnly(true);
+    setShowEditModal(true);
   };
 
   const handleEditCandidate = (candidate) => {
     setSelectedCandidate(candidate);
+    setIsViewOnly(false);
     setShowEditModal(true);
   };
 
   const handleAddSuccess = (newCandidate) => {
     setCandidates((prev) => [newCandidate, ...prev]);
-    // ✅ ĐÃ XÓA: showToast("Thêm ứng viên thành công!", "success");
+    showToast("Thêm ứng viên thành công!");
     setCurrentPage(1);
   };
 
   const handleEditSuccess = (updatedCandidate) => {
     setCandidates((prev) =>
-      prev.map((c) =>
-        c.candidateId === updatedCandidate.candidateId ? updatedCandidate : c
-      )
+      prev.map((c) => (c.candidateId === updatedCandidate.candidateId ? updatedCandidate : c))
     );
     setShowEditModal(false);
-    // ✅ ĐÃ XÓA: showToast("Chấm điểm thành công!", "success");
-  };
-  const getStatusClass = (status) => {
-    switch (status) {
-      case "Chưa có kết quả":
-        return "status-none";
-      case "Đã có kết quả":
-        return "status-done";
-      case "Không nhận việc":
-        return "status-refuse";
-      case "Đã gửi mail cảm ơn":
-        return "status-mail";
-      case "Đã nhận việc":
-        return "status-accept";
-      case "Đã thông báo thời gian TT":
-        return "status-inform";
-      default:
-        return "status-none";
-    }
+    showToast("Cập nhật ứng viên thành công!");
   };
 
   return (
     <Layout>
+      {/* BREADCRUMB */}
       <div className="breadcrumb-container fade-slide">
         <div className="breadcrumb-left">
-          <span className="breadcrumb-icon">
-            <HiUserGroup />
-          </span>
+          <span className="breadcrumb-icon"><HiUserGroup /></span>
           <span className="breadcrumb-item">Tuyển dụng</span>
           <span className="breadcrumb-separator">&gt;</span>
           <span className="breadcrumb-current">Quản lý ứng viên</span>
-        </div>
-        <div className="breadcrumb-right">
-          <div className="mini-pagination">
-            <label className="mini-pagination-label">Hiển thị:</label>
-            <select
-              value={itemsPerPage}
-              onChange={handleChangeItemsPerPage}
-              className="mini-pagination-select"
-            >
-              <option value={10}>10</option>
-              <option value={15}>15</option>
-              <option value={20}>20</option>
-            </select>
-          </div>
         </div>
       </div>
 
@@ -239,24 +217,19 @@ export default function CandidateManagementPage() {
         <div className="title-row">
           <h2 className="page-title-small">Quản lý ứng viên</h2>
           <div className="filter-bar candidate-filter-bar">
-            {/* Search */}
+            {/* SEARCH */}
             <div className="filter-item">
               <input
                 type="text"
                 className="filter-input"
                 placeholder="Tìm theo tên..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setCurrentPage(1);
-                }}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
               />
-              <span className="filter-icon">
-                <FiSearch />
-              </span>
+              <span className="filter-icon"><FiSearch /></span>
             </div>
 
-            {/* Trạng thái */}
+            {/* STATUS */}
             <div className="filter-item">
               <select
                 className="filter-select"
@@ -264,6 +237,7 @@ export default function CandidateManagementPage() {
                 onChange={(e) => {
                   setStatusFilter(e.target.value);
                   setCurrentPage(1);
+                  updateSearchParams({ status: e.target.value, page: 1 });
                 }}
               >
                 <option value="">Chọn trạng thái</option>
@@ -272,38 +246,33 @@ export default function CandidateManagementPage() {
                 <option value="Không nhận việc">Không nhận việc</option>
                 <option value="Đã gửi mail cảm ơn">Đã gửi mail cảm ơn</option>
                 <option value="Đã nhận việc">Đã nhận việc</option>
-                <option value="Đã thông báo thời gian TT">
-                  Đã thông báo thời gian TT
-                </option>
+                <option value="Đã thông báo thời gian TT">Đã thông báo thời gian TT</option>
               </select>
             </div>
 
-            {/* Kế hoạch tuyển dụng */}
-<div className="filter-item">
-  <select
-    className="filter-select candidate-plan-select"
-    value={planFilter}
-    onChange={(e) => {
-      setPlanFilter(e.target.value);
-      setCurrentPage(1);
-    }}
-  >
-    <option value="">Chọn kế hoạch tuyển dụng</option>
-    {planSelectOptions.map((plan) => (
-      <option key={plan.id} value={`${plan.id}`}>
-        {plan.name}
-      </option>
-    ))}
-  </select>
-</div>
-
-            {/* Nút Thêm ứng viên */}
-            <div className="filter-item filter-right-group">
-              <button
-                type="button"
-                className="add-plan-btn clean"
-                onClick={() => setShowAddModal(true)}
+            {/* PLAN */}
+            <div className="filter-item">
+              <select
+                className="filter-select candidate-plan-select"
+                value={planFilter}
+                onChange={(e) => {
+                  setPlanFilter(e.target.value);
+                  setCurrentPage(1);
+                  updateSearchParams({ plan: e.target.value, page: 1 });
+                }}
               >
+                <option value="">Chọn kế hoạch tuyển dụng</option>
+                {planOptions.map((plan) => (
+                  <option key={plan.id || plan.planId} value={String(plan.id ?? plan.planId)}>
+                    {plan.name ?? plan.planName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* ADD BUTTON */}
+            <div className="filter-item filter-right-group">
+              <button type="button" className="add-plan-btn clean" onClick={() => setShowAddModal(true)}>
                 ＋ Thêm ứng viên
               </button>
             </div>
@@ -311,11 +280,7 @@ export default function CandidateManagementPage() {
         </div>
 
         {/* TABLE */}
-        <div
-          className={`table-container table-fade ${
-            isAnimating ? "fade-out" : "fade-in"
-          }`}
-        >
+        <div className={`table-container table-fade ${isAnimating ? "fade-out" : "fade-in"}`}>
           {loading ? (
             <p className="loading-text">Đang tải dữ liệu...</p>
           ) : error ? (
@@ -337,39 +302,25 @@ export default function CandidateManagementPage() {
               <tbody>
                 {currentCandidates.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="text-center">
-                      Không có ứng viên phù hợp.
-                    </td>
+                    <td colSpan={8} className="text-center">Không có ứng viên phù hợp.</td>
                   </tr>
                 ) : (
-                  currentCandidates.map((c, index) => {
-                    const stt = indexOfFirst + index + 1;
-                    const name = c.fullName || "—";
-                    const email = c.email || "—";
-                    const phone = c.phoneNumber || "—";
-                    const testScore = c.testScore ?? "—";
-                    const interviewScore = c.interviewScore ?? "—";
-                    const status = c.status || "Chưa có kết quả";
-
+                  currentCandidates.map((c, i) => {
+                    const stt = indexOfFirst + i + 1;
                     return (
                       <tr key={c.candidateId || stt}>
-                        <td style={{ textAlign: "center" }}>{stt}</td>
-                        <td>{name}</td>
-                        <td style={{ textAlign: "left" }}>{email}</td>
-                        <td style={{ textAlign: "center" }}>{phone}</td>
-                        <td style={{ textAlign: "center" }}>{testScore}</td>
-                        <td style={{ textAlign: "center" }}>
-                          {interviewScore}
-                        </td>
-                        <td style={{ textAlign: "center" }}>
-                          <span
-                            className={`status-badge ${getStatusClass(status)}`}
-                          >
-                            {status}
+                        <td>{stt}</td>
+                        <td>{c.fullName || "—"}</td>
+                        <td>{c.email || "—"}</td>
+                        <td>{c.phoneNumber || "—"}</td>
+                        <td>{c.testScore ?? "—"}</td>
+                        <td>{c.interviewScore ?? "—"}</td>
+                        <td>
+                          <span className={`status-badge ${getStatusClass(c.status)}`}>
+                            {c.status || "Chưa có kết quả"}
                           </span>
                         </td>
-                        <td className="actions-cell text-center">
-                          {/* Đã bỏ div wrapper thừa ở đây theo yêu cầu trước */}
+                        <td>
                           <ActionButtons
                             onView={() => handleViewCandidate(c)}
                             onEdit={() => handleEditCandidate(c)}
@@ -384,22 +335,13 @@ export default function CandidateManagementPage() {
           )}
         </div>
 
-        {/* PAGINATION - chỉ hiện khi có dữ liệu */}
+        {/* PAGINATION */}
         {filteredSorted.length > 0 && (
           <div className="pagination-bar">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-            />
-
+            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
             <div className="mini-pagination">
               <label className="mini-pagination-label">Hiển thị:</label>
-              <select
-                value={itemsPerPage}
-                onChange={handleChangeItemsPerPage}
-                className="mini-pagination-select"
-              >
+              <select value={itemsPerPage} onChange={handleChangeItemsPerPage} className="mini-pagination-select">
                 <option value={10}>10</option>
                 <option value={15}>15</option>
                 <option value={20}>20</option>
@@ -409,21 +351,32 @@ export default function CandidateManagementPage() {
         )}
       </div>
 
-      {/* Modal Thêm */}
-      <AddCandidateModal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onSuccess={handleAddSuccess}
-        planOptions={planOptions}
-      />
+      {/* MODALS */}
+      {showAddModal && (
+        <AddCandidateModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onSuccess={handleAddSuccess}
+          planOptions={planOptions}
+        />
+      )}
 
-      {/* Modal Sửa/Chấm điểm */}
-      <AddResultModal
-        isOpen={showEditModal}
-        onClose={() => setShowEditModal(false)}
-        onSuccess={handleEditSuccess}
-        candidate={selectedCandidate}
-      />
+      {showEditModal && selectedCandidate && (
+        <AddResultModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onSuccess={handleEditSuccess}
+          candidate={selectedCandidate}
+          isViewOnly={isViewOnly}
+        />
+      )}
+
+      {/* TOAST */}
+      {toast && (
+        <div className={`toast-container ${toast.type === "success" ? "toast-success" : "toast-error"}`} role="status">
+          {toast.msg}
+        </div>
+      )}
     </Layout>
   );
 }

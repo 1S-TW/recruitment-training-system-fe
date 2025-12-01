@@ -1,6 +1,7 @@
 // src/pages/RecruitmentPlanPage.jsx
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import axios from "axios";
 import Layout from "../components/Layout";
 import Pagination from "../components/Pagination";
@@ -163,16 +164,22 @@ const INITIAL_PLAN_META = {
 };
 
 const RecruitmentPlanPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedDate, setSelectedDate] = useState(null);
   const [plans, setPlans] = useState([]);
   const [filteredPlans, setFilteredPlans] = useState([]);
-  const [searchName, setSearchName] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
+
+    // --- FILTER + PAGINATION STATE ---
+  const [searchTerm, setSearchTerm] = useState(searchParams.get("name") || "");
+  const [searchName, setSearchName] = useState(searchParams.get("name") || "");
+  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "");
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(Number(searchParams.get("page")) || 1);
   const [isAnimating, setIsAnimating] = useState(false);
+  
 
   const [openAddModal, setOpenAddModal] = useState(false);
   const [techSummary, setTechSummary] = useState([]);
@@ -261,6 +268,65 @@ const RecruitmentPlanPage = () => {
       setLoading(false);
     }
   };
+
+ // --- SYNC URL PARAMS WHEN PAGE LOAD ---
+  useEffect(() => {
+    setSearchName(searchParams.get("name") || "");
+    setSearchTerm(searchParams.get("name") || "");
+    setStatusFilter(searchParams.get("status") || "");
+    setSelectedDate(searchParams.get("date") || "");
+    setCurrentPage(Number(searchParams.get("page")) || 1);
+  }, []);  
+
+  // ----- CẬP NHẬT URL PARAMS -----
+const updateSearchParams = ({ name, status, date, page }) => {
+  const newParams = {
+    ...Object.fromEntries([...searchParams]),
+    ...(name !== undefined ? { name } : {}),
+    ...(status !== undefined ? { status } : {}),
+    ...(date !== undefined ? { date } : {}), 
+    ...(page !== undefined ? { page } : {}),
+  };
+
+  if (!newParams.name) delete newParams.name;
+  if (!newParams.status) delete newParams.status;
+  if (!newParams.date) delete newParams.date;
+  if (!newParams.page) delete newParams.page;
+
+  setSearchParams(newParams);
+};
+
+// ----- DEBOUNCE TÌM KIẾM THEO TÊN -----
+useEffect(() => {
+  const handler = setTimeout(() => {
+    updateSearchParams({ name: searchName, page: 1 });
+    setCurrentPage(1);
+  }, 500);
+
+  return () => clearTimeout(handler);
+}, [searchName]);
+
+// ----- DEBOUNCE CHO DATE -----
+useEffect(() => {
+  const handler = setTimeout(() => {
+    if (selectedDate?.value) {
+      // Chuyển date sang định dạng yyyy-mm-dd để URL
+      const d = new Date(selectedDate.value);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      const dateStr = `${yyyy}-${mm}-${dd}`;
+
+      updateSearchParams({ date: dateStr, page: 1 });
+      setCurrentPage(1);
+    } else {
+      updateSearchParams({ date: "", page: 1 });
+    }
+  }, 500);
+
+  return () => clearTimeout(handler);
+}, [selectedDate]);
+  // ====== KHỞI TẠO: LẤY PARAMS TÌM KIẾM TỪ URL VÀ LOAD KẾ HOẠCH ======
 
   useEffect(() => {
     const paramsForSearch = new URLSearchParams(location.search);
