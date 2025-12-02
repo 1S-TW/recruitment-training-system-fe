@@ -1,12 +1,20 @@
 // Header.jsx (pure CSS)
-import { Bell, Sun, Moon, User, LogOut, Check } from 'lucide-react';
+import { Bell, User, LogOut, Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { useAuth } from '../contexts/AuthContext';
+import { getNotifications, markAsRead } from '../services/notificationService';
+
 export default function Header() {
-  const [isDark, setIsDark] = useState(() => localStorage.getItem('theme') === 'dark');
+  const [isDark] = useState(() => localStorage.getItem('theme') === 'dark');
   const [showDropdown, setShowDropdown] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showToast, setShowToast] = useState(false);
+
+  const [showBell, setShowBell] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const { user, logoutUser } = useAuth();
+
 
   useEffect(() => {
     const root = document.documentElement;
@@ -14,13 +22,50 @@ export default function Header() {
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
   }, [isDark]);
 
-  const toggleTheme   = () => setIsDark(v => !v);
+
   const handleLogout  = () => setShowConfirm(true);
   const cancelLogout  = () => setShowConfirm(false);
   const confirmLogout = () => {
     setShowConfirm(false);
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);
+    logoutUser();
+    window.location.href = "/login";
+  };
+
+  useEffect(() => {
+    const loadNotifications = async () => {
+      try {
+        const data = await getNotifications();
+        setNotifications(data);
+      } catch (error) {
+        console.error('Failed to load notifications', error);
+      }
+    };
+
+    loadNotifications();
+    const interval = setInterval(loadNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const handleNotificationClick = async (id) => {
+    try {
+      await markAsRead(id);
+      setNotifications((prev) =>
+        prev.map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                read: true,
+              }
+            : item
+        )
+      );
+    } catch (error) {
+      console.error('Failed to mark notification as read', error);
+    }
   };
 
   return (
@@ -30,6 +75,49 @@ export default function Header() {
         </div>
 
         <div className="header__right">
+
+          {user?.role && (
+            <div className="header__greeting">Chào {user.role}</div>
+          )}
+
+          <div className="dropdown">
+            <button
+              className="icon-btn notification__btn"
+              onClick={() => setShowBell((s) => !s)}
+              aria-label="notifications"
+            >
+              <Bell size={18} />
+              {unreadCount > 0 && <span className="notification__badge" aria-hidden />}
+            </button>
+            {showBell && (
+              <div className="dropdown__menu notification__menu">
+                <div className="notification__header">Thông báo</div>
+                {notifications.length === 0 && (
+                  <div className="notification__empty">Chưa có thông báo</div>
+                )}
+                {notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    className={`notification__item ${n.read ? '' : 'notification__item--unread'}`}
+                    onClick={() => handleNotificationClick(n.id)}
+                  >
+                    <div className="notification__title">{n.title}</div>
+                    <div className="notification__content">{n.content}</div>
+                    <div className="notification__meta">
+                      <span>{n.eventType}</span>
+                      {n.createdAt && (
+                        <span>
+                          {new Date(n.createdAt).toLocaleString('vi-VN', {
+                            hour12: false,
+                          })}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="dropdown">
             <button className="avatar" onClick={()=>setShowDropdown(s=>!s)} aria-label="user">
@@ -52,10 +140,7 @@ export default function Header() {
             <p className="modal__text">Bạn có chắc chắn muốn đăng xuất?</p>
             <div style={{display:'flex', justifyContent:'flex-end', gap:'.5rem'}}>
               <button onClick={cancelLogout} className="btn">Hủy</button>
-              <button onClick={() => {
-                localStorage.clear();
-                window.location.href = "/login";
-                }} className="btn btn--primary">Đăng xuất</button>
+              <button onClick={confirmLogout} className="btn btn--primary">Đăng xuất</button>
             </div>
           </div>
         </>
