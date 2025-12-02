@@ -95,26 +95,35 @@ export default function Header() {
                 {notifications.length === 0 && (
                   <div className="notification__empty">Chưa có thông báo</div>
                 )}
-                {notifications.map((n) => (
-                  <div
-                    key={n.id}
-                    className={`notification__item ${n.read ? '' : 'notification__item--unread'}`}
-                    onClick={() => handleNotificationClick(n.id)}
-                  >
-                    <div className="notification__title">{n.title}</div>
-                    <div className="notification__content">{n.content}</div>
-                    <div className="notification__meta">
-                      <span>{n.eventType}</span>
-                      {n.createdAt && (
-                        <span>
-                          {new Date(n.createdAt).toLocaleString('vi-VN', {
-                            hour12: false,
-                          })}
-                        </span>
+                 {notifications.map((n) => {
+                  const timestamp = n.createdAt
+                    ? new Date(n.createdAt).toLocaleString('vi-VN', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour12: false,
+                      })
+                    : '';
+
+                  return (
+                    <div
+                      key={n.id}
+                      className={`notification__item ${n.read ? '' : 'notification__item--unread'}`}
+                      onClick={() => handleNotificationClick(n.id)}
+                    >
+                      <div className="notification__title">{n.title}</div>
+                      <div className="notification__content">{n.content}</div>
+                      {timestamp && (
+                        <div className="notification__meta">
+                          <span className="notification__dot" aria-hidden />
+                          <span className="notification__time">{timestamp}</span>
+                        </div>
                       )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
