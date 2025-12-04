@@ -449,29 +449,61 @@ const RecruitmentPlanPage = () => {
     if (planStatus !== "NEW") {
       const candidatePassedCount = planMeta.candidatePassedCount != null ? planMeta.candidatePassedCount : 0;
       const baseActorCandidate = steps[1].actor && steps[1].actor !== "Chưa thực hiện" ? steps[1].actor : createdBy;
+      const candidateLinkDisabled = candidatePassedCount <= 0;
       const detail = (
         <div className="timeline-desc-stack">
           <span>Số lượng ứng viên ứng tuyển: {candidatePassedCount}/{outputRequired}</span>
           {selectedPlan?.recruitmentPlanId && (
-            <button type="button" className="timeline-link" onClick={handleOpenCandidateManagement}>Xem kết quả tuyển dụng</button>
+            <button
+              type="button"
+              className={`timeline-link ${candidateLinkDisabled ? "disabled" : ""}`}
+              disabled={candidateLinkDisabled}
+              onClick={handleOpenCandidateManagement}
+            >
+              Xem kết quả tuyển dụng
+            </button>
           )}
         </div>
       );
       steps[1] = { ...steps[1], actor: baseActorCandidate, detail, status: candidatePassedCount > 0 ? "success" : "pending" };
     }
 
-    if (planStatus !== "NEW") {
-      const baseActorTraining = steps[2].actor && steps[2].actor !== "Chưa thực hiện" ? steps[2].actor : createdBy;
-      const detail = (
-        <div className="timeline-desc-stack">
-          <span>Số lượng TTS tham gia đào tạo: {trainingCount}</span>
-          {selectedPlan?.recruitmentPlanId && (
-            <button type="button" className="timeline-link" onClick={handleOpenTrainingManagement}>Xem kết quả đào tạo</button>
-          )}
-        </div>
-      );
-      steps[2] = { ...steps[2], actor: baseActorTraining, detail, status: trainingCount > 0 ? "success" : "pending" };
-    }
+    // ===== ĐÀO TẠO =====
+if (planStatus !== "NEW") {
+  const baseActorTraining =
+    steps[2].actor && steps[2].actor !== "Chưa thực hiện"
+      ? steps[2].actor
+      : createdBy;
+
+  const trainingLinkDisabled = trainingCount <= 0;
+
+  const detail = (
+    <div className="timeline-desc-stack">
+      <span>Số lượng TTS tham gia đào tạo: {trainingCount}</span>
+
+      {selectedPlan?.recruitmentPlanId && (
+        <button
+          type="button"
+          className={`timeline-link ${
+            trainingLinkDisabled ? "disabled" : ""
+          }`}
+          disabled={trainingLinkDisabled}
+          onClick={handleOpenTrainingManagement}
+        >
+          Xem kết quả đào tạo
+        </button>
+      )}
+    </div>
+  );
+
+  steps[2] = {
+    ...steps[2],
+    actor: baseActorTraining,
+    detail,
+    status: trainingCount > 0 ? "success" : "pending",
+  };
+}
+
 
     if (outputRequired > 0) {
       const baseActorHandover = steps[3].actor && steps[3].actor !== "Chưa thực hiện" ? steps[3].actor : createdBy;

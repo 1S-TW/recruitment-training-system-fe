@@ -678,6 +678,7 @@ export default function HRRequestModal({
             : planCreator;
 
         // ✅ CHỈ CẦN CÓ ÍT NHẤT 1 ỨNG VIÊN ỨNG TUYỂN LÀ ĐƯỢC ĐÁNH "ĐÃ HOÀN THÀNH"
+        const candidateLinkDisabled = candidatePassedCount <= 0;
         const candidateDetail = (
           <div className="timeline-desc-stack">
             <span>
@@ -687,7 +688,8 @@ export default function HRRequestModal({
             {planMeta?.recruitmentPlanId && (
               <button
                 type="button"
-                className="timeline-link"
+                className={`timeline-link ${candidateLinkDisabled ? "disabled" : ""}`}
+                disabled={candidateLinkDisabled}
                 onClick={handleOpenCandidateManagement}
               >
                 Xem kết quả tuyển dụng
@@ -708,6 +710,8 @@ export default function HRRequestModal({
             ? steps[5].actor
             : planCreator;
 
+            const trainingLinkDisabled = trainingCount <= 0;
+
         const trainingDetail = (
           <div className="timeline-desc-stack">
             <span>Số lượng TTS tham gia đào tạo: {trainingCount}</span>
@@ -715,7 +719,8 @@ export default function HRRequestModal({
             {planMeta?.recruitmentPlanId && (
               <button
                 type="button"
-                className="timeline-link"
+                className={`timeline-link ${trainingLinkDisabled ? "disabled" : ""}`}
+                disabled={trainingLinkDisabled}
                 onClick={handleOpenTrainingManagement}
               >
                 Xem kết quả đào tạo
