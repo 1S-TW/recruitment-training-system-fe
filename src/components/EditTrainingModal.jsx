@@ -320,11 +320,7 @@ export default function EditTrainingModal({
                         }
                       }}
                       className="score-input"
-                      title={
-                        courseUnlocked
-                          ? ""
-                          : "Hoàn tất môn học trước để mở khóa"
-                      }
+                      
                       style={{
                         width: "60px",
                         padding: "4px",
@@ -344,11 +340,7 @@ export default function EditTrainingModal({
                     "NA"
                   )}
                 </div>
-                {!courseUnlocked && (
-                  <div className="lock-overlay">
-                    <span className="lock-text">Hoàn tất môn trước</span>
-                  </div>
-                )}
+                
               </div>
             );
           })}

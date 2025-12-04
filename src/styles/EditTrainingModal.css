@@ -152,27 +152,9 @@
 }
 
 .score-locked .score-input {
-  cursor: not-allowed;
-}
-
-.lock-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #0f172a;
-  font-weight: 700;
+cursor: default;
   pointer-events: none;
-  gap: 6px;
-}
 
-.lock-text {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
 }
 
 /* Animation */
