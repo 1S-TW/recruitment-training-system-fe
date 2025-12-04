@@ -249,7 +249,7 @@ const RecruitmentPlanPage = () => {
         const deliveredCount = typeof deliveredRes.data === "number" ? deliveredRes.data : Number(deliveredRes.data ?? 0) || 0;
         const candidateList = Array.isArray(candidatesRes.data) ? candidatesRes.data : [];
         const candidateCount = candidateList.length;
-        const candidatePassedCount = candidateList.filter(candidate => typeof candidate.finalResult === "string" && candidate.finalResult.trim().toLowerCase() === "đạt").length;
+        const candidatePassedCount = candidateList.filter(candidate => typeof candidate.status === "string" && candidate.status.trim().toLowerCase() === "đã nhận việc").length;
         const trainingCount = typeof trainingCountRes.data === "number" ? trainingCountRes.data : Number(trainingCountRes.data ?? 0) || 0;
         const hrReq = hrReqRes.data || null;
 
@@ -423,7 +423,7 @@ const RecruitmentPlanPage = () => {
     const outputRequired = techRows.reduce((sum, qc) => sum + (qc.soLuong || 0), 0);
     const statusRaw = (planMeta.requestStatus || "").toUpperCase();
     const parsedReject = parseRejectReason(planMeta.requestRejectReason || "");
-    const candidateCount = planMeta.candidateCount != null ? planMeta.candidateCount : 0;
+    
     const trainingCount = planMeta.trainingCount != null ? planMeta.trainingCount : 0;
     const handoverCount = planMeta.handoverCount != null ? planMeta.handoverCount : planMeta.deliveredCount != null ? planMeta.deliveredCount : 0;
     const hasRejectReason = !!(parsedReject.reason || planMeta.requestRejectReason);
@@ -451,13 +451,13 @@ const RecruitmentPlanPage = () => {
       const baseActorCandidate = steps[1].actor && steps[1].actor !== "Chưa thực hiện" ? steps[1].actor : createdBy;
       const detail = (
         <div className="timeline-desc-stack">
-          <span>Số lượng ứng viên ứng tuyển: {candidatePassedCount}/{candidateCount}</span>
+          <span>Số lượng ứng viên ứng tuyển: {candidatePassedCount}/{outputRequired}</span>
           {selectedPlan?.recruitmentPlanId && (
             <button type="button" className="timeline-link" onClick={handleOpenCandidateManagement}>Xem kết quả tuyển dụng</button>
           )}
         </div>
       );
-      steps[1] = { ...steps[1], actor: baseActorCandidate, detail, status: candidateCount > 0 ? "success" : "pending" };
+      steps[1] = { ...steps[1], actor: baseActorCandidate, detail, status: candidatePassedCount > 0 ? "success" : "pending" };
     }
 
     if (planStatus !== "NEW") {

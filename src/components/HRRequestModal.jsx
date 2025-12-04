@@ -127,10 +127,10 @@ export default function HRRequestModal({
       })
       .then((list) => {
         const count = Array.isArray(list) ? list.length : 0;
-        const passedCount = Array.isArray(list)
+        const hiredCount = Array.isArray(list)
           ? list.filter((c) =>
-              typeof c.finalResult === "string" &&
-              c.finalResult.trim().toLowerCase() === "đạt"
+              typeof c.status === "string" &&
+              c.status.trim().toLowerCase() === "đã nhận việc"
             ).length
           : 0;
         setPlanMeta((prev) =>
@@ -138,7 +138,7 @@ export default function HRRequestModal({
             ? {
                 ...prev,
                 candidateCount: count,
-                candidatePassedCount: passedCount,
+                candidatePassedCount: hiredCount,
               }
             : prev
         );
@@ -661,9 +661,7 @@ export default function HRRequestModal({
 
       // ===== 2.1. QUẢN LÝ ỨNG VIÊN =====
       const inputRequired = planMeta?.inputRequired || 0; // NV đầu vào (soLuong * 2)
-      const candidateCount =
-        planMeta?.candidateCount != null ? planMeta.candidateCount : 0;
-        const candidatePassedCount =
+      const candidatePassedCount =
         planMeta?.candidatePassedCount != null
           ? planMeta.candidatePassedCount
           : 0;
@@ -683,7 +681,7 @@ export default function HRRequestModal({
         const candidateDetail = (
           <div className="timeline-desc-stack">
             <span>
-              Số lượng ứng viên ứng tuyển: {candidatePassedCount}/{candidateCount}
+              Số lượng ứng viên ứng tuyển: {candidatePassedCount}/{outputRequired}
             </span>
 
             {planMeta?.recruitmentPlanId && (
@@ -701,7 +699,7 @@ export default function HRRequestModal({
           ...steps[4],
           actor: baseActorCandidate,
           detail: candidateDetail,
-          status: candidateCount > 0 ? "success" : "pending",
+          status: candidatePassedCount > 0 ? "success" : "pending",
         };
 
         // ===== 2.2. ĐÀO TẠO – SỐ LƯỢNG TTS =====
