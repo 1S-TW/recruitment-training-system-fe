@@ -1,5 +1,5 @@
 // src/pages/TrainingManagementPage.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import api from "../services/api";
 import { useSearchParams } from "react-router-dom";
 
@@ -44,8 +44,8 @@ export default function TrainingManagementPage() {
   const [trainings, setTrainings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [searchParams] = useSearchParams();
 
+  const [searchParams] = useSearchParams();
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -53,8 +53,8 @@ export default function TrainingManagementPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [internStatusFilter, setInternStatusFilter] = useState("");
   const [planFilter, setPlanFilter] = useState("");
-
   const [planOptions, setPlanOptions] = useState([]);
+  const [courseOrder, setCourseOrder] = useState([]);
 
   // --- STATE MODAL ---
   const [editingTraining, setEditingTraining] = useState(null);
@@ -62,6 +62,7 @@ export default function TrainingManagementPage() {
   const [isViewOnly, setIsViewOnly] = useState(false);
 
   const [toast, setToast] = useState(null);
+
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
     window.clearTimeout(showToast._t);
@@ -93,15 +94,41 @@ export default function TrainingManagementPage() {
     }
   };
 
+  const normalizeCourseOrder = (courses = []) =>
+    courses
+      .map((course, idx) => ({
+        ...course,
+        displayOrder:
+          course?.displayOrder ??
+          course?.orderIndex ??
+          course?.sortOrder ??
+          course?.order ??
+          course?.position ??
+          idx + 1,
+      }))
+      .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+
+  const fetchCourseOrder = async () => {
+    try {
+      const res = await api.get("/courses");
+      setCourseOrder(
+        normalizeCourseOrder(Array.isArray(res.data) ? res.data : [])
+      );
+    } catch (e) {
+      console.error("Lỗi tải danh sách môn học:", e);
+      setCourseOrder([]);
+    }
+  };
+
   useEffect(() => {
     fetchTrainings();
     fetchPlans();
+    fetchCourseOrder();
   }, []);
 
   useEffect(() => {
     const planId = searchParams.get("planId");
     const planName = searchParams.get("planName");
-
     if (!planId) return;
 
     setPlanFilter(planId);
@@ -120,7 +147,6 @@ export default function TrainingManagementPage() {
         name: fallbackName,
         planName: fallbackName,
       };
-
       return [newPlan, ...prev];
     });
   }, [searchParams]);
@@ -139,6 +165,7 @@ export default function TrainingManagementPage() {
           ).toLowerCase();
           const email = (t.email || "").toLowerCase();
           const phone = (t.phoneNumber || t.phone || "").toLowerCase();
+
           if (
             !name.includes(keyword) &&
             !email.includes(keyword) &&
@@ -159,7 +186,6 @@ export default function TrainingManagementPage() {
             t.planId ??
             t.recruitmentPlan?.id ??
             t.recruitmentPlan?.planId;
-
           if (trainingPlanId?.toString() !== planFilter) {
             return false;
           }
@@ -176,10 +202,45 @@ export default function TrainingManagementPage() {
     [filteredTrainings]
   );
 
+  const orderScoresForDisplay = useCallback(
+    (scores = []) => {
+      if (!courseOrder.length) return scores || [];
+
+      const orderedFromCourses = courseOrder.map((course) => {
+        const match = scores.find(
+          (s) =>
+            (s.courseId &&
+              course.courseId &&
+              s.courseId === course.courseId) ||
+            s.courseName === course.courseName
+        );
+        return match || { courseName: course.courseName, totalScore: null };
+      });
+
+      const remaining = (scores || []).filter(
+        (s) =>
+          !courseOrder.some(
+            (course) =>
+              (s.courseId &&
+                course.courseId &&
+                s.courseId === course.courseId) ||
+              s.courseName === course.courseName
+          )
+      );
+
+      return [...orderedFromCourses, ...remaining];
+    },
+    [courseOrder]
+  );
+
   const totalPages = Math.ceil(filteredSorted.length / itemsPerPage) || 1;
   const indexOfLast = currentPage * itemsPerPage;
   const indexOfFirst = indexOfLast - itemsPerPage;
   const currentTrainings = filteredSorted.slice(indexOfFirst, indexOfLast);
+
+  const headerSubjects = courseOrder.length
+    ? courseOrder
+    : orderScoresForDisplay(currentTrainings[0]?.scores || []);
 
   const handleChangeItemsPerPage = (e) => {
     setItemsPerPage(Number(e.target.value));
@@ -217,9 +278,7 @@ export default function TrainingManagementPage() {
   const handleSaveTraining = (updatedTraining) => {
     setTrainings((prevTrainings) =>
       prevTrainings.map((t) =>
-        t.internId === updatedTraining.internId
-          ? { ...t, ...updatedTraining }
-          : t
+        t.internId === updatedTraining.internId ? { ...t, ...updatedTraining } : t
       )
     );
     showToast("Cập nhật điểm thành công!");
@@ -341,13 +400,15 @@ export default function TrainingManagementPage() {
                   <th>Số ngày TT</th>
                   <th className="subject-col">
                     <div className="subject-header-row">
-                      {(currentTrainings[0]?.scores || []).map((s, i) => (
-                        <div key={i} className="subject-header-cell">
-                          {s.courseName}
+                      {headerSubjects.map((s, i) => (
+                        <div
+                          key={s.courseId || s.courseName || i}
+                          className="subject-header-cell"
+                        >
+                          {s.courseName || "Môn học"}
                         </div>
                       ))}
-
-                      {(currentTrainings[0]?.scores?.length ?? 0) === 0 && (
+                      {(headerSubjects.length ?? 0) === 0 && (
                         <div className="subject-header-cell">Chưa có môn</div>
                       )}
                     </div>
@@ -358,7 +419,6 @@ export default function TrainingManagementPage() {
                   <th>Hành động</th>
                 </tr>
               </thead>
-
               <tbody>
                 {currentTrainings.length === 0 ? (
                   <tr>
@@ -369,35 +429,40 @@ export default function TrainingManagementPage() {
                 ) : (
                   currentTrainings.map((t, index) => {
                     const stt = indexOfFirst + index + 1;
-                    const name = t.traineeName || t.fullName || t.name || "NA";
+                    const name =
+                      t.traineeName || t.fullName || t.name || "NA";
                     const startDate =
                       t.startDate || t.beginDate || t.trainingStartDate || null;
                     const internDays =
-                      t.trainingDays ?? t.soNgayThucTap ?? t.soNgayTT ?? "NA";
+                      t.trainingDays ??
+                      t.soNgayThucTap ??
+                      t.soNgayTT ??
+                      "NA";
+
+                    const orderedScores = orderScoresForDisplay(t.scores || []);
 
                     return (
-                      <tr key={t.internId || t.trainingId || t.id || stt}>
+                      <tr
+                        key={t.internId || t.trainingId || t.id || stt}
+                      >
                         <td>{stt}</td>
                         <td>{name}</td>
                         <td>{formatDate(startDate)}</td>
                         <td>{internDays}</td>
-
                         <td className="subject-col">
                           <div className="subject-body-row">
-                            {(t.scores || []).map((s, i) => (
+                            {orderedScores.map((s, i) => (
                               <div key={i} className="subject-body-cell">
                                 {s.totalScore != null
                                   ? Number(s.totalScore).toFixed(2)
                                   : "NA"}
                               </div>
                             ))}
-
-                            {(t.scores?.length ?? 0) === 0 && (
+                            {(orderedScores.length ?? 0) === 0 && (
                               <div className="subject-body-cell">NA</div>
                             )}
                           </div>
                         </td>
-
                         <td>
                           {t.summaryResult != null
                             ? Number(t.summaryResult).toFixed(2)
@@ -474,6 +539,7 @@ export default function TrainingManagementPage() {
           trainingData={editingTraining}
           onSave={handleSaveTraining}
           isViewOnly={isViewOnly} // ✅ Truyền prop này để modal biết khóa ô input/nút lưu
+          courseOrder={courseOrder}
         />
       )}
 

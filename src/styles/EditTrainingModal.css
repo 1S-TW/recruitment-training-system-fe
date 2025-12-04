@@ -61,6 +61,7 @@
   grid-template-columns: 1.5fr repeat(4, 1fr);
   gap: 4px; /* giảm khoảng cách */
   align-items: center;
+  position: relative;
 }
 
 .subject-cell {
@@ -146,6 +147,33 @@
   cursor: not-allowed;
 }
 
+.score-locked {
+  opacity: 0.65;
+}
+
+.score-locked .score-input {
+  cursor: not-allowed;
+}
+
+.lock-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0f172a;
+  font-weight: 700;
+  pointer-events: none;
+  gap: 6px;
+}
+
+.lock-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 
 /* Animation */
 @keyframes fadeIn {

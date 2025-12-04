@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Layout from "../../components/Layout";
-import { BookOpen, Edit3, Trash2 } from "lucide-react";
-import { getCourses, deleteCourse } from "../../services/courseService";
+import { BookOpen, Edit3, GripVertical, Trash2 } from "lucide-react";
+import { getCourses, deleteCourse, reorderCourses } from "../../services/courseService";
 import { useNotification } from "../../contexts/NotificationContext";
 import CourseModal from "../../components/admin/CourseModal";
 import ConfirmModal from "../../components/ConfirmModal";
@@ -10,6 +10,9 @@ import "../../styles/admin.css";
 export default function CourseManagement() {
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(false);
+
+    const [isSavingOrder, setIsSavingOrder] = useState(false);
+    const [draggedId, setDraggedId] = useState(null);
     
     // State cho Modal Thêm/Sửa
     const [showModal, setShowModal] = useState(false);
@@ -23,11 +26,24 @@ export default function CourseManagement() {
     const { showNotification } = useNotification();
 
     // ✅ FIX 1 & 2: Dùng useCallback để ổn định hàm, thêm dependency showNotification
+    const normalizeCourseOrder = (list = []) =>
+        list
+            .map((course, idx) => ({
+                ...course,
+                displayOrder:
+                    course?.displayOrder ??
+                    course?.orderIndex ??
+                    course?.sortOrder ??
+                    course?.order ??
+                    course?.position ??
+                    idx + 1,
+            }))
+            .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
     const fetchCourses = useCallback(async () => {
         setLoading(true);
         try {
             const data = await getCourses();
-            setCourses(data);
+            setCourses(normalizeCourseOrder(data));
         } catch (error) { // ✅ FIX 3: Đổi tên biến hoặc log ra console để tránh lỗi "unused vars"
             console.error("Failed to fetch courses:", error);
             showNotification("Lỗi tải danh sách môn học", "error");
@@ -65,6 +81,42 @@ export default function CourseManagement() {
         }
     };
 
+     const handleDrop = async (targetId) => {
+        if (!draggedId || draggedId === targetId) return;
+
+        const updated = [...courses];
+        const fromIndex = updated.findIndex((c) => c.courseId === draggedId);
+        const toIndex = updated.findIndex((c) => c.courseId === targetId);
+
+        if (fromIndex === -1 || toIndex === -1) return;
+
+        const [moved] = updated.splice(fromIndex, 1);
+        updated.splice(toIndex, 0, moved);
+        const normalized = updated.map((c, idx) => ({
+    ...c,
+    displayOrder: idx + 1, // gán thứ tự mới theo vị trí MẢNG, KHÔNG sort lại
+}));
+
+setCourses(normalized);
+setIsSavingOrder(true);
+
+try {
+    await reorderCourses(normalized.map((c) => c.courseId));
+    showNotification("Đã cập nhật thứ tự môn học", "success");
+} catch (error) {
+    console.error("Failed to reorder courses", error);
+    showNotification(
+        error.response?.data?.message || "Không thể sắp xếp",
+        "error"
+    );
+    fetchCourses(); // reload lại từ BE nếu lỗi
+} finally {
+    setDraggedId(null);
+    setIsSavingOrder(false);
+}
+
+    };
+
     return (
         <Layout>
             <div className="breadcrumb-container fade-slide">
@@ -93,7 +145,7 @@ export default function CourseManagement() {
                         <table className="styled-table course-table">
                             <thead>
                                 <tr>
-                                    <th>STT</th>
+                                    <th style={{ width: 90 }}>Thứ tự</th>
                                     <th>Tên môn học</th>
                                     <th>Số ngày học</th>
                                     <th>Mô tả</th>
@@ -104,8 +156,20 @@ export default function CourseManagement() {
                                 {courses.length === 0 ? (
                                     <tr><td colSpan={5} className="text-center">Chưa có môn học nào</td></tr>
                                 ) : courses.map((c, index) => (
-                                    <tr key={c.courseId}>
-                                        <td>{index + 1}</td>
+                                    <tr
+                                        key={c.courseId}
+                                        draggable
+                                        onDragStart={() => setDraggedId(c.courseId)}
+                                        onDragOver={(e) => e.preventDefault()}
+                                        onDrop={() => handleDrop(c.courseId)}
+                                        className={draggedId === c.courseId ? "dragging-row" : ""}
+                                    >
+                                        <td className="order-cell">
+                                            <span className="drag-handle" title="Kéo để sắp xếp">
+                                                <GripVertical size={18} />
+                                            </span>
+                                            <span className="order-badge">{index + 1}</span>
+                                        </td>
                                         <td style={{fontWeight: 600, color: '#0f172a'}}>{c.courseName}</td>
                                         <td>
                                             <span className="status-badge status-new" style={{fontSize: '0.9rem'}}>
@@ -142,6 +206,7 @@ export default function CourseManagement() {
                             </tbody>
                         </table>
                     )}
+                     {isSavingOrder && <p className="saving-text">Đang lưu thứ tự mới...</p>}
                 </div>
             </div>
 

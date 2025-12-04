@@ -1,5 +1,5 @@
-// === EditTrainingModal.jsx ===
-import React, { useState, useEffect } from "react";
+// src/components/EditTrainingModal.jsx
+import React, { useCallback, useEffect, useState } from "react";
 import "../styles/EditTrainingModal.css";
 import api from "../services/api";
 
@@ -9,6 +9,7 @@ export default function EditTrainingModal({
   trainingData,
   onSave,
   isViewOnly = false,
+  courseOrder = [],
 }) {
   const [scores, setScores] = useState([]);
   const [overallScore, setOverallScore] = useState("NA");
@@ -43,10 +44,53 @@ export default function EditTrainingModal({
     );
   };
 
+  const orderScoresByCourse = useCallback(
+    (scoreList = []) => {
+      if (!courseOrder?.length) return scoreList;
+
+      const ordered = courseOrder.map((course) => {
+        const match = scoreList.find(
+          (score) =>
+            (score.courseId &&
+              course.courseId &&
+              score.courseId === course.courseId) ||
+            score.courseName === course.courseName
+        );
+
+        return (
+          match || {
+            courseName: course.courseName,
+            theory: "",
+            attitude: "",
+            practice: "",
+            totalScore: null,
+          }
+        );
+      });
+
+      const remaining = scoreList.filter(
+        (score) =>
+          !courseOrder.some(
+            (course) =>
+              (score.courseId &&
+                course.courseId &&
+                score.courseId === course.courseId) ||
+              score.courseName === course.courseName
+          )
+      );
+
+      return [...ordered, ...remaining];
+    },
+    [courseOrder]
+  );
+
   const calculateOverall = (list) => {
     const totals = list.map((s) => {
       if (isValid(s.theory) && isValid(s.attitude) && isValid(s.practice)) {
-        return ((Number(s.theory) + Number(s.attitude) + Number(s.practice)) / 3).toFixed(1);
+        return (
+          (Number(s.theory) + Number(s.attitude) + Number(s.practice)) /
+          3
+        ).toFixed(1);
       }
       return "NA";
     });
@@ -54,13 +98,24 @@ export default function EditTrainingModal({
     if (totals.includes("NA")) {
       setOverallScore("NA");
     } else {
-      const avg = (totals.reduce((a, b) => a + Number(b), 0) / totals.length).toFixed(1);
+      const avg = (
+        totals.reduce((a, b) => a + Number(b), 0) / totals.length
+      ).toFixed(1);
       setOverallScore(avg);
     }
   };
 
+  const isCourseComplete = (score) =>
+    isValid(score.theory) && isValid(score.attitude) && isValid(score.practice);
+
+  const isCourseUnlocked = (index, list = scores) => {
+    if (!canEdit) return false;
+    if (index === 0) return true;
+    return list.slice(0, index).every((s) => isCourseComplete(s));
+  };
+
   const handleScoreChange = (index, key, value) => {
-    if (!canEdit) return;
+    if (!isCourseUnlocked(index)) return;
     const newScores = [...scores];
     newScores[index][key] = value;
     setScores(newScores);
@@ -69,7 +124,9 @@ export default function EditTrainingModal({
 
   const handleStopInternship = async () => {
     try {
-      const response = await api.put(`/trainings/${trainingData.internId}/stop`);
+      const response = await api.put(
+        `/trainings/${trainingData.internId}/stop`
+      );
       onSave(response.data);
       setStopped(true);
       setConfirmStop(false);
@@ -90,37 +147,56 @@ export default function EditTrainingModal({
     }));
 
     const validScores = processedScores.filter(
-      (s) => s.theoryScore !== null && s.attitudeScore !== null && s.practiceScore !== null
+      (s) =>
+        s.theoryScore !== null &&
+        s.attitudeScore !== null &&
+        s.practiceScore !== null
     );
 
     const overall =
       validScores.length > 0
         ? (
             validScores.reduce(
-              (sum, s) => sum + (s.theoryScore + s.attitudeScore + s.practiceScore) / 3,
+              (sum, s) =>
+                sum +
+                (s.theoryScore + s.attitudeScore + s.practiceScore) / 3,
               0
             ) / validScores.length
           ).toFixed(2)
         : null;
 
     const hasIncomplete = processedScores.some(
-      (s) => s.theoryScore === null || s.attitudeScore === null || s.practiceScore === null
+      (s) =>
+        s.theoryScore === null ||
+        s.attitudeScore === null ||
+        s.practiceScore === null
     );
     const hasFailSubject = validScores.some(
-      (s) => (s.theoryScore + s.attitudeScore + s.practiceScore) / 3 < 7
+      (s) =>
+        (s.theoryScore + s.attitudeScore + s.practiceScore) / 3 < 7
     );
 
-    const internshipResult = hasIncomplete ? "NA" : overall >= 7 && !hasFailSubject ? "PASS" : "FAIL";
+    const internshipResult = hasIncomplete
+      ? "NA"
+      : overall >= 7 && !hasFailSubject
+      ? "PASS"
+      : "FAIL";
 
     const payload = {
       scores: processedScores,
       summaryResult: overall !== null ? Number(overall) : null,
-      teamReview: teamEvaluation !== "" && !isNaN(teamEvaluation) ? Number(teamEvaluation) : null,
+      teamReview:
+        teamEvaluation !== "" && !isNaN(teamEvaluation)
+          ? Number(teamEvaluation)
+          : null,
       internshipResult,
     };
 
     try {
-      const response = await api.put(`/trainings/${trainingData.internId}/scores`, payload);
+      const response = await api.put(
+        `/trainings/${trainingData.internId}/scores`,
+        payload
+      );
       onSave(response.data);
       onClose();
       showToast("Lưu điểm thành công!");
@@ -136,7 +212,7 @@ export default function EditTrainingModal({
     const status = trainingData.internStatus || "Đang thực tập";
     setStopped(status === "Đã dừng thực tập");
 
-    const initScores = (trainingData.scores || []).map((s) => ({
+    const rawScores = (trainingData.scores || []).map((s) => ({
       courseName: s.courseName,
       theory: s.theoryScore != null ? s.theoryScore : "",
       attitude: s.attitudeScore != null ? s.attitudeScore : "",
@@ -144,23 +220,36 @@ export default function EditTrainingModal({
       totalScore: s.totalScore,
     }));
 
+    const initScores = orderScoresByCourse(rawScores);
+
     setScores(initScores);
     calculateOverall(initScores);
     setTeamEvaluation(trainingData.teamReview || "");
-  }, [trainingData]);
+  }, [orderScoresByCourse, trainingData]);
 
   if (!isOpen) return null;
 
   return (
     <div className="modal-overlay">
       <div className="modal-content">
-        <div className="modal-close" onClick={onClose}>✕</div>
+        <div className="modal-close" onClick={onClose}>
+          ✕
+        </div>
         <h2>Kết quả học tập</h2>
 
         <div className="training-info">
-          <div>Họ và tên: {trainingData?.traineeName || trainingData?.fullName || trainingData?.name || "NA"}</div>
           <div>
-            Ngày bắt đầu: {trainingData?.startDate} | Số ngày thực tập: {trainingData?.trainingDays ?? trainingData?.soNgayThucTap ?? "NA"}
+            Họ và tên:{" "}
+            {trainingData?.traineeName ||
+              trainingData?.fullName ||
+              trainingData?.name ||
+              "NA"}
+          </div>
+          <div>
+            Ngày bắt đầu: {trainingData?.startDate} | Số ngày thực tập:{" "}
+            {trainingData?.trainingDays ??
+              trainingData?.soNgayThucTap ??
+              "NA"}
           </div>
           <div>Ngày kết thúc: {trainingData?.endDate || "Chưa kết thúc"}</div>
         </div>
@@ -175,16 +264,29 @@ export default function EditTrainingModal({
           </div>
 
           {scores.map((s, i) => {
-            const valid3 = isValid(s.theory) && isValid(s.attitude) && isValid(s.practice);
-            const total = valid3 ? ((Number(s.theory) + Number(s.attitude) + Number(s.practice)) / 3).toFixed(1) : "NA";
+            const valid3 = isCourseComplete(s);
+            const courseUnlocked = isCourseUnlocked(i);
+            const total = valid3
+              ? (
+                  (Number(s.theory) +
+                    Number(s.attitude) +
+                    Number(s.practice)) /
+                  3
+                ).toFixed(1)
+              : "NA";
 
             return (
-              <div key={i} className="scores-row">
+              <div
+                key={i}
+                className={`scores-row ${
+                  courseUnlocked ? "" : "score-locked"
+                }`}
+              >
                 <div className="subject-cell">{s.courseName}</div>
                 {["theory", "attitude", "practice"].map((key) => (
                   <div className="subject-cell" key={key}>
                     <input
-                      disabled={!canEdit}
+                      disabled={!courseUnlocked}
                       type="text"
                       value={s[key]}
                       onChange={(e) => {
@@ -218,7 +320,17 @@ export default function EditTrainingModal({
                         }
                       }}
                       className="score-input"
-                      style={{ width: "60px", padding: "4px", textAlign: "center", fontSize: "14px" }}
+                      title={
+                        courseUnlocked
+                          ? ""
+                          : "Hoàn tất môn học trước để mở khóa"
+                      }
+                      style={{
+                        width: "60px",
+                        padding: "4px",
+                        textAlign: "center",
+                        fontSize: "14px",
+                      }}
                     />
                   </div>
                 ))}
@@ -228,8 +340,15 @@ export default function EditTrainingModal({
                       <span>{total}</span>
                       {renderIcon(Number(total))}
                     </div>
-                  ) : "NA"}
+                  ) : (
+                    "NA"
+                  )}
                 </div>
+                {!courseUnlocked && (
+                  <div className="lock-overlay">
+                    <span className="lock-text">Hoàn tất môn trước</span>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -243,21 +362,33 @@ export default function EditTrainingModal({
                 <span>{overallScore}</span>
                 {renderIcon(Number(overallScore))}
               </span>
-            ) : "NA"}
+            ) : (
+              "NA"
+            )}
           </strong>
 
           {(() => {
             const subjectTotals = scores.map((s) =>
-              isValid(s.theory) && isValid(s.attitude) && isValid(s.practice)
-                ? (Number(s.theory) + Number(s.attitude) + Number(s.practice)) / 3
+              isValid(s.theory) &&
+              isValid(s.attitude) &&
+              isValid(s.practice)
+                ? (Number(s.theory) +
+                    Number(s.attitude) +
+                    Number(s.practice)) /
+                  3
                 : null
             );
 
-            if (subjectTotals.includes(null)) return <strong>Kết quả thực tập: NA</strong>;
+            if (subjectTotals.includes(null))
+              return <strong>Kết quả thực tập: NA</strong>;
 
             const hasFailSubject = subjectTotals.some((t) => t < 7);
             const finalResult =
-              overallScore !== "NA" && !hasFailSubject && overallScore >= 7 ? "PASS" : "FAIL";
+              overallScore !== "NA" &&
+              !hasFailSubject &&
+              overallScore >= 7
+                ? "PASS"
+                : "FAIL";
 
             return <strong>Kết quả thực tập: {finalResult}</strong>;
           })()}
@@ -274,17 +405,25 @@ export default function EditTrainingModal({
         </div>
 
         <div className="modal-actions">
-          {!stopped && (trainingData.internStatus || "Đang thực tập") !== "Đã hoàn thành" && (
-            <button className="btn-cancel" onClick={() => setConfirmStop(true)}>
-              Dừng thực tập
-            </button>
-          )}
+          {!stopped &&
+            (trainingData.internStatus || "Đang thực tập") !==
+              "Đã hoàn thành" && (
+              <button
+                className="btn-cancel"
+                onClick={() => setConfirmStop(true)}
+              >
+                Dừng thực tập
+              </button>
+            )}
 
           {canEdit && (
             <button
               className="btn-save"
               onClick={handleSave}
-              disabled={(trainingData.internStatus || "Đang thực tập") === "Đã hoàn thành"}
+              disabled={
+                (trainingData.internStatus || "Đang thực tập") ===
+                "Đã hoàn thành"
+              }
             >
               Lưu
             </button>
@@ -296,7 +435,10 @@ export default function EditTrainingModal({
             <div className="modal-content confirm-modal">
               <p>Bạn có chắc chắn muốn dừng thực tập không?</p>
               <div className="modal-actions">
-                <button className="btn-cancel" onClick={() => setConfirmStop(false)}>
+                <button
+                  className="btn-cancel"
+                  onClick={() => setConfirmStop(false)}
+                >
                   Hủy
                 </button>
                 <button className="btn-save" onClick={handleStopInternship}>
@@ -308,7 +450,12 @@ export default function EditTrainingModal({
         )}
 
         {toast && (
-          <div className={`toast-container ${toast.type === "success" ? "toast-success" : "toast-error"}`} role="status">
+          <div
+            className={`toast-container ${
+              toast.type === "success" ? "toast-success" : "toast-error"
+            }`}
+            role="status"
+          >
             {toast.msg}
           </div>
         )}
