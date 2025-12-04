@@ -1,30 +1,32 @@
 // Header.jsx (pure CSS)
-import { Bell, User, LogOut, Check } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Bell, User, LogOut, Check } from "lucide-react";
+import { useEffect, useState } from "react";
 
-import { useAuth } from '../contexts/AuthContext';
-import { getNotifications, markAsRead } from '../services/notificationService';
+import { useAuth } from "../contexts/AuthContext";
+import { getNotifications, markAsRead } from "../services/notificationService";
 
 export default function Header() {
-  const [isDark] = useState(() => localStorage.getItem('theme') === 'dark');
+  const [isDark] = useState(() => localStorage.getItem("theme") === "dark");
   const [showDropdown, setShowDropdown] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showToast, setShowToast] = useState(false);
 
   const [showBell, setShowBell] = useState(false);
   const [notifications, setNotifications] = useState([]);
-  const { user, logoutUser } = useAuth();
 
+  // 🔹 TAB hiện tại: "all" | "unread"
+  const [activeTab, setActiveTab] = useState("all");
+
+  const { user, logoutUser } = useAuth();
 
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.toggle('theme-dark', isDark);   // ✅ chỉ dùng CSS thuần
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    root.classList.toggle("theme-dark", isDark);
+    localStorage.setItem("theme", isDark ? "dark" : "light");
   }, [isDark]);
 
-
-  const handleLogout  = () => setShowConfirm(true);
-  const cancelLogout  = () => setShowConfirm(false);
+  const handleLogout = () => setShowConfirm(true);
+  const cancelLogout = () => setShowConfirm(false);
   const confirmLogout = () => {
     setShowConfirm(false);
     setShowToast(true);
@@ -39,7 +41,7 @@ export default function Header() {
         const data = await getNotifications();
         setNotifications(data);
       } catch (error) {
-        console.error('Failed to load notifications', error);
+        console.error("Failed to load notifications", error);
       }
     };
 
@@ -49,6 +51,8 @@ export default function Header() {
   }, []);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadNotifications = notifications.filter((n) => !n.read);
+  const readNotifications = notifications.filter((n) => n.read);
 
   const handleNotificationClick = async (id) => {
     try {
@@ -64,22 +68,25 @@ export default function Header() {
         )
       );
     } catch (error) {
-      console.error('Failed to mark notification as read', error);
+      console.error("Failed to mark notification as read", error);
     }
   };
+
+  // 🔹 Danh sách sẽ render theo tab
+  const listToRender =
+    activeTab === "unread" ? unreadNotifications : notifications;
 
   return (
     <>
       <header className="header">
-        <div className="header__left">
-        </div>
+        <div className="header__left"></div>
 
         <div className="header__right">
-
           {user?.role && (
             <div className="header__greeting">Chào {user.role}</div>
           )}
 
+          {/* ====== Nút chuông thông báo ====== */}
           <div className="dropdown">
             <button
               className="icon-btn notification__btn"
@@ -87,74 +94,161 @@ export default function Header() {
               aria-label="notifications"
             >
               <Bell size={18} />
-              {unreadCount > 0 && <span className="notification__badge" aria-hidden />}
+              {unreadCount > 0 && (
+                <span className="notification__badge" aria-hidden />
+              )}
             </button>
+
             {showBell && (
               <div className="dropdown__menu notification__menu">
-                <div className="notification__header">Thông báo</div>
-                {notifications.length === 0 && (
-                  <div className="notification__empty">Chưa có thông báo</div>
-                )}
-                 {notifications.map((n) => {
-                  const timestamp = n.createdAt
-                    ? new Date(n.createdAt).toLocaleString('vi-VN', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour12: false,
-                      })
-                    : '';
+                {/* Header + tabs */}
+                <div className="notification__header">
+                  <span>Thông báo</span>
+                  {unreadCount > 0 && (
+                    <span className="notification__pill notification__pill--ghost">
+                      {unreadCount}
+                    </span>
+                  )}
+                </div>
 
-                  return (
-                    <div
-                      key={n.id}
-                      className={`notification__item ${n.read ? '' : 'notification__item--unread'}`}
-                      onClick={() => handleNotificationClick(n.id)}
-                    >
-                      <div className="notification__title">{n.title}</div>
-                      <div className="notification__content">{n.content}</div>
-                      {timestamp && (
-                        <div className="notification__meta">
-                          <span className="notification__dot" aria-hidden />
-                          <span className="notification__time">{timestamp}</span>
+                <div className="notification__tabs">
+                  <button
+                    type="button"
+                    className={`notification__tab ${
+                      activeTab === "all" ? "notification__tab--active" : ""
+                    }`}
+                    onClick={() => setActiveTab("all")}
+                  >
+                    Tất cả
+                  </button>
+                  <button
+                    type="button"
+                    className={`notification__tab ${
+                      activeTab === "unread" ? "notification__tab--active" : ""
+                    }`}
+                    onClick={() => setActiveTab("unread")}
+                  >
+                    Chưa đọc
+                    {unreadCount > 0 && (
+                      <span className="notification__tab-count">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </button>
+                </div>
+
+                {/* Nội dung theo tab */}
+                {listToRender.length === 0 ? (
+                  <div className="notification__empty">
+                    {activeTab === "unread"
+                      ? "Không có thông báo chưa đọc"
+                      : "Chưa có thông báo"}
+                  </div>
+                ) : (
+                  <div className="notification__list">
+                    {listToRender.map((n) => {
+                      const timestamp = n.createdAt
+                        ? new Date(n.createdAt).toLocaleString("vi-VN", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour12: false,
+                          })
+                        : "";
+
+                      const isUnread = !n.read;
+
+                      return (
+                        <div
+                          key={n.id}
+                          className={`notification__item ${
+                            isUnread ? "notification__item--unread" : ""
+                          }`}
+                          onClick={() => handleNotificationClick(n.id)}
+                        >
+                          <span
+                            className={`notification__dot ${
+                              isUnread ? "" : "notification__dot--muted"
+                            }`}
+                            aria-hidden
+                          />
+                          <div className="notification__body">
+                            <div className="notification__title">
+                              {n.title}
+                            </div>
+                            <div className="notification__content">
+                              {n.content}
+                            </div>
+                            {timestamp && (
+                              <div className="notification__meta">
+                                <span className="notification__time">
+                                  {timestamp}
+                                </span>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>
 
+          {/* ====== Avatar / dropdown user ====== */}
           <div className="dropdown">
-            <button className="avatar" onClick={()=>setShowDropdown(s=>!s)} aria-label="user">
+            <button
+              className="avatar"
+              onClick={() => setShowDropdown((s) => !s)}
+              aria-label="user"
+            >
               <User size={18} />
             </button>
             {showDropdown && (
               <div className="dropdown__menu">
-                <div className="dropdown__item" onClick={handleLogout}><LogOut size={18}/> Đăng xuất</div>
+                <div className="dropdown__item" onClick={handleLogout}>
+                  <LogOut size={18} /> Đăng xuất
+                </div>
               </div>
             )}
           </div>
         </div>
       </header>
 
+      {/* Modal xác nhận logout */}
       {showConfirm && (
         <>
           <div className="backdrop" onClick={cancelLogout} />
           <div className="modal">
             <h3 className="modal__title">Xác nhận đăng xuất</h3>
             <p className="modal__text">Bạn có chắc chắn muốn đăng xuất?</p>
-            <div style={{display:'flex', justifyContent:'flex-end', gap:'.5rem'}}>
-              <button onClick={cancelLogout} className="btn">Hủy</button>
-              <button onClick={confirmLogout} className="btn btn--primary">Đăng xuất</button>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: ".5rem",
+              }}
+            >
+              <button onClick={cancelLogout} className="btn">
+                Hủy
+              </button>
+              <button onClick={confirmLogout} className="btn btn--primary">
+                Đăng xuất
+              </button>
             </div>
           </div>
         </>
       )}
-      {showToast && <div className="toast"><Check size={18}/> Đã đăng xuất</div>}
+
+      {/* Toast */}
+      {showToast && (
+        <div className="toast">
+          <Check size={18} /> Đã đăng xuất
+        </div>
+      )}
     </>
   );
 }
