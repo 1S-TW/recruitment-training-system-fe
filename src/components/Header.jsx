@@ -1,6 +1,7 @@
+// src/components/Header.jsx
 // Header.jsx (pure CSS)
 import { Bell, User, LogOut, Check } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 import { useAuth } from "../contexts/AuthContext";
 import { getNotifications, markAsRead } from "../services/notificationService";
@@ -14,17 +15,23 @@ export default function Header() {
   const [showBell, setShowBell] = useState(false);
   const [notifications, setNotifications] = useState([]);
 
-  // 🔹 TAB hiện tại: "all" | "unread"
+  // TAB hiện tại: "all" | "unread"
   const [activeTab, setActiveTab] = useState("all");
 
   const { user, logoutUser } = useAuth();
 
+  // ref để bắt click outside
+  const bellRef = useRef(null);
+  const userRef = useRef(null);
+
+  // theme
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle("theme-dark", isDark);
     localStorage.setItem("theme", isDark ? "dark" : "light");
   }, [isDark]);
 
+  // logout
   const handleLogout = () => setShowConfirm(true);
   const cancelLogout = () => setShowConfirm(false);
   const confirmLogout = () => {
@@ -35,6 +42,7 @@ export default function Header() {
     window.location.href = "/login";
   };
 
+  // load notifications
   useEffect(() => {
     const loadNotifications = async () => {
       try {
@@ -50,29 +58,41 @@ export default function Header() {
     return () => clearInterval(interval);
   }, []);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  // click outside -> đóng menu
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (bellRef.current && !bellRef.current.contains(e.target)) {
+        setShowBell(false);
+      }
+      if (userRef.current && !userRef.current.contains(e.target)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const unreadNotifications = notifications.filter((n) => !n.read);
   const readNotifications = notifications.filter((n) => n.read);
+  const unreadCount = unreadNotifications.length;
 
   const handleNotificationClick = async (id) => {
     try {
       await markAsRead(id);
       setNotifications((prev) =>
         prev.map((item) =>
-          item.id === id
-            ? {
-                ...item,
-                read: true,
-              }
-            : item
+          item.id === id ? { ...item, read: true } : item
         )
       );
+      // nếu muốn click xong đóng panel thì thêm:
+      // setShowBell(false);
     } catch (error) {
       console.error("Failed to mark notification as read", error);
     }
   };
 
-  // 🔹 Danh sách sẽ render theo tab
+  // danh sách sẽ render theo tab
   const listToRender =
     activeTab === "unread" ? unreadNotifications : notifications;
 
@@ -86,8 +106,8 @@ export default function Header() {
             <div className="header__greeting">Chào {user.role}</div>
           )}
 
-          {/* ====== Nút chuông thông báo ====== */}
-          <div className="dropdown">
+          {/* ==== Chuông thông báo ==== */}
+          <div className="dropdown" ref={bellRef}>
             <button
               className="icon-btn notification__btn"
               onClick={() => setShowBell((s) => !s)}
@@ -95,13 +115,15 @@ export default function Header() {
             >
               <Bell size={18} />
               {unreadCount > 0 && (
-                <span className="notification__badge" aria-hidden />
+                <span className="notification__badge">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
               )}
             </button>
 
             {showBell && (
               <div className="dropdown__menu notification__menu">
-                {/* Header + tabs */}
+                {/* Header + tổng chưa đọc */}
                 <div className="notification__header">
                   <span>Thông báo</span>
                   {unreadCount > 0 && (
@@ -111,11 +133,14 @@ export default function Header() {
                   )}
                 </div>
 
+                {/* Tabs */}
                 <div className="notification__tabs">
                   <button
                     type="button"
                     className={`notification__tab ${
-                      activeTab === "all" ? "notification__tab--active" : ""
+                      activeTab === "all"
+                        ? "notification__tab--active"
+                        : ""
                     }`}
                     onClick={() => setActiveTab("all")}
                   >
@@ -124,7 +149,9 @@ export default function Header() {
                   <button
                     type="button"
                     className={`notification__tab ${
-                      activeTab === "unread" ? "notification__tab--active" : ""
+                      activeTab === "unread"
+                        ? "notification__tab--active"
+                        : ""
                     }`}
                     onClick={() => setActiveTab("unread")}
                   >
@@ -198,8 +225,8 @@ export default function Header() {
             )}
           </div>
 
-          {/* ====== Avatar / dropdown user ====== */}
-          <div className="dropdown">
+          {/* ==== Avatar user ==== */}
+          <div className="dropdown" ref={userRef}>
             <button
               className="avatar"
               onClick={() => setShowDropdown((s) => !s)}
@@ -218,7 +245,7 @@ export default function Header() {
         </div>
       </header>
 
-      {/* Modal xác nhận logout */}
+      {/* Modal confirm logout */}
       {showConfirm && (
         <>
           <div className="backdrop" onClick={cancelLogout} />
