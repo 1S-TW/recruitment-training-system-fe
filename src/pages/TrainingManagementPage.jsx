@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import api from "../services/api";
 import { useSearchParams } from "react-router-dom";
-
+import { BookOpenCheck } from "lucide-react";
 import Layout from "../components/Layout";
 import Pagination from "../components/Pagination";
 import ActionButtons from "../components/ActionButtons.jsx";
@@ -328,7 +328,7 @@ useEffect(() => {
       {/* BREADCRUMB */}
       <div className="breadcrumb-container fade-slide">
         <div className="breadcrumb-left">
-          <span className="breadcrumb-icon">📚</span>
+          <span className="breadcrumb-icon"> <BookOpenCheck size={18} /> </span>
           <span className="breadcrumb-item">Đào tạo</span>
           <span className="breadcrumb-separator">&gt;</span>
           <span className="breadcrumb-current">Quản lý đào tạo</span>

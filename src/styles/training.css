@@ -221,19 +221,14 @@
 .training-table-scroll {
     overflow-x: auto;
     width: 280px;   /* ⭐ giữ khả năng cuộn */
-   -ms-overflow-style: none; /* IE và Edge cũ */
-    scrollbar-width: none;    /* Firefox */
+ 
 }
 
 .training-table-scroll table {
     width: auto !important;    /* ⭐ xoá độ rộng cứng */
     table-layout: fixed;    
 }
-/* Ẩn thanh cuộn cho WebKit (Chrome, Safari, Edge mới) */
-.training-table-scroll::-webkit-scrollbar {
-    width: 0 !important;
-    height: 0 !important;
-}
+
 /* ============================================
    BỎ VIỀN RIÊNG CỦA BẢNG GIỮA (nếu còn)
 =============================================== */

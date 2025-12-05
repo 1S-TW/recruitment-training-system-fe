@@ -1,6 +1,6 @@
 // src/components/Sidebar.jsx
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, BookOpen, Users, UserCog, Book } from "lucide-react";
+import { LayoutDashboard, Users, UserCog, Book, BookUser } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -31,7 +31,7 @@ export default function Sidebar() {
       requiredRole: "SUPER_ADMIN" 
     },
 
-    { icon: BookOpen, label: "Đào tạo", path: "/training" },
+    { icon: BookUser, label: "Đào tạo", path: "/training" },
     {
       icon: Users,
       label: "Tuyển dụng",
