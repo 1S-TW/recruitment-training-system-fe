@@ -33,7 +33,7 @@
 }
 
 /* === Pagination bar container === */
-  .pagination-bar {
+.pagination-bar {
     width: 100%;
     display: flex;
     align-items: center;
@@ -41,20 +41,18 @@
     margin-top: 16px;
     position: relative;        /* để mini box bám trái */
     padding: 8px 0;
-  }
+}
 
-  /* === Mini Pagination (góc trái) === */
-  .mini-pagination {
+/* === Mini Pagination (góc trái) === */
+.mini-pagination {
     position: absolute;
     left: 0;
     top: 50%;
+    transform: translateY(-50%);
 
     display: flex;
-
-    align-items: center;     /* căn giữa theo chiều dọc */
+    align-items: center;
     gap: 6px;
-    height: 30px;            /* chiều cao cố định */
-    line-height: 24px;   
 
     padding: 4px 10px;
     border: 1px solid #d1d5db;
@@ -62,22 +60,19 @@
     background: #ffffff;
     font-size: 0.8rem;
     font-weight: 500;
-
-    height: 30px;
-    line-height: 24px;
     box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-  }
+}
 
-  /* Label */
-  .mini-pagination-label {
+/* Label */
+.mini-pagination-label {
     font-size: 0.8rem;
     font-weight: 600;
     margin-right: 4px;
     color: #0f172a;
-  }
+}
 
-  /* Select */
-  .mini-pagination-select {
+/* Select */
+.mini-pagination-select {
     height: 28px;
     line-height: 20px;
     padding: 0 20px 0 6px;
@@ -95,7 +90,7 @@
     background-repeat: no-repeat;
     background-position: right 4px center;
     background-size: 10px;
-  }
+}
 
 /* --- TITLE + FILTER --- */
 .title-row {
@@ -221,7 +216,7 @@
     color: #1d4ed8;
 }
 
-/* Nút “+ Thêm ứng viên” – xanh lá như ảnh */
+/* Nút “+ Thêm ứng viên” – xanh lá */
 .btn-add-candidate {
     display: inline-flex;
     align-items: center;
@@ -290,7 +285,7 @@
     transition: background 0.2s ease;
 }
 
-/* --- CỘT CĂN CHỈNH cho bảng 8 cột (theo ảnh) --- */
+/* --- CỘT CĂN CHỈNH cho bảng 8 cột --- */
 .styled-table th:nth-child(1),
 .styled-table td:nth-child(1) {
     text-align: center;
@@ -339,10 +334,44 @@
     border-radius: 6px;
     font-size: 0.75rem;
     font-weight: 600;
-    text-transform: uppercase;
-    border: 1px solid #e2e8f0;
-    background: #f8fafc;
-    color: #475569;
+    text-transform: none;
+    border: none;
+}
+
+/* Chưa có kết quả — Xám */
+.status-none {
+  background: #E5E7EB;
+  color: #374151;
+}
+
+/* Đã có kết quả — Vàng */
+.status-done {
+  background: #FEF3C7;
+  color: #B45309;
+}
+
+/* Không nhận việc — Đỏ */
+.status-refuse {
+  background: #FEE2E2;
+  color: #B91C1C;
+}
+
+/* Đã gửi mail cảm ơn — Cam */
+.status-mail {
+  background: #FFEDD5;
+  color: #C2410C;
+}
+
+/* Đã nhận việc — Xanh lá */
+.status-accept {
+  background: #DCFCE7;
+  color: #166534;
+}
+
+/* Đã thông báo thời gian TT — Xanh dương */
+.status-inform {
+  background: #DBEAFE;
+  color: #1D4ED8;
 }
 
 /* --- ACTION BUTTONS --- */
@@ -385,7 +414,7 @@
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
-/* --- TOOLTIP (mờ nhẹ, fade-in mượt) --- */
+/* --- TOOLTIP --- */
 .action-tooltip {
     position: absolute;
     bottom: 130%;
@@ -471,7 +500,7 @@
     padding: 0 4px;
 }
 
-/* --- FADE ANIMATIONS (hiệu ứng mượt khi chuyển trang) --- */
+/* --- FADE ANIMATIONS --- */
 .fade-in {
     animation: fadeSlideIn 0.3s ease-in-out forwards;
 }
@@ -495,11 +524,12 @@
     to { opacity: 1; transform: translateX(0); }
 }
 
-/* ===================== END CANDIDATE PAGE CSS ===================== */
+/* ===================== END CANDIDATE PAGE BASE ===================== */
+
 /* Căn 3 ô Search / Trạng thái / Kế hoạch tuyển dụng gần nhau hơn */
 .candidate-filter-bar {
-  justify-content: flex-start;   /* không space-between nữa */
-  gap: 16px;                     /* khoảng cách vừa phải */
+  justify-content: flex-start;
+  gap: 16px;
   flex-wrap: wrap;
 }
 
@@ -514,75 +544,141 @@
 
 /* Riêng ô "Kế hoạch tuyển dụng..." làm rộng hơn để thấy hết chữ */
 .candidate-plan-select {
-  min-width: 230px;              /* tăng width để không bị cắt chữ */
+  min-width: 230px;
 }
 
 /* Icon dropdown cho tất cả .filter-select */
 .filter-select {
   appearance: none;
-  -webkit-appearance: none; 
+  -webkit-appearance: none;
   -moz-appearance: none;
 
   background-image: url("data:image/svg+xml;utf8,<svg fill='gray' height='20' viewBox='0 0 20 20' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M5.5 7l4.5 4.5L14.5 7'/></svg>");
   background-repeat: no-repeat;
   background-position: right 12px center;
   background-size: 16px;
-  padding-right: 35px; /* để không bị đè text */
+  padding-right: 35px;
 }
 
 /* Riêng cho select kế hoạch để chữ không bị cắt */
-.candidate-plan-select {
-  min-width: 200px;
-}
 .filter-select.candidate-plan-select {
   width: auto !important;
   min-width: 200px !important;
 }
-/* STYLE badge trạng thái ứng viên */
-.status-badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: none;
-  border: none;
+
+/* ===================== RANGE DATE FILTER (Ngày PV) ===================== */
+
+.range-filter {
+  position: relative;
 }
 
-/* Chưa có kết quả — Xám */
-.status-none {
-  background: #E5E7EB;
+/* Button filter ngày: dùng chung .filter-select, chỉ thêm layout */
+.range-filter-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 220px;        /* cho rộng tương tự ô kế hoạch */
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.range-filter-label {
+  flex: 1;
+}
+
+/* Popover chứa 2 DatePicker Từ / Đến */
+.range-popover {
+  position: absolute;
+  top: 115%;
+  right: 0;
+  z-index: 50;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  padding: 10px 12px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  min-width: 320px;
+}
+
+.range-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.range-row-label {
+  width: 32px;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+/* Cho DatePicker bên trong full chiều rộng */
+.range-popover .filter-date {
+  width: 100%;
+}
+
+.range-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.range-btn {
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.range-btn-clear {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
   color: #374151;
 }
 
-/* Đã có kết quả — Vàng */
-.status-done {
-  background: #FEF3C7;
-  color: #B45309;
-}
-
-/* Không nhận việc — Đỏ */
-.status-refuse {
-  background: #FEE2E2;
-  color: #B91C1C;
-}
-
-/* Đã gửi mail cảm ơn — Cam */
-.status-mail {
-  background: #FFEDD5;
-  color: #C2410C;
-}
-
-/* Đã nhận việc — Xanh lá */
-.status-accept {
-  background: #DCFCE7;
-  color: #166534;
-}
-
-/* Đã thông báo thời gian TT — Xanh dương */
-.status-inform {
-  background: #DBEAFE;
-  color: #1D4ED8;
+.range-btn-ok {
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
 }
 
 /* ===================== END CANDIDATE MANAGEMENT PAGE CSS ===================== */
+
+
+/* === OVERRIDE RIÊNG CHO FILTER "Ngày PV" === */
+
+/* Khung bao bên ngoài */
+.filter-item.range-filter {
+  flex: 0 0 360px;      /* cố định ~360px, rộng hơn các filter khác */
+}
+
+/* Nút "Ngày PV: từ - đến" */
+.filter-select.range-filter-toggle {
+  width: 360px !important;      /* ép rộng hẳn ra 360px */
+  min-width: 360px !important;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  /* bỏ mũi tên dropdown của .filter-select */
+  background-image: none;
+  padding-right: 10px;
+}
+
+/* Text bên trong */
+.range-filter-label {
+  flex: 1;
+  text-align: left;
+}
+

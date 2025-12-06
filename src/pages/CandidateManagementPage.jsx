@@ -5,6 +5,7 @@ import api from "../services/api"; // Dùng axios instance chung
 
 import AddCandidateModal from "../components/AddCandidateModal";
 import AddResultModal from "../components/AddResultModal";
+import DatePicker from "../components/DatePicker";
 
 import Layout from "../components/Layout";
 import Pagination from "../components/Pagination";
@@ -17,9 +18,84 @@ import "../styles/CandidateManagementPage.css";
 import { HiUserGroup } from "react-icons/hi";
 import { FiSearch } from "react-icons/fi";
 
+/**
+ * ✅ Component gộp bộ lọc ngày phỏng vấn (Từ - Đến) vào 1 filter
+ */
+function InterviewDateFilter({ from, to, onChange }) {
+  const [open, setOpen] = useState(false);
+
+  const formatPayloadDate = (payload) => {
+    if (!payload?.value) return "";
+    const d = new Date(payload.value);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("vi-VN");
+  };
+
+  const fromLabel = formatPayloadDate(from) || "...";
+  const toLabel = formatPayloadDate(to) || "...";
+
+  const displayLabel =
+    from?.value || to?.value
+      ? `Ngày PV: ${fromLabel} → ${toLabel}`
+      : "Ngày PV (từ - đến)";
+
+  return (
+    <div className="filter-item range-filter">
+      {/* Nút mở popover */}
+      <button
+  type="button"
+  className="filter-select range-filter-toggle"
+  onClick={() => setOpen((o) => !o)}
+>
+        <span className="range-filter-label">{displayLabel}</span>
+      </button>
+
+      {open && (
+        <div className="range-popover">
+          <div className="range-row">
+            <span className="range-row-label">Từ:</span>
+            <DatePicker
+              selectedDate={from}
+              onDateChange={(value) => onChange({ from: value, to })}
+            />
+          </div>
+
+          <div className="range-row">
+            <span className="range-row-label">Đến:</span>
+            <DatePicker
+              selectedDate={to}
+              onDateChange={(value) => onChange({ from, to: value })}
+            />
+          </div>
+
+          <div className="range-footer">
+            <button
+              type="button"
+              className="range-btn range-btn-clear"
+              onClick={() => {
+                onChange({ from: null, to: null });
+                setOpen(false);
+              }}
+            >
+              Xóa
+            </button>
+            <button
+              type="button"
+              className="range-btn range-btn-ok"
+              onClick={() => setOpen(false)}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function CandidateManagementPage() {
   const { user } = useAuth(); // ✅ Lấy user info
-  const role = user?.role;    // ✅ Lấy role
+  const role = user?.role; // ✅ Lấy role
 
   // ✅ PHÂN QUYỀN:
   // 1. Thêm mới: Chỉ HR & Admin. (QLDT & LEAD bị ẩn nút)
@@ -74,6 +150,18 @@ export default function CandidateManagementPage() {
     fetchConfirmedPlans();
   }, []);
 
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [planFilter, setPlanFilter] = useState("");
+
+  // ✅ Dùng 2 state này cho filter ngày PV (from - to)
+  const [interviewFrom, setInterviewFrom] = useState(null);
+  const [interviewTo, setInterviewTo] = useState(null);
+
   useEffect(() => {
     const planId = searchParams.get("planId");
     const planName = searchParams.get("planName");
@@ -87,14 +175,6 @@ export default function CandidateManagementPage() {
       }
     }
   }, [searchParams]);
-
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isAnimating, setIsAnimating] = useState(false);
-
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [planFilter, setPlanFilter] = useState("");
 
   const normalizePlan = (raw) => {
     const id = raw.id ?? raw.recruitmentPlanId ?? raw.planId ?? null;
@@ -117,35 +197,82 @@ export default function CandidateManagementPage() {
     return normalized;
   }, [planOptions, prefilledPlan]);
 
-  const filteredCandidates = useMemo(
-    () =>
-      (candidates || []).filter((c) => {
-        const keyword = searchTerm.trim().toLowerCase();
-        if (keyword) {
-          const name = (c.fullName || c.name || "").toLowerCase();
-          const email = (c.email || "").toLowerCase();
-          const phone = (c.phone || c.phoneNumber || "").toLowerCase();
-          if (
-            !name.includes(keyword) &&
-            !email.includes(keyword) &&
-            !phone.includes(keyword)
-          ) {
-            return false;
-          }
+  const getDateRange = (payload) => {
+    if (!payload?.value) return null;
+
+    const base = new Date(payload.value);
+    if (Number.isNaN(base.getTime())) return null;
+
+    const filterMode = payload.filterMode || "day";
+    const year = payload.displayYear ?? base.getFullYear();
+    const month = payload.displayMonth ?? base.getMonth();
+
+    if (filterMode === "month") {
+      return {
+        start: new Date(year, month, 1, 0, 0, 0, 0),
+        end: new Date(year, month + 1, 0, 23, 59, 59, 999),
+      };
+    }
+
+    if (filterMode === "year") {
+      return {
+        start: new Date(year, 0, 1, 0, 0, 0, 0),
+        end: new Date(year, 11, 31, 23, 59, 59, 999),
+      };
+    }
+
+    const day = base.getDate();
+    return {
+      start: new Date(year, month, day, 0, 0, 0, 0),
+      end: new Date(year, month, day, 23, 59, 59, 999),
+    };
+  };
+
+  const filteredCandidates = useMemo(() => {
+    const fromRange = getDateRange(interviewFrom);
+    const toRange = getDateRange(interviewTo);
+
+    return (candidates || []).filter((c) => {
+      // Search text
+      const keyword = searchTerm.trim().toLowerCase();
+      if (keyword) {
+        const name = (c.fullName || c.name || "").toLowerCase();
+        const email = (c.email || "").toLowerCase();
+        const phone = (c.phone || c.phoneNumber || "").toLowerCase();
+        if (!name.includes(keyword) && !email.includes(keyword) && !phone.includes(keyword)) {
+          return false;
         }
-        if (statusFilter) {
-          const status = (c.status || "").toLowerCase();
-          if (status !== statusFilter.toLowerCase()) return false;
+      }
+
+      // Trạng thái
+      if (statusFilter) {
+        const status = (c.status || "").toLowerCase();
+        if (status !== statusFilter.toLowerCase()) return false;
+      }
+
+      // Kế hoạch
+      if (planFilter) {
+        if (c.recruitmentPlanId?.toString() !== planFilter) {
+          return false;
         }
-        if (planFilter) {
-          if (c.recruitmentPlanId?.toString() !== planFilter) {
-            return false;
-          }
-        }
-        return true;
-      }),
-    [candidates, searchTerm, statusFilter, planFilter]
-  );
+      }
+
+      // Ngày phỏng vấn / hẹn thực tập
+      const interviewValue = c.interviewDate || c.interview_date;
+
+      if ((fromRange || toRange) && !interviewValue) return false;
+
+      if (interviewValue && (fromRange || toRange)) {
+        const interviewDate = new Date(interviewValue);
+        if (Number.isNaN(interviewDate.getTime())) return false;
+
+        if (fromRange && interviewDate < fromRange.start) return false;
+        if (toRange && interviewDate > toRange.end) return false;
+      }
+
+      return true;
+    });
+  }, [candidates, interviewFrom, interviewTo, planFilter, searchTerm, statusFilter]);
 
   const filteredSorted = useMemo(
     () =>
@@ -179,7 +306,7 @@ export default function CandidateManagementPage() {
   const handleViewCandidate = (candidate) => {
     // Chỉ xem, Modal sẽ tự khóa input dựa trên role LEAD trong đó
     setSelectedCandidate(candidate);
-    setShowEditModal(true); 
+    setShowEditModal(true);
   };
 
   const handleEditCandidate = (candidate) => {
@@ -222,7 +349,10 @@ export default function CandidateManagementPage() {
   };
 
   // Helper để hiển thị tooltip khi bị disable
-  const flashEditTooltip = (btnWrapperEl, message = "Bạn không có quyền thực hiện thao tác này") => {
+  const flashEditTooltip = (
+    btnWrapperEl,
+    message = "Bạn không có quyền thực hiện thao tác này"
+  ) => {
     const tip = btnWrapperEl?.querySelector(".action-tooltip");
     if (!tip) return;
     const original = tip.textContent;
@@ -324,6 +454,17 @@ export default function CandidateManagementPage() {
               </select>
             </div>
 
+            {/* ✅ Gộp bộ lọc ngày phỏng vấn vào 1 filter */}
+            <InterviewDateFilter
+              from={interviewFrom}
+              to={interviewTo}
+              onChange={({ from, to }) => {
+                setInterviewFrom(from);
+                setInterviewTo(to);
+                setCurrentPage(1);
+              }}
+            />
+
             {/* ✅ Nút Thêm ứng viên: Chỉ HR & Admin thấy */}
             <div className="filter-item filter-right-group">
               {canAddCandidate && (
@@ -392,7 +533,9 @@ export default function CandidateManagementPage() {
                         </td>
                         <td style={{ textAlign: "center" }}>
                           <span
-                            className={`status-badge ${getStatusClass(status)}`}
+                            className={`status-badge ${getStatusClass(
+                              status
+                            )}`}
                           >
                             {status}
                           </span>
@@ -401,19 +544,23 @@ export default function CandidateManagementPage() {
                           <ActionButtons
                             // LEAD vẫn được xem
                             onView={() => handleViewCandidate(c)}
-                            
                             // Sửa: Kiểm tra quyền canInteract
                             onEdit={(e) => {
                               if (!canInteract) {
                                 e?.preventDefault?.();
-                                const wrapper = e?.currentTarget?.closest(".btn-action-wrapper")
-                                  || e?.target?.closest(".btn-action-wrapper");
-                                flashEditTooltip(wrapper, "Bạn không có quyền chỉnh sửa");
+                                const wrapper =
+                                  e?.currentTarget?.closest(
+                                    ".btn-action-wrapper"
+                                  ) ||
+                                  e?.target?.closest(".btn-action-wrapper");
+                                flashEditTooltip(
+                                  wrapper,
+                                  "Bạn không có quyền chỉnh sửa"
+                                );
                                 return;
                               }
                               handleEditCandidate(c);
                             }}
-                            
                             // Prop để hiện icon mờ/cấm nếu không có quyền
                             canEdit={canInteract}
                           />
