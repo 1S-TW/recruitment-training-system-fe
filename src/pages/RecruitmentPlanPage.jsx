@@ -389,7 +389,14 @@ const RecruitmentPlanPage = () => {
       const fullPlanName = buildFullPlanName(form.planName);
       const payload = { ...form, planName: fullPlanName };
       await axiosAuth.post("/api/recruitment-plans", payload);
-      try { await axiosAuth.put(`/api/hr-request/${form.requestId}/approve`, { params: { note: "" } }); } catch (err) { console.error("Không thể cập nhật trạng thái nhu cầu:", err); }
+      const requestStatus = String(form.status || "").toUpperCase();
+      if (requestStatus === "NEW") {
+        try {
+          await axiosAuth.put(`/api/hr-request/${form.requestId}/approve`, { params: { note: "" } });
+        } catch (err) {
+          console.error("Không thể cập nhật trạng thái nhu cầu:", err);
+        }
+      }
       window.dispatchEvent(new Event("hr:requests:changed"));
       setOpenAddModal(false);
       await loadPlans();

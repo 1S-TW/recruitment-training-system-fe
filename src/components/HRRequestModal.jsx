@@ -826,40 +826,10 @@ export default function HRRequestModal({
 
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      const url = `http://localhost:8080/api/hr-request/${
-        request.requestId
-      }/approve?note=${encodeURIComponent(note || "")}`;
-
-      const res = await fetch(url, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!res.ok) {
-        const msg = await readErrorMessage(res);
-        if (res.status === 401)
-          alert("⚠️ Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
-        else if (res.status === 403)
-          alert("⚠️ Bạn không có quyền phê duyệt yêu cầu này.");
-        else if (res.status === 409) alert(`⚠️ Không thể phê duyệt: ${msg}`);
-        else if (res.status === 400)
-          alert(`⚠️ Dữ liệu không hợp lệ: ${msg}`);
-        else alert(`⚠️ Lỗi khi phê duyệt yêu cầu: ${msg}`);
-        onActionError?.(msg);
-        return;
-      }
-
-      onActionSuccess?.();
+      // Chỉ chuyển sang bước tạo kế hoạch; không phê duyệt ở bước này để tránh bắn thông báo sớm
       onClose();
       navigate(`/recruitment/plan?requestId=${request.requestId}`);
-    } catch (err) {
-      const msg = err?.message || "";
-      alert(`⚠️ Lỗi mạng khi phê duyệt yêu cầu: ${msg}`);
-      onActionError?.(msg);
+
     } finally {
       setLoading(false);
     }
