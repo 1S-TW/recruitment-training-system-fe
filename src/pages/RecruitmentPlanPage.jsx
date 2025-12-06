@@ -148,6 +148,7 @@ const RecruitmentPlanPage = () => {
   const [modalStep, setModalStep] = useState(0);
   const [rejectReason, setRejectReason] = useState("");
   const [planMeta, setPlanMeta] = useState(INITIAL_PLAN_META);
+    const [pendingPlanName, setPendingPlanName] = useState("");
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -204,6 +205,28 @@ const RecruitmentPlanPage = () => {
     loadPlans();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (location.state?.planName) {
+      setPendingPlanName(location.state.planName);
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    if (!pendingPlanName || !plans.length) return;
+
+    const matchedPlan = plans.find(
+      (plan) => (plan.planName || "").toLowerCase() === pendingPlanName.toLowerCase()
+    );
+
+    if (matchedPlan) {
+      setSelectedPlan(matchedPlan);
+      setModalStep(1);
+      setSearchName(pendingPlanName);
+    }
+
+    setPendingPlanName("");
+  }, [pendingPlanName, plans]);
 
   const handleOpenCandidateManagement = useCallback(() => {
     if (!selectedPlan?.recruitmentPlanId) return;

@@ -2,6 +2,7 @@
 // Header.jsx (pure CSS)
 import { Bell, User, LogOut, Check } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../contexts/AuthContext";
 import { getNotifications, markAsRead } from "../services/notificationService";
@@ -19,6 +20,7 @@ export default function Header() {
   const [activeTab, setActiveTab] = useState("all");
 
   const { user, logoutUser } = useAuth();
+  const navigate = useNavigate();
 
   // ref để bắt click outside
   const bellRef = useRef(null);
@@ -77,16 +79,40 @@ export default function Header() {
   const readNotifications = notifications.filter((n) => n.read);
   const unreadCount = unreadNotifications.length;
 
-  const handleNotificationClick = async (id) => {
+   const extractQuotedText = (text = "") => {
+    const match = text.match(/"([^"]+)"/);
+    return match ? match[1] : "";
+  };
+
+  const getNotificationTarget = (notification = {}) => {
+    const combinedText = `${notification.title || ""} ${notification.content || ""}`.toLowerCase();
+
+    if (combinedText.includes("nhu cầu nhân sự mới")) {
+      const requestTitle = extractQuotedText(notification.content || notification.title);
+      return { path: "/recruitment/needs", state: requestTitle ? { requestTitle } : undefined };
+    }
+
+    if (combinedText.includes("kế hoạch tuyển dụng đã được duyệt")) {
+      const planName = extractQuotedText(notification.content || notification.title);
+      return { path: "/recruitment/plan", state: planName ? { planName } : undefined };
+    }
+
+    return null;
+  };
+
+  const handleNotificationClick = async (notification) => {
     try {
-      await markAsRead(id);
+      await markAsRead(notification.id);
       setNotifications((prev) =>
         prev.map((item) =>
-          item.id === id ? { ...item, read: true } : item
+          item.id === notification.id ? { ...item, read: true } : item
         )
       );
-      // nếu muốn click xong đóng panel thì thêm:
-      // setShowBell(false);
+      const target = getNotificationTarget(notification);
+      if (target) {
+        navigate(target.path, { state: target.state });
+        setShowBell(false);
+      }
     } catch (error) {
       console.error("Failed to mark notification as read", error);
     }
@@ -193,7 +219,7 @@ export default function Header() {
                           className={`notification__item ${
                             isUnread ? "notification__item--unread" : ""
                           }`}
-                          onClick={() => handleNotificationClick(n.id)}
+                          onClick={() => handleNotificationClick(n)}
                         >
                           <span
                             className={`notification__dot ${

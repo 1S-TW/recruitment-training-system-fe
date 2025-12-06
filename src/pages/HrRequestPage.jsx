@@ -1,5 +1,6 @@
 // src/pages/HrRequestPage.jsx
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import useHrRequests from "../hooks/useHrRequests";
 import Layout from "../components/Layout";
 import ActionButtons from "../components/ActionButtons.jsx";
@@ -87,6 +88,7 @@ export default function HrRequestPage() {
   const [searchName, setSearchName] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [selectedDate, setSelectedDate] = useState(null);
+    const [pendingRequestTitle, setPendingRequestTitle] = useState("");
 
   const [showModal, setShowModal] = useState(false);
   const [editData, setEditData] = useState(null);
@@ -102,6 +104,7 @@ export default function HrRequestPage() {
   // Hàm kiểm tra trạng thái có thể sửa hay không (chỉ NEW)
   const isStatusEditable = (status) =>
     String(status || "").toUpperCase() === "NEW";
+    const location = useLocation();
 
   const filteredRequests = (requests || []).filter((req) => {
     const matchesName = (req.requestTitle || "")
@@ -206,6 +209,26 @@ export default function HrRequestPage() {
     window.addEventListener("hr:requests:changed", handler);
     return () => window.removeEventListener("hr:requests:changed", handler);
   }, [refetch]);
+   useEffect(() => {
+    if (location.state?.requestTitle) {
+      setPendingRequestTitle(location.state.requestTitle);
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    if (!pendingRequestTitle || !requests?.length) return;
+
+    const matchedRequest = requests.find(
+      (req) => (req.requestTitle || "").toLowerCase() === pendingRequestTitle.toLowerCase()
+    );
+
+    if (matchedRequest) {
+      setSelectedRequest(matchedRequest);
+      setSearchName(pendingRequestTitle);
+    }
+
+    setPendingRequestTitle("");
+  }, [pendingRequestTitle, requests]);
 
   return (
     <Layout>
