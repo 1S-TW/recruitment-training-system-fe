@@ -1,164 +1,535 @@
-/* === EditTrainingModal.css === */
+/* === EditTrainingModal.css - Phiên bản cuối cùng, siêu sạch & đẹp === */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 2000;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 9998;
+  animation: fadeInOverlay 0.25s ease;
 }
 
-.modal-content {
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.edit-training-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 95%;
+  max-width: 1100px;
+  max-height: 92vh;
   background: #ffffff;
   border-radius: 16px;
-  padding: 28px;
-  width: 95%;
-  max-width: 900px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
-  position: relative;
-  animation: fadeIn 0.2s ease;
-}
-
-.modal-close {
-  position: absolute;
-  top: 12px;
-  right: 14px;
-  font-size: 20px;
-  cursor: pointer;
-  background: #f3f4f6;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: 0.2s;
-}
-
-.modal-close:hover {
-  background: #e5e7eb;
-}
-
-.training-info {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-bottom: 16px;
-  font-size: 15px;
+  z-index: 9999;
+  animation: modalPop 0.3s ease;
 }
 
-/* === EditTrainingModal.css - kiểu bảng sạch, không viền === */
-.scores-table {
-  overflow-x: auto;
-  margin-bottom: 16px;
-  border-collapse: collapse;
-  width: 100%;
+@keyframes modalPop {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.95); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 
-.scores-header,
-.scores-row {
-  display: grid;
-  grid-template-columns: 1.5fr repeat(4, 1fr);
-  gap: 4px; /* giảm khoảng cách */
+/* ==================== HEADER ==================== */
+.modal-header {
+  padding: 18px 24px;
+  background: linear-gradient(135deg, #1e40af, #1d4ed8);
+  color: white;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  position: relative;
-}
-
-.subject-cell {
-  padding: 4px 6px;
-  text-align: center;
-  font-size: 13px;
-}
-
-.scores-header .subject-cell {
+  font-size: 1.5rem;
   font-weight: 600;
-  background-color: #f8fafc; /* nền nhẹ cho header */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-.score-input {
-  width: 50px; /* nhỏ gọn hơn */
-  padding: 2px 4px;
-  border: 1px solid #cbd5e1;
-  border-radius: 4px;
-  font-size: 12px;
-  text-align: center;
-}
-
-.total-cell {
+.modal-close-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  font-size: 26px;
+  cursor: pointer;
   display: flex;
+  align-items: center;
   justify-content: center;
-  align-items: center;
-  gap: 4px;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
 }
 
-.total-flex {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+.modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+  transform: scale(1.1);
+}
+
+/* ==================== BODY ==================== */
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  background: #f8fafc;
+}
+
+.training-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  font-size: 14.5px;
+}
+
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-weight: 600;
   font-size: 13px;
+  background: #dbeafe;
+  color: #1e40af;
 }
 
-.overall-scores {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 16px;
+/* Bảng điểm - chỉ còn 5 cột */
+.scores-table-container {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  margin-bottom: 20px;
+}
+
+.scores-table {
+  width: 100%;
+  border-collapse: collapse;
   font-size: 14px;
 }
 
-.overall-scores input {
-  padding: 4px 6px;
-  border-radius: 4px;
-  border: 1px solid #cbd5e1;
-  width: 120px;
-  font-size: 12px;
+.scores-table th {
+  background: #1e40af;
+  color: white;
+  padding: 14px 10px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 13.5px;
+}
+
+.scores-table td {
+  padding: 14px 10px;
+  text-align: center;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.scores-table tbody tr:hover {
+  background: #f0f9ff;
+}
+
+.subject-name {
+  font-weight: 600;
+  color: #1e293b;
+  text-align: left !important;
+  padding-left: 20px;
+  font-size: 14.5px;
+}
+
+/* Cố định chiều rộng 5 cột */
+.scores-table th:nth-child(1),
+.scores-table td:nth-child(1) { width: 32%; text-align: left; }
+.scores-table th:nth-child(2),
+.scores-table td:nth-child(2) { width: 15%; }
+.scores-table th:nth-child(3),
+.scores-table td:nth-child(3) { width: 15%; }
+.scores-table th:nth-child(4),
+.scores-table td:nth-child(4) { width: 15%; }
+.scores-table th:nth-child(5),
+.scores-table td:nth-child(5) { width: 23%; }
+
+.score-input {
+  width: 78px;
+  height: 42px;
+  padding: 0 8px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 15px;
+  text-align: center;
+  transition: all 0.2s;
+  background: white;
+}
+
+.score-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+}
+
+.score-input:disabled {
+  background: #f8fafc;
+  color: #64748b;
+  cursor: not-allowed;
+  border-color: #e2e8f0;
+}
+
+.row-disabled {
+  opacity: 0.6;
+  background: #f9fafb !important;
+}
+
+/* Tổng điểm + icon lịch sử */
+.total-cell {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.total-with-history {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+}
+
+.history-trigger {
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  color: #6366f1;
+  user-select: none;
+  transition: all 0.2s;
+}
+
+.history-trigger:hover {
+  color: #4f46e5;
+  transform: scale(1.2);
+}
+
+.history-tooltip {
+  position: absolute;
+  top: -48px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e293b;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.25s ease;
+  z-index: 10;
+  pointer-events: none;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  font-weight: 500;
+}
+
+.history-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #1e293b;
+}
+
+.history-trigger:hover .history-tooltip {
+  opacity: 1;
+  visibility: visible;
+  top: -54px;
+}
+
+/* ==================== LỊCH SỬ CHẤM ĐIỂM - SIÊU ĐẸP, CỘT LẦN NHỎ, LÝ DO RỘNG ==================== */
+.history-expanded-row {
+  background: #f0f9ff !important;
+}
+
+.history-detail {
+  padding: 20px !important;
+  background: #f8fafc;
+  border-top: 3px solid #6366f1;
+  border-radius: 0 0 12px 12px;
+}
+
+.history-title {
+  font-weight: 700;
+  color: #1e40af;
+  margin-bottom: 14px;
+  font-size: 15px;
+  text-align: center;
+  background: #e0e7ff;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.inner-history-table {
+  width: 100%;
+  font-size: 13.8px;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  margin-top: 8px;
+}
+
+.inner-history-table th {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: white;
+  padding: 14px 8px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 13.5px;
+}
+
+/* Cột "Lần" - siêu nhỏ gọn */
+.inner-history-table th:nth-child(1),
+.inner-history-table td:nth-child(1) {
+  width: 48px;
+  min-width: 48px;
+  max-width: 48px;
+  font-weight: bold;
+  color: #1e40af;
+  font-size: 14.5px;
+}
+
+/* 4 cột điểm: cân đối */
+.inner-history-table th:nth-child(2),
+.inner-history-table th:nth-child(3),
+.inner-history-table th:nth-child(4),
+.inner-history-table th:nth-child(5),
+.inner-history-table td:nth-child(2),
+.inner-history-table td:nth-child(3),
+.inner-history-table td:nth-child(4),
+.inner-history-table td:nth-child(5) {
+  width: 90px;
+  min-width: 85px;
   text-align: center;
 }
 
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 16px;
+/* Cột "Lý do" - rộng nhất, xuống dòng đẹp */
+.inner-history-table th:nth-child(6),
+.inner-history-table td:nth-child(6) {
+  width: auto;
+  min-width: 240px;
+  max-width: none;
+  text-align: left;
+  padding: 12px 16px;
 }
 
-.btn-cancel {
-  background: #ef4444;
-  color: #fff;
-  padding: 6px 12px;
+.inner-history-table td {
+  padding: 12px 8px;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: top;
+}
+
+.inner-history-table tbody tr:hover {
+  background: #eef2ff;
+}
+
+/* Lý do: xuống dòng đẹp, dễ đọc */
+.reason-text {
+  font-style: italic;
+  color: #dc2626;
+  line-height: 1.6;
+  word-wrap: break-word;
+  white-space: normal;
+  max-width: 100%;
+  font-weight: 500;
+}
+
+/* Nếu không có lý do */
+.reason-text:empty::before,
+.reason-text:contains("—") {
+  content: "—";
+  color: #94a3b8;
+  font-style: normal;
+  font-weight: normal;
+}
+
+
+/* ==================== FOOTER ==================== */
+.modal-footer {
+  padding: 20px 24px;
+  background: #f1f5f9;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.footer-left, .footer-right {
+  display: flex;
+  gap: 14px;
+}
+
+.btn-save, .btn-stop {
+  padding: 12px 28px;
   border: none;
-  border-radius: 6px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 15px;
   cursor: pointer;
-  font-size: 13px;
+  transition: all 0.2s;
+  min-width: 140px;
 }
 
 .btn-save {
-  background: #22c55e;
-  color: #fff;
-  padding: 6px 12px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
+  background: #10b981;
+  color: white;
 }
 
-.btn-disabled {
-  opacity: 0.5;
+.btn-save:hover {
+  background: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+}
+
+.btn-stop {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-stop:hover {
+  background: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .modal-header h2 { font-size: 1.3rem; }
+  .scores-table th, .scores-table td { padding: 10px 6px; font-size: 13px; }
+  .score-input { width: 64px; height: 38px; font-size: 14px; }
+  .summary-section { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .team-review input { width: 100%; }
+  .history-tooltip { font-size: 12px; padding: 6px 10px; }
+  .inner-history-table th:nth-child(6),
+  .inner-history-table td:nth-child(6) { min-width: 160px; }
+}
+/* Ô nhập lý do hiện dưới dòng - giống lịch sử */
+.reason-expanded-row {
+  background: #fff5f5 !important;
+}
+
+.reason-detail {
+  padding: 16px 20px !important;
+  background: #fef2f2;
+  border-top: 3px solid #ef4444;
+}
+
+.reason-title {
+  font-weight: 700;
+  color: #dc2626;
+  margin-bottom: 10px;
+  font-size: 14.5px;
+}
+
+.reason-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #fca5a5;
+  border-radius: 10px;
+  font-size: 14px;
+  background: white;
+  resize: vertical;
+  min-height: 70px;
+}
+
+.reason-textarea:focus {
+  outline: none;
+  border-color: #ef4444;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15);
+}
+
+.reason-textarea::placeholder {
+  color: #ef4444;
+  font-style: italic;
+}
+
+/* Tổng kết + Kết quả thực tập cùng 1 hàng - Đẹp như app ngân hàng */
+.summary-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 14px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  font-size: 17px;
+  font-weight: 600;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.summary-result-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.summary-score {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e40af;
+  min-width: 60px;
+}
+
+/* Đánh giá team full width - Siêu đẹp */
+.team-review-full {
+  padding: 20px 24px;
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+}
+
+.team-review-label {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 16px;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.team-review-textarea {
+  width: 100%;
+  padding: 16px 20px;
+  border: 2px solid #cbd5e1;
+  border-radius: 12px;
+  font-size: 15.5px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 120px;
+  transition: all 0.25s ease;
+  background: #ffffff;
+  line-height: 1.6;
+}
+
+.team-review-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.15);
+  background: #fff;
+}
+
+.team-review-textarea:disabled {
+  background: #f8fafc;
+  color: #64748b;
   cursor: not-allowed;
+  opacity: 0.9;
 }
 
-.score-locked {
-  opacity: 0.65;
-}
-
-.score-locked .score-input {
-cursor: default;
-  pointer-events: none;
-
-}
-
-/* Animation */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+.team-review-textarea::placeholder {
+  color: #94a3b8;
+  font-style: italic;
 }

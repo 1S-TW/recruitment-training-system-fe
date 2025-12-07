@@ -1,12 +1,16 @@
-/* ===================== Training Page CSS ===================== */ 
+/* ===================== Training Page CSS ===================== */
+/* --- THEME / VARIABLES --- */
+:root {
+    --subject-width: 160px;
+    /* <- chỉnh giá trị này để thay đổi chiều rộng 1 môn (mặc định 160px) */
+}
 
 /* --- PAGE BASE --- */
 .training-page {
     padding: 24px 32px;
-    font-family: "Inter", "Segoe UI", sans-serif;
     color: #111827;
     background-color: #ffffff;
-    min-height: 100vh;
+
 }
 
 /* --- BREADCRUMB --- */
@@ -131,6 +135,7 @@
     width: 200px;
     padding-right: 26px;
 }
+
 .filter-select {
     width: 150px;
 }
@@ -141,6 +146,7 @@
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
     transform: translateY(-1px);
 }
+
 .filter-input:focus,
 .filter-select:focus {
     border-color: #0284c7;
@@ -159,49 +165,71 @@
     pointer-events: none;
 }
 
-/* --- TABLE 3 PHẦN --- */
 .training-table-container {
-    display: flex;
-    position: relative;
     width: 100%;
-    overflow-x: auto;
+    display: flex;
+    overflow-x: hidden;
+    position: relative;
 }
+
 
 /* ============================================
    RESET & STYLE CHUNG CHO CẢ 3 BẢNG
+   (giảm min-width chung để không phình quá lớn)
 =============================================== */
-.training-table-fixed th,
-.training-table-fixed td,
+.training-table-fixed-left th,
+.training-table-fixed-left td,
 .training-table-fixed-right th,
 .training-table-fixed-right td,
 .training-table-scroll th,
 .training-table-scroll td {
     padding: 8px 12px;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid #ffffff;
     white-space: nowrap;
     text-align: center;
     background: #ffffff;
-    min-width: 140px;        /* ⭐ tất cả ô rộng bằng nhau */
-    box-sizing: border-box; 
-    height: 52px !important;
-    vertical-align: middle; /* ⭐ giúp border không làm lệch width */
+    min-width: 120px ;
+    box-sizing: border-box;
+    height: 52px ;
+    vertical-align: middle;
 }
+
 /* FIX: Cố định riêng chiều cao cho ô tiêu đề (th) */
-.training-table-fixed th,
+.training-table-fixed-left th,
 .training-table-fixed-right th,
 .training-table-scroll th {
-    height: 52px !important; /* Đảm bảo hàng tiêu đề bằng hàng dữ liệu */
-    white-space: normal; /* Cho phép tiêu đề dài xuống dòng */
+    height: 52px !important;
+    /* Đảm bảo hàng tiêu đề bằng hàng dữ liệu */
+    white-space: nowrap;
+    /* Cho phép tiêu đề dài xuống dòng */
 }
+
 /* ============================================
    BẢNG TRÁI CỐ ĐỊNH
 =============================================== */
-.training-table-fixed {
+.training-table-fixed-left {
     position: sticky;
     left: 0;
     z-index: 3;
-    background: white;
+    background: rgb(255, 255, 255);
     border-right: 1px solid #e2e8f0;
+    /* tránh ảnh hưởng chiều cao khác */
+    box-shadow: 1px 0 0 rgba(0, 0, 0, 0.02);
+    align-self: flex-start !important;
+}
+
+/* đảm bảo table fixed trái nhỏ gọn */
+.training-table-fixed-left {
+    border-collapse: collapse;
+    background: white;
+}
+/* Make left table rows match right table height */
+.training-table-fixed-left th,
+.training-table-fixed-left td {
+    height: 52px !important;
+    line-height: 18px !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
 }
 
 /* ============================================
@@ -212,35 +240,75 @@
     right: 0;
     z-index: 3;
     background: white;
-    border-left: 1px solid #e2e8f0;
+    border-right: 1px solid #e2e8f0;
+    /* tránh ảnh hưởng chiều cao khác */
+    box-shadow: 1px 0 0 rgba(0, 0, 0, 0.02);
+    align-self: flex-start !important;
 }
+
+/* đảm bảo table fixed trái nhỏ gọn */
+.training-table-fixed-right {
+    border-collapse: collapse;
+    background: white;
+}
+
+/* Make right table rows match left table height */
+.training-table-fixed-right th,
+.training-table-fixed-right td {
+    height: 52px !important;
+    line-height: 18px !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
 
 /* ============================================
-   BẢNG GIỮA CUỘN NGANG
+   BẢNG GIỮA CUỘN NGANG (CHỈ HIỂN THỊ 2 MÔN)
 =============================================== */
+/* key change: giới hạn chỉ hiển thị đủ 2 môn */
 .training-table-scroll {
     overflow-x: auto;
-    width: 280px;   /* ⭐ giữ khả năng cuộn */
- 
+    flex: 0 0 auto;
+    max-width: calc(var(--subject-width) * 2 + 20px);
+    /* + padding/border room */
+    -webkit-overflow-scrolling: touch;
 }
 
+/* ensure middle table doesn't stretch parent */
 .training-table-scroll table {
-    width: auto !important;    /* ⭐ xoá độ rộng cứng */
-    table-layout: fixed;    
+    width: auto !important;
+    /* giữ width theo nội dung */
+    table-layout: fixed;
+    border-collapse: collapse;
 }
+
+/* enforce subject column width for middle table */
+.training-table-scroll th,
+.training-table-scroll td {
+    min-width: var(--subject-width);
+    width: var(--subject-width);
+    max-width: var(--subject-width);
+    box-sizing: border-box;
+    border: none;
+    /* match previous behavior (no extra border) */
+    padding: 8px 10px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 
 /* ============================================
    BỎ VIỀN RIÊNG CỦA BẢNG GIỮA (nếu còn)
 =============================================== */
 .training-table-scroll th,
 .training-table-scroll td {
-    border: none;   /* ⭐ để bảng 2 giống hệt 1 + 3 */
+    border: none;
 }
 
-
-
- /* --- STATUS BADGE --- */
-  .training-page.status-badge {
+/* --- STATUS BADGE --- */
+.training-page.status-badge {
     display: inline-block;
     padding: 4px 9px;
     border-radius: 6px;
@@ -251,28 +319,31 @@
     background: #f8fafc;
     color: #475569;
     letter-spacing: 0.2px;
-  }
+}
 
-  .status-badge.status-intern {
+.status-badge.status-intern {
     background: #e0f2fe;
     border-color: #60a5fa;
     color: #1d4ed8;
-  }
-  .status-badge.status-completed {
+}
+
+.status-badge.status-completed {
     background: #dcfce7;
     border-color: #86efac;
     color: #166534;
-  }
-  .status-badge.status-stopped {
+}
+
+.status-badge.status-stopped {
     background: #fee2e2;
     border-color: #fca5a5;
     color: #b91c1c;
-  }
-  .status-badge.status-unknown {
+}
+
+.status-badge.status-unknown {
     background: #f8fafc;
     border-color: #e2e8f0;
     color: #475569;
-  }
+}
 
 
 /* --- ACTION BUTTONS --- */
@@ -298,6 +369,7 @@
 .btn-view {
     color: #0284c7;
 }
+
 .btn-edit {
     color: #eab308;
 }
@@ -328,6 +400,7 @@
     backdrop-filter: blur(3px);
     z-index: 10;
 }
+
 .btn-action-wrapper:hover .action-tooltip {
     opacity: 1;
     transform: translateX(-50%) scale(1);
@@ -404,85 +477,45 @@
 }
 
 @keyframes fadeSlideIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes fadeSlideOut {
-    from { opacity: 1; transform: translateY(0); }
-    to { opacity: 0; transform: translateY(-8px); }
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
 }
 
 @keyframes slideIn {
-    from { opacity: 0; transform: translateX(12px); }
-    to { opacity: 1; transform: translateX(0); }
+    from {
+        opacity: 0;
+        transform: translateX(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
-/* ========================================================= */
-/*               CỘT MÔN HỌC — SCROLL NGANG OPTIMIZED      */
-/* ========================================================= */
-
-.subject-col {
-  padding: 0 !important;
-  min-width: 400px;   /* tăng tổng độ rộng container */
-  max-width: 100%;
-}
-
-/* Header và body dùng chung grid, scroll ngang */
-.subject-header-row,
-.subject-body-row {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 120px; /* tăng từ 90px lên 120px */
-  overflow-x: auto;
-  gap: 6px; /* tăng khoảng cách giữa các cột */
-  padding: 6px 4px;
-  white-space: nowrap;
-  align-items: center;
-}
-
-/* Cell cho cả header và body */
-.subject-header-cell,
-.subject-body-cell {
-  text-align: center;
-  padding: 6px 8px;
-  font-size: 13px;
-  border: 1px solid #e2e8f0;
-  border-radius: 4px;
-  background: #fdfdfd;
-
-  width: 120px;
-  min-width: 120px;
-  max-width: 120px;
-
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Header nổi bật hơn */
-.subject-header-cell {
-  background: #eef4ff;
-  font-weight: 600;
-}
-
-/* Scrollbar đẹp */
-.subject-header-row::-webkit-scrollbar,
-.subject-body-row::-webkit-scrollbar {
-  height: 6px;
-}
-
-.subject-header-row::-webkit-scrollbar-thumb,
-.subject-body-row::-webkit-scrollbar-thumb {
-  background: #b8c4d1;
-  border-radius: 3px;
-}
-
-/* Sticky header khi scroll dọc */
-.styled-table thead th.subject-col {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  background: #eef4ff;
-}
 
 /* ===================== END TRAINING PAGE ===================== */
+.training-table-container .col-mid {
+    flex: 1; /* quan trọng */
+    min-width: max-content; /* để không bị ép nhỏ */
+    overflow: visible;
+}
