@@ -338,34 +338,69 @@ export default function CreateRequestModal({
           </div>
 
           {/* FOOTER */}
-          <div className="modal-footer">
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn btn-cancel"
-              disabled={loading}
+            <div
+                className="modal-footer"
+                style={{
+                    display: "flex",
+                    justifyContent: "flex-end", // đẩy nút về bên phải
+                    gap: "8px",
+                    paddingTop: "12px"
+                }}
             >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              disabled={
-                loading || !!dateError || hasInvalidTech || !titleMain.trim()
-              }
-              className="btn btn-submit"
-              aria-busy={loading ? "true" : "false"}
-            >
-              {loading ? (
-                <>
-                  <span className="spinner" /> Đang xử lý...
-                </>
-              ) : (
-                <>
-                  {isEdit ? "Cập nhật" : "Gửi"} <Send size={18} />
-                </>
-              )}
-            </button>
-          </div>
+                <button
+                    type="button"
+                    onClick={onClose}
+                    disabled={loading}
+                    style={{
+                        backgroundColor: loading ? "#ccc" : "#6c757d", // xám đậm
+                        color: "white",
+                        height: "40px",          // tăng chiều cao
+                        minWidth: "100px",       // tăng độ rộng tối thiểu
+                        padding: "0 16px",       // padding lớn hơn
+                        border: "none",
+                        borderRadius: "6px",
+                        fontSize: "15px",        // chữ to hơn chút
+                        fontWeight: "500",
+                        cursor: loading ? "not-allowed" : "pointer"
+                    }}
+                >
+                    Hủy
+                </button>
+
+                <button
+                    type="submit"
+                    disabled={loading || !!dateError || hasInvalidTech || !titleMain.trim()}
+                    aria-busy={loading ? "true" : "false"}
+                    style={{
+                        backgroundColor:
+                            loading || !!dateError || hasInvalidTech || !titleMain.trim()
+                                ? "#ccc"
+                                : "#28a745", // xanh lá
+                        color: "white",
+                        height: "40px",          // tăng chiều cao
+                        minWidth: "100px",       // tăng độ rộng tối thiểu
+                        padding: "0 16px",       // padding lớn hơn
+                        border: "none",
+                        borderRadius: "6px",
+                        fontSize: "15px",        // chữ to hơn chút
+                        fontWeight: "500",
+                        cursor:
+                            loading || !!dateError || hasInvalidTech || !titleMain.trim()
+                                ? "not-allowed"
+                                : "pointer"
+                    }}
+                >
+                    {loading ? (
+                        <>
+                            <span className="spinner" /> Đang xử lý...
+                        </>
+                    ) : (
+                        <>
+                            {isEdit ? "Cập nhật" : "Gửi"}
+                        </>
+                    )}
+                </button>
+            </div>
         </form>
       </div>
     </>
