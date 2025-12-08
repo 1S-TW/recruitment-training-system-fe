@@ -5,6 +5,25 @@ import "../styles/HomePage.css";
 import axios from "axios";
 import "../styles/layout.css";
 
+// =======================
+//   IMPORT RECHARTS (Bước 3)
+// =======================
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  CartesianGrid,
+  ResponsiveContainer,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar
+} from "recharts";
+
 function HomePage() {
   const [activeTab, setActiveTab] = useState("chis0");
 
@@ -48,7 +67,6 @@ function HomePage() {
     }
 
     if (filterType === "all") {
-      // phải gửi khoảng ngày hợp lệ, backend mới hiểu
       start = "1900-01-01";
       end = "2100-12-31";
     }
@@ -65,7 +83,7 @@ function HomePage() {
   // -------------------------
   const fetchDashboard = async () => {
     try {
-let url = `http://localhost:8080/api/dashboard?start=${dateRange.start}&end=${dateRange.end}`;
+      let url = `http://localhost:8080/api/dashboard?start=${dateRange.start}&end=${dateRange.end}`;
 
       console.log("CALL API:", url);
 
@@ -228,14 +246,86 @@ let url = `http://localhost:8080/api/dashboard?start=${dateRange.start}&end=${da
           </>
         )}
 
+        {/* ====================== TAB BIỂU ĐỒ ====================== */}
         {activeTab === "bieu-do" && (
-          <div className="coming-soon">Biểu đồ đang phát triển...</div>
+          <div className="charts-container">
+            <h2 className="title">Biểu đồ thống kê</h2>
+
+            {/* BAR CHART */}
+            <div className="chart-box">
+              <h3>Biểu đồ cột</h3>
+
+              <ResponsiveContainer width="100%" height={350}>
+                <BarChart
+                  data={[
+                    { name: "Nhập học", value: stats?.totalEnroll || 0 },
+                    { name: "Tốt nghiệp", value: stats?.totalGraduate || 0 },
+                    { name: "Fail", value: stats?.totalFail || 0 },
+                    { name: "Quit", value: stats?.totalQuit || 0 },
+                    { name: "Pass/Fail %", value: stats?.passFailRate || 0 },
+                    { name: "Điểm TB", value: stats?.averageFinalScore || 0 },
+                  ]}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="value" fill="#007bff" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* RADAR CHART */}
+            <div className="chart-box">
+              <h3>Biểu đồ Radar </h3>
+
+              <ResponsiveContainer width="100%" height={350}>
+                <RadarChart
+                  outerRadius="75%"
+                  data={[
+                    { subject: "Enroll", value: stats?.totalEnroll || 0 },
+                    { subject: "Graduate", value: stats?.totalGraduate || 0 },
+                    { subject: "Fail", value: stats?.totalFail || 0 },
+                    { subject: "Quit", value: stats?.totalQuit || 0 },
+                    { subject: "Pass%", value: stats?.passFailRate || 0 },
+                    { subject: "Score", value: stats?.averageFinalScore || 0 },
+                  ]}
+                >
+                  <PolarGrid />
+                  <PolarAngleAxis dataKey="subject" />
+                  <PolarRadiusAxis />
+                  <Radar
+                    dataKey="value"
+                    stroke="#ff7300"
+                    fill="#ff7300"
+                    fillOpacity={0.6}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         )}
 
+        {/* TAB TĂNG TRƯỞNG */}
         {activeTab === "tang-truong" && (
           <div className="coming-soon">Thống kê tăng trưởng đang phát triển...</div>
         )}
       </div>
+
+      {/* ===================== CSS (Bước 4) ===================== */}
+      <style>{`
+        .charts-container {
+          margin-top: 20px;
+        }
+        .chart-box {
+          background: white;
+          padding: 20px;
+          border-radius: 12px;
+          margin-bottom: 30px;
+          box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+        }
+      `}</style>
     </Layout>
   );
 }

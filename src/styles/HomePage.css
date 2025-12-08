@@ -89,3 +89,15 @@
   color: #777;
   text-align: center;
 }
+
+.charts-container {
+  margin-top: 20px;
+}
+
+.chart-box {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+}
