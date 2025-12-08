@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import api from "../services/api";
+import { BookOpenCheck } from "lucide-react";
 
 import Layout from "../components/Layout";
 import Pagination from "../components/Pagination";
@@ -212,7 +213,7 @@ export default function TrainingManagementPage() {
       {/* BREADCRUMB */}
       <div className="breadcrumb-container fade-slide">
         <div className="breadcrumb-left">
-          <span className="breadcrumb-icon">Đào tạo</span>
+          <span className="breadcrumb-icon"><BookOpenCheck size={20}/></span>
           <span className="breadcrumb-item">Đào tạo</span>
           <span className="breadcrumb-separator">&gt;</span>
           <span className="breadcrumb-current">Quản lý đào tạo</span>
@@ -355,6 +356,7 @@ export default function TrainingManagementPage() {
                           onView={() => handleViewTraining(t)}
                           onEdit={() => handleEditTraining(t)}
                           canEdit={t.internStatus !== "Đã dừng thực tập" && t.internStatus !== "Đã hoàn thành"}
+                          showBanOnDisabled={true}
                         />
                       </td>
                     </tr>

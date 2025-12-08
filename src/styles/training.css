@@ -406,6 +406,22 @@
     transform: translateX(-50%) scale(1);
 }
 
+/* VÒNG TRÒN CẤM ĐỎ – CHỈ HIỆN KHI HOVER, SIÊU ĐẸP, KHÔNG ẢNH HƯỞNG TRANG KHÁC */
+.show-ban-effect {
+  position: relative;
+}
+
+/* Khi hover → hiện vòng cấm */
+.show-ban-effect:hover{
+  opacity: 1;
+}
+
+/* Đảm bảo nút vẫn giữ style cũ */
+.btn-edit-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* --- PAGINATION --- */
 .clean-pagination {
     display: flex;
