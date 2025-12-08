@@ -372,22 +372,23 @@ export default function CreateRequestModal({
                     disabled={loading || !!dateError || hasInvalidTech || !titleMain.trim()}
                     aria-busy={loading ? "true" : "false"}
                     style={{
-                        backgroundColor:
-                            loading || !!dateError || hasInvalidTech || !titleMain.trim()
-                                ? "#ccc"
-                                : "#28a745", // xanh lá
+                        backgroundColor: "#28a745", // luôn xanh lá
                         color: "white",
-                        height: "40px",          // tăng chiều cao
-                        minWidth: "100px",       // tăng độ rộng tối thiểu
-                        padding: "0 16px",       // padding lớn hơn
+                        height: "40px",
+                        minWidth: "100px",
+                        padding: "0 16px",
                         border: "none",
                         borderRadius: "6px",
-                        fontSize: "15px",        // chữ to hơn chút
+                        fontSize: "15px",
                         fontWeight: "500",
                         cursor:
                             loading || !!dateError || hasInvalidTech || !titleMain.trim()
                                 ? "not-allowed"
-                                : "pointer"
+                                : "pointer",
+                        opacity:
+                            loading || !!dateError || hasInvalidTech || !titleMain.trim()
+                                ? 0.5 // mờ đi khi disable
+                                : 1,
                     }}
                 >
                     {loading ? (
@@ -395,9 +396,7 @@ export default function CreateRequestModal({
                             <span className="spinner" /> Đang xử lý...
                         </>
                     ) : (
-                        <>
-                            {isEdit ? "Cập nhật" : "Gửi"}
-                        </>
+                        <>{isEdit ? "Cập nhật" : "Gửi"}</>
                     )}
                 </button>
             </div>
