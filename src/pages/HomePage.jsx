@@ -17,15 +17,37 @@ import {
   Legend,
   CartesianGrid,
   ResponsiveContainer,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar,
-  LineChart,
-  Line,
   Cell
 } from "recharts";
+/* ---------------------------
+   Small helper components / funcs
+   --------------------------- */
+function LegendNote({ color, label }) {
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      <div style={{ width: 14, height: 14, borderRadius: 3, background: color }} />
+      <div style={{ fontSize: 13, color: "#333" }}>{label}</div>
+    </div>
+  );
+}
+
+// shade color helper (returns lighter/darker variant)
+// amount between -1 and 1: negative => darker, positive => lighter
+function shadeColor(hex, amount) {
+  // convert hex to rgb
+  const c = hex.replace("#", "");
+  const num = parseInt(c, 16);
+  let r = (num >> 16) + Math.round(255 * amount);
+  let g = ((num >> 8) & 0x00ff) + Math.round(255 * amount);
+  let b = (num & 0x0000ff) + Math.round(255 * amount);
+  r = Math.max(Math.min(255, r), 0);
+  g = Math.max(Math.min(255, g), 0);
+  b = Math.max(Math.min(255, b), 0);
+  const rr = r.toString(16).padStart(2, "0");
+  const gg = g.toString(16).padStart(2, "0");
+  const bb = b.toString(16).padStart(2, "0");
+  return `#${rr}${gg}${bb}`;
+}
 
 function HomePage() {
   const [activeTab, setActiveTab] = useState("chis0");
@@ -35,6 +57,8 @@ function HomePage() {
   const [month, setMonth] = useState("1");
   const [quarter, setQuarter] = useState("1");
   const [year, setYear] = useState(new Date().getFullYear());
+
+  
 
   // DATA STATES
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
@@ -442,244 +466,14 @@ function HomePage() {
           <div className="charts-container">
             <h2 className="title">Thống kê tăng trưởng</h2>
 
-            {/* comparison controls */}
-            <div className="chart-box" style={{ marginBottom: 18 }}>
-              <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-                <div>
-                  <label style={{ fontSize: 13, color: "#444" }}>So sánh theo</label>
-                  <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
-                    <button className={compareType === "month" ? "f-btn active" : "f-btn"} onClick={() => setCompareType("month")}>Tháng</button>
-                    <button className={compareType === "quarter" ? "f-btn active" : "f-btn"} onClick={() => setCompareType("quarter")}>Quý</button>
-                    <button className={compareType === "year" ? "f-btn active" : "f-btn"} onClick={() => setCompareType("year")}>Năm</button>
-                  </div>
-                </div>
-
-                {/* Selector A */}
-                <div>
-                  <div style={{ fontSize: 13, color: "#444", marginBottom: 6 }}>Thời gian kỳ A</div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    {compareType === "month" && (
-                      <>
-                        <select className="select-control" value={a_month} onChange={(e) => setA_Month(e.target.value)}>
-                          {Array.from({ length: 12 }, (_, i) => <option key={i+1} value={i+1}>Tháng {i+1}</option>)}
-                        </select>
-                        <select className="select-control" value={a_year} onChange={(e) => setA_Year(e.target.value)}>
-                          {Array.from({ length: 16 }, (_, i) => { const y = new Date().getFullYear() - i; return <option key={y} value={y}>{y}</option>; })}
-                        </select>
-                      </>
-                    )}
-
-                    {compareType === "quarter" && (
-                      <>
-                        <select className="select-control" value={a_quarter} onChange={(e) => setA_Quarter(e.target.value)}>
-                          <option value="1">Quý 1</option>
-                          <option value="2">Quý 2</option>
-                          <option value="3">Quý 3</option>
-                          <option value="4">Quý 4</option>
-                        </select>
-                        <select className="select-control" value={a_year} onChange={(e) => setA_Year(e.target.value)}>
-                          {Array.from({ length: 16 }, (_, i) => { const y = new Date().getFullYear() - i; return <option key={y} value={y}>{y}</option>; })}
-                        </select>
-                      </>
-                    )}
-
-                    {compareType === "year" && (
-                      <select className="select-control" value={a_year} onChange={(e) => setA_Year(e.target.value)}>
-                        {Array.from({ length: 16 }, (_, i) => { const y = new Date().getFullYear() - i; return <option key={y} value={y}>{y}</option>; })}
-                      </select>
-                    )}
-                  </div>
-                </div>
-
-                {/* Selector B */}
-                <div>
-                  <div style={{ fontSize: 13, color: "#444", marginBottom: 6 }}>Thời gian Kỳ B</div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    {compareType === "month" && (
-                      <>
-                        <select className="select-control" value={b_month} onChange={(e) => setB_Month(e.target.value)}>
-                          {Array.from({ length: 12 }, (_, i) => <option key={i+1} value={i+1}>Tháng {i+1}</option>)}
-                        </select>
-                        <select className="select-control" value={b_year} onChange={(e) => setB_Year(e.target.value)}>
-                          {Array.from({ length: 16 }, (_, i) => { const y = new Date().getFullYear() - i; return <option key={y} value={y}>{y}</option>; })}
-                        </select>
-                      </>
-                    )}
-
-                    {compareType === "quarter" && (
-                      <>
-                        <select className="select-control" value={b_quarter} onChange={(e) => setB_Quarter(e.target.value)}>
-                          <option value="1">Quý 1</option>
-                          <option value="2">Quý 2</option>
-                          <option value="3">Quý 3</option>
-                          <option value="4">Quý 4</option>
-                        </select>
-                        <select className="select-control" value={b_year} onChange={(e) => setB_Year(e.target.value)}>
-                          {Array.from({ length: 16 }, (_, i) => { const y = new Date().getFullYear() - i; return <option key={y} value={y}>{y}</option>; })}
-                        </select>
-                      </>
-                    )}
-
-                    {compareType === "year" && (
-                      <select className="select-control" value={b_year} onChange={(e) => setB_Year(e.target.value)}>
-                        {Array.from({ length: 16 }, (_, i) => { const y = new Date().getFullYear() - i; return <option key={y} value={y}>{y}</option>; })}
-                      </select>
-                    )}
-                  </div>
-                </div>
-
-                {/* Button refresh (optional) */}
-                <div style={{ marginLeft: "auto" }}>
-                  <button className="f-btn" onClick={() => fetchCompare()}>So sánh</button>
-                </div>
-              </div>
-            </div>
-
-            {/* Growth results cards */}
-            <div className="chart-box" style={{ marginBottom: 18 }}>
-              <h3 style={{ marginBottom: 12 }}>Kết quả so sánh</h3>
-
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 12 }}>
-                {growthResults.map((g) => (
-                  <div key={g.metric} style={{ background: "#fff", padding: 12, borderRadius: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-                    <div style={{ color: "#666", fontSize: 13 }}>{g.metric}</div>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 8 }}>
-                      <div style={{ fontWeight: 700, fontSize: 18 }}>{g.a}</div>
-                      <div style={{ color: "#888", fontSize: 13 }}> / {g.b}</div>
-                      <div style={{ marginLeft: "auto", fontWeight: 700, color: g.diff >= 0 ? "#198754" : "#dc3545" }}>
-                        {g.diff >= 0 ? "▲" : "▼"} {g.pct === Infinity ? "—" : formatPercent(g.pct)}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Comparison Charts: Grouped Bar, Radar, Line */}
-            <div className="chart-box" style={{ marginBottom: 14 }}>
-              <h3 style={{ marginBottom: 10 }}>So sánh A vs B — Bar (nhóm)</h3>
-              <ResponsiveContainer width="100%" height={360}>
-                <BarChart data={barGroupedData} margin={{ top: 10, right: 30, left: 0, bottom: 40 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="metric" tick={{ fontSize: 12 }} />
-                  <YAxis />
-                  {/* custom tooltip uses hoveredBar state */}
-                  <Tooltip content={<CustomBarTooltip />} />
-                  {/* Bars: A and B, but use Cells to color each metric's bars */}
-                  <Bar dataKey="A" name="Kỳ A">
-                    {barGroupedData.map((entry, idx) => (
-                      <Cell
-                        key={`A-${idx}`}
-                        fill={entry.color}
-                        onMouseEnter={() => setHoveredBar({ series: "A", index: idx })}
-                        onMouseLeave={() => setHoveredBar(null)}
-                      />
-                    ))}
-                  </Bar>
-                  <Bar dataKey="B" name="Kỳ B">
-                    {barGroupedData.map((entry, idx) => (
-                      <Cell
-                        key={`B-${idx}`}
-                        fill={shadeColor(entry.color, 0.4)}
-                        onMouseEnter={() => setHoveredBar({ series: "B", index: idx })}
-                        onMouseLeave={() => setHoveredBar(null)}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-
-              {/* legend: show color squares and labels */}
-              <div style={{ display: "flex", gap: 14, marginTop: 12, flexWrap: "wrap" }}>
-                {compareMetrics.map((m) => (
-                  <div key={m.name} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ width: 14, height: 14, borderRadius: 3, background: m.color }} />
-                    <div style={{ fontSize: 13, color: "#444" }}>{m.name}</div>
-                  </div>
-                ))}
-                <div style={{ width: 20 }} />
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ width: 14, height: 14, borderRadius: 3, background: "#000", opacity: 0.9 }} />
-                  <div style={{ fontSize: 13, color: "#444" }}>Kỳ A</div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ width: 14, height: 14, borderRadius: 3, background: "#000", opacity: 0.35 }} />
-                  <div style={{ fontSize: 13, color: "#444" }}>Kỳ B</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="chart-box" style={{ marginBottom: 14 }}>
-              <h3 style={{ marginBottom: 10 }}>Radar chart (A vs B)</h3>
-              <ResponsiveContainer width="100%" height={360}>
-                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-                  <PolarGrid />
-                  <PolarAngleAxis dataKey="subject" />
-                  <PolarRadiusAxis />
-                  <Radar name="Kỳ A" dataKey="A" stroke="#111827" fill="#111827" fillOpacity={0.25} />
-                  <Radar name="Kỳ B" dataKey="B" stroke="#6b7280" fill="#6b7280" fillOpacity={0.15} />
-                  <Legend />
-                </RadarChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="chart-box" style={{ marginBottom: 14 }}>
-              <h3 style={{ marginBottom: 10 }}>Line chart (A vs B)</h3>
-              <ResponsiveContainer width="100%" height={360}>
-                <LineChart data={lineData} margin={{ top: 5, right: 30, left: 0, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="metric" tick={{ fontSize: 12 }} />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="A" stroke="#111827" strokeWidth={2} activeDot={{ r: 6 }} />
-                  <Line type="monotone" dataKey="B" stroke="#6b7280" strokeWidth={2} activeDot={{ r: 6 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-
+          
           </div>
         )}
 
       </div>
 
-      {/* inline CSS for a couple small helper classes */}
-      <style>{`
-        .charts-container { margin-top: 20px; }
-        .chart-box { background: white; padding: 20px; border-radius: 12px; margin-bottom: 30px; box-shadow: 0 3px 8px rgba(0,0,0,0.08); }
-      `}</style>
+      
     </Layout>
   );
 }
-
-/* ---------------------------
-   Small helper components / funcs
-   --------------------------- */
-function LegendNote({ color, label }) {
-  return (
-    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-      <div style={{ width: 14, height: 14, borderRadius: 3, background: color }} />
-      <div style={{ fontSize: 13, color: "#333" }}>{label}</div>
-    </div>
-  );
-}
-
-// shade color helper (returns lighter/darker variant)
-// amount between -1 and 1: negative => darker, positive => lighter
-function shadeColor(hex, amount) {
-  // convert hex to rgb
-  const c = hex.replace("#", "");
-  const num = parseInt(c, 16);
-  let r = (num >> 16) + Math.round(255 * amount);
-  let g = ((num >> 8) & 0x00ff) + Math.round(255 * amount);
-  let b = (num & 0x0000ff) + Math.round(255 * amount);
-  r = Math.max(Math.min(255, r), 0);
-  g = Math.max(Math.min(255, g), 0);
-  b = Math.max(Math.min(255, b), 0);
-  const rr = r.toString(16).padStart(2, "0");
-  const gg = g.toString(16).padStart(2, "0");
-  const bb = b.toString(16).padStart(2, "0");
-  return `#${rr}${gg}${bb}`;
-}
-
 export default HomePage;
