@@ -12,7 +12,6 @@ import Pagination from "../components/Pagination";
 import ActionButtons from "../components/ActionButtons.jsx";
 import { useAuth } from "../contexts/AuthContext"; // ✅ 1. Import AuthContext
 
-import "../styles/request.css";
 import "../styles/toast.css";
 import "../styles/CandidateManagementPage.css";
 import { HiUserGroup } from "react-icons/hi";
@@ -341,7 +340,7 @@ export default function CandidateManagementPage() {
         return "status-mail";
       case "Đã nhận việc":
         return "status-accept";
-      case "Đã thông báo thời gian TT":
+      case "Đã hẹn ngày thực tập":
         return "status-inform";
       default:
         return "status-none";
@@ -392,7 +391,7 @@ export default function CandidateManagementPage() {
         </div>
       </div>
 
-      <div className="recruitment-page candidate-page fade-slide">
+      <div className="candidate-page fade-slide">
         <div className="title-row">
           <h2 className="page-title-small">Quản lý ứng viên</h2>
           <div className="filter-bar candidate-filter-bar">

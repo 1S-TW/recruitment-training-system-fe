@@ -1,6 +1,6 @@
 /* ===================== CANDIDATE MANAGEMENT PAGE ===================== */
 /* --- PAGE BASE --- */
-.request-page {
+.candidate-page {
     padding: 24px 32px;
     font-family: "Inter", "Segoe UI", sans-serif;
     color: #111827;
@@ -328,7 +328,7 @@
 }
 
 /* --- STATUS BADGE --- */
-.status-badge {
+.candidate-page.status-badge {
     display: inline-block;
     padding: 4px 9px;
     border-radius: 6px;
@@ -339,37 +339,37 @@
 }
 
 /* Chưa có kết quả — Xám */
-.status-none {
+.status-badge.status-none {
   background: #E5E7EB;
   color: #374151;
 }
 
 /* Đã có kết quả — Vàng */
-.status-done {
+.status-badge.status-done {
   background: #FEF3C7;
   color: #B45309;
 }
 
 /* Không nhận việc — Đỏ */
-.status-refuse {
+.status-badge.status-refuse {
   background: #FEE2E2;
   color: #B91C1C;
 }
 
 /* Đã gửi mail cảm ơn — Cam */
-.status-mail {
+.status-badge.status-mail {
   background: #FFEDD5;
   color: #C2410C;
 }
 
 /* Đã nhận việc — Xanh lá */
-.status-accept {
+.status-badge.status-accept {
   background: #DCFCE7;
   color: #166534;
 }
 
 /* Đã thông báo thời gian TT — Xanh dương */
-.status-inform {
+.status-badge.status-inform {
   background: #DBEAFE;
   color: #1D4ED8;
 }

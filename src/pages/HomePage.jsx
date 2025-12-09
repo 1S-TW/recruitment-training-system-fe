@@ -133,10 +133,8 @@ function HomePage() {
   const chartData = [
     { name: "Nhập học", value: statsChart?.totalEnroll || 0 },
     { name: "Tốt nghiệp", value: statsChart?.totalGraduate || 0 },
-    { name: "Fail", value: statsChart?.totalFail || 0 },
-    { name: "Quit", value: statsChart?.totalQuit || 0 },
-    { name: "Pass/Fail %", value: statsChart?.passFailRate || 0 },
-    { name: "Điểm TB", value: statsChart?.averageFinalScore || 0 },
+    { name: "Trượt", value: statsChart?.totalFail || 0 },
+    { name: "Dừng thực tập", value: statsChart?.totalQuit || 0 },
   ];
 
   return (
@@ -237,9 +235,9 @@ function HomePage() {
             <div className="stats-grid">
               <div className="card">Số thực tập sinh nhập học: {stats?.totalEnroll ?? 0}</div>
               <div className="card">Số thực tập sinh tốt nghiệp: {stats?.totalGraduate ?? 0}</div>
-              <div className="card">Số TTS fail: {stats?.totalFail ?? 0}</div>
-              <div className="card">Tỉ lệ pass/fail: {stats?.passFailRate ?? 0}%</div>
-              <div className="card">Số TTS nghỉ thực tập: {stats?.totalQuit ?? 0}</div>
+              <div className="card">Số thực tập sinh trượt: {stats?.totalFail ?? 0}</div>
+              <div className="card">Tỉ lệ đỗ/trượt: {stats?.passFailRateStr ?? 0}</div>
+              <div className="card">Số thực tập sinh dừng thực tập: {stats?.totalQuit ?? 0}</div>
               <div className="card">Điểm tốt nghiệp trung bình: {stats?.averageFinalScore ?? 0}</div>
             </div>
           </>
@@ -252,7 +250,7 @@ function HomePage() {
 
             {/* BAR CHART */}
             <div className="chart-box">
-              <h3>Biểu đồ cột</h3>
+              <h3>Số lượng thực tập sinh toàn khoá</h3>
               <ResponsiveContainer width="100%" height={350}>
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -265,38 +263,6 @@ function HomePage() {
               </ResponsiveContainer>
             </div>
 
-            {/* RADAR CHART */}
-            <div className="chart-box">
-              <h3>Biểu đồ Radar</h3>
-              <ResponsiveContainer width="100%" height={350}>
-                <RadarChart outerRadius="75%" data={chartData}>
-                  <PolarGrid />
-                  <PolarAngleAxis dataKey="name" />
-                  <PolarRadiusAxis />
-                  <Radar dataKey="value" stroke="#ff7300" fill="#ff7300" fillOpacity={0.6} />
-                </RadarChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* LINE CHART */}
-            <div className="chart-box">
-              <h3>Biểu đồ đường</h3>
-              <ResponsiveContainer width="100%" height={350}>
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="value"
-                    stroke="#28a745"
-                    strokeWidth={3}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
           </div>
         )}
 
