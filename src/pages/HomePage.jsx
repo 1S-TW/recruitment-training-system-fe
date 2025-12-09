@@ -446,7 +446,7 @@ function HomePage() {
             <div className="chart-box" style={{ marginBottom: 18 }}>
               <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
                 <div>
-                  <label style={{ fontSize: 13, color: "#444" }}>So sánh theo:</label>
+                  <label style={{ fontSize: 13, color: "#444" }}>So sánh theo</label>
                   <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
                     <button className={compareType === "month" ? "f-btn active" : "f-btn"} onClick={() => setCompareType("month")}>Tháng</button>
                     <button className={compareType === "quarter" ? "f-btn active" : "f-btn"} onClick={() => setCompareType("quarter")}>Quý</button>
@@ -456,7 +456,7 @@ function HomePage() {
 
                 {/* Selector A */}
                 <div>
-                  <div style={{ fontSize: 13, color: "#444", marginBottom: 6 }}>Kỳ A</div>
+                  <div style={{ fontSize: 13, color: "#444", marginBottom: 6 }}>Thời gian kỳ A</div>
                   <div style={{ display: "flex", gap: 8 }}>
                     {compareType === "month" && (
                       <>
@@ -493,7 +493,7 @@ function HomePage() {
 
                 {/* Selector B */}
                 <div>
-                  <div style={{ fontSize: 13, color: "#444", marginBottom: 6 }}>Kỳ B</div>
+                  <div style={{ fontSize: 13, color: "#444", marginBottom: 6 }}>Thời gian Kỳ B</div>
                   <div style={{ display: "flex", gap: 8 }}>
                     {compareType === "month" && (
                       <>
