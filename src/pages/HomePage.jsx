@@ -440,7 +440,7 @@ function HomePage() {
         {/* ========== TAB TĂNG TRƯỞNG ========== */}
         {activeTab === "tang-truong" && (
           <div className="charts-container">
-            <h2 className="title">Thống kê tăng trưởng — So sánh 2 kỳ</h2>
+            <h2 className="title">Thống kê tăng trưởng</h2>
 
             {/* comparison controls */}
             <div className="chart-box" style={{ marginBottom: 18 }}>
