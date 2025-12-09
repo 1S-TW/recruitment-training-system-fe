@@ -13,7 +13,7 @@ export default function Sidebar() {
   const role = user?.role;
 
   const baseMenu = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+    { icon: LayoutDashboard, label: "Bảng điều khiển ", path: "/" },
 
     // 👇 CẬP NHẬT: Cho phép cả SUPER_ADMIN và QLDT truy cập
     { 

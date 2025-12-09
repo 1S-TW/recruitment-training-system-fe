@@ -770,3 +770,89 @@ margin-bottom: 20px; /* đẩy nút lên trên */
   color: #dc2626;
   transform: translateY(-1px);
 }
+/* --- Áp dụng cho Modal Chỉnh sửa môn học --- */
+/* Thay .course-modal bằng tên class thực tế trong file CourseModal.jsx nếu khác */
+.course-modal, .admin-modal-content {
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden; /* Bo góc mượt mà */
+  padding: 0 !important; /* Để header/footer tràn viền */
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  max-width: 500px; /* Độ rộng tùy chỉnh */
+  width: 90%;
+}
+
+/* 1. HEADER: Xanh đậm, Chữ trắng */
+.course-modal .modal-header,
+.admin-modal-content .modal-header {
+  background-color: #1e40af;
+  color: white !important;
+  padding: 20px 24px;
+  border-bottom: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.course-modal .modal-header h2,
+.course-modal .modal-header h3 {
+  margin: 0;
+  color: white !important;
+  font-weight: 600;
+}
+
+/* 2. BODY: Nền trắng, nội dung form */
+.course-modal .modal-body,
+.admin-modal-content .modal-body {
+  padding: 24px;
+  background-color: white;
+  overflow-y: auto;
+  color: #374151;
+}
+
+/* 3. FOOTER: Xanh đậm, Chữ trắng */
+.course-modal .modal-footer,
+.admin-modal-content .modal-footer {
+  background-color: #1e40af;
+  border-top: none;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: auto;
+}
+
+/* 4. BUTTONS */
+/* Nút Hủy: Nền trong suốt mờ */
+.course-modal .btn-cancel,
+.admin-modal-content .btn-secondary {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  min-width: 90px;
+  height: 38px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+.course-modal .btn-cancel:hover {
+  background-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Nút Lưu: Nền Trắng, Chữ Xanh */
+.course-modal .btn-save,
+.admin-modal-content .btn-primary {
+  background-color: white !important;
+  color: #1e40af !important;
+  border: none;
+  min-width: 90px;
+  height: 38px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.course-modal .btn-save:hover {
+  background-color: #f0f9ff !important;
+}

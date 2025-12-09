@@ -252,3 +252,12 @@ select option:disabled {
 .final-result-block .final-result-select:focus {
     box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.25);
 }
+.modal-footer {
+  padding: 20px 24px;
+  background: #f1f5f9;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}

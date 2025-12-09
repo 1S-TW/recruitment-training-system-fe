@@ -276,7 +276,10 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
       <div className="modal-backdrop" onClick={onClose} />
       <div className="modal-content" style={{ maxWidth: "700px" }} role="dialog">
         <div className="modal-header">
-          <h3 className="modal-title">Thông tin & Kết quả ứng viên</h3>
+          <h3 className="modal-title" style={{ color: "#fff" }}>
+  Thông tin & Kết quả ứng viên
+</h3>
+
           <button className="modal-close-btn" onClick={onClose}>✕</button>
         </div>
 
