@@ -389,7 +389,7 @@ function HomePage() {
               <div className="card">Số thực tập sinh nhập học: {stats?.totalEnroll ?? 0}</div>
               <div className="card">Số thực tập sinh tốt nghiệp: {stats?.totalGraduate ?? 0}</div>
               <div className="card">Số thực tập sinh trượt: {stats?.totalFail ?? 0}</div>
-              <div className="card">Tỉ lệ đỗ/trượt: {stats?.passFailRateStr ?? 0}</div>
+              <div className="card">Tỉ lệ đỗ: {stats?.passFailRateStr ?? 0}</div>
               <div className="card">Số thực tập sinh dừng thực tập: {stats?.totalQuit ?? 0}</div>
               <div className="card">Điểm tốt nghiệp trung bình: {stats?.averageFinalScore ?? 0}</div>
             </div>
