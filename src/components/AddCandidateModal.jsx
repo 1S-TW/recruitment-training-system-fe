@@ -140,9 +140,9 @@ export default function AddCandidateModal({
         role="dialog"
       >
         <div className="modal-header">
-  <h3 className="modal-title" style={{ color: "#fff" }}>
+      <h3 className="modal-title" style={{ color: "#fff" }}>
 Thông tin ứng viên
-  </h3>
+      </h3>
 
           <button className="modal-close-btn" onClick={onClose}>
             ×
