@@ -17,8 +17,11 @@ import {
   Legend,
   CartesianGrid,
   ResponsiveContainer,
-  Cell
+  Cell,
+  LineChart,
+  Line
 } from "recharts";
+
 /* ---------------------------
    Small helper components / funcs
    --------------------------- */
@@ -461,19 +464,150 @@ function HomePage() {
           </div>
         )}
 
-        {/* ========== TAB TĂNG TRƯỞNG ========== */}
-        {activeTab === "tang-truong" && (
-          <div className="charts-container">
-            <h2 className="title">Thống kê tăng trưởng</h2>
+       {/* ========== TAB TĂNG TRƯỞNG ========== */}
+{activeTab === "tang-truong" && (
+  <div className="charts-container">
+    <h2 className="title">Thống kê tăng trưởng</h2>
 
-          
-          </div>
-        )}
+    {/* --- Chọn loại thống kê --- */}
+    <div className="filter-buttons">
+      <button className={compareType === "month" ? "f-btn active" : "f-btn"} onClick={() => setCompareType("month")}>Tháng</button>
+      <button className={compareType === "quarter" ? "f-btn active" : "f-btn"} onClick={() => setCompareType("quarter")}>Quý</button>
+      <button className={compareType === "year" ? "f-btn active" : "f-btn"} onClick={() => setCompareType("year")}>Năm</button>
+    </div>
+
+    {/* --- Chọn năm (trừ mode Năm) --- */}
+    {compareType !== "year" && (
+      <div style={{ marginTop: 10 }}>
+        <select className="select-control" value={a_year} onChange={(e) => setA_Year(e.target.value)}>
+          {Array.from({ length: 16 }, (_, i) => {
+            const y = new Date().getFullYear() - i;
+            return <option key={y} value={y}>Năm {y}</option>;
+          })}
+        </select>
+      </div>
+    )}
+
+    {/* --- Tải dữ liệu biểu đồ --- */}
+    <GrowthChart
+      mode={compareType}
+      year={a_year}
+    />
+  </div>
+)}
+
 
       </div>
-
-      
     </Layout>
   );
+  function GrowthChart({ mode, year }) {
+  const [data, setData] = React.useState([]);
+
+  // helper build range
+  const buildRange = (y, m1, m2) => {
+    const start = `${y}-${String(m1).padStart(2, "0")}-01`;
+    const endDay = new Date(y, m2, 0).getDate();
+    const end = `${y}-${String(m2).padStart(2, "0")}-${String(endDay).padStart(2, "0")}`;
+    return { start, end };
+  };
+
+  const fetchData = async () => {
+    const token = localStorage.getItem("token");
+
+    let items = [];
+
+    if (mode === "month") {
+      // 12 tháng trong 1 năm
+      for (let m = 1; m <= 12; m++) {
+        const range = buildRange(year, m, m);
+        const url = `http://localhost:8080/api/dashboard?start=${range.start}&end=${range.end}`;
+        const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
+        items.push({
+          label: `T${m}`,
+          enroll: res.data.totalEnroll ?? 0,
+          grad: res.data.totalGraduate ?? 0,
+          fail: res.data.totalFail ?? 0,
+          quit: res.data.totalQuit ?? 0,
+          
+        });
+      }
+    }
+
+    if (mode === "quarter") {
+      // 4 quý trong 1 năm
+      const ranges = [
+        buildRange(year, 1, 3),
+        buildRange(year, 4, 6),
+        buildRange(year, 7, 9),
+        buildRange(year, 10, 12),
+      ];
+
+      for (let i = 0; i < 4; i++) {
+        const res = await axios.get(
+          `http://localhost:8080/api/dashboard?start=${ranges[i].start}&end=${ranges[i].end}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        items.push({
+          label: `Q${i + 1}`,
+          enroll: res.data.totalEnroll ?? 0,
+          grad: res.data.totalGraduate ?? 0,
+          fail: res.data.totalFail ?? 0,
+          quit: res.data.totalQuit ?? 0,
+          
+        });
+      }
+    }
+
+    if (mode === "year") {
+      // Lấy danh sách năm có dữ liệu
+      let startYear = 2010;
+      let endYear = new Date().getFullYear();
+
+      for (let y = startYear; y <= endYear; y++) {
+        const range = buildRange(y, 1, 12);
+        const url = `http://localhost:8080/api/dashboard?start=${range.start}&end=${range.end}`;
+        const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
+        items.push({
+          label: `${y}`,
+          enroll: res.data.totalEnroll ?? 0,
+          grad: res.data.totalGraduate ?? 0,
+          fail: res.data.totalFail ?? 0,
+          quit: res.data.totalQuit ?? 0,
+          
+        });
+      }
+    }
+
+    setData(items);
+  };
+
+  React.useEffect(() => {
+    fetchData();
+  }, [mode, year]);
+
+  return (
+    <div className="chart-box" style={{ marginTop: 20 }}>
+      <h3>Đồ thị tăng trưởng</h3>
+
+      <ResponsiveContainer width="100%" height={380}>
+        <LineChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="label" />
+          <YAxis />
+          <Tooltip />
+
+          <Legend />
+
+          <Line type="monotone" dataKey="enroll" name="Nhập học" stroke="#4f8ef7" strokeWidth={2} />
+          <Line type="monotone" dataKey="grad" name="Tốt nghiệp" stroke="#34c759" strokeWidth={2} />
+          <Line type="monotone" dataKey="fail" name="Trượt" stroke="#ff4d4f" strokeWidth={2} />
+          <Line type="monotone" dataKey="quit" name="Dừng thực tập" stroke="#ffb84d" strokeWidth={2} />
+          
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 }
 export default HomePage;
