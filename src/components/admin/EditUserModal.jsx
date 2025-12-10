@@ -66,7 +66,7 @@ const EditUserModal = ({ show, handleClose, user, availableRoles, onSaveSuccess 
 
   return (
     <Modal 
-      title="Chỉnh sửa tài khoản" 
+      title={<span style={{ color: "#fff" }}>Chỉnh sửa tài khoản</span>}
       onClose={handleClose} 
       width={500}
     >

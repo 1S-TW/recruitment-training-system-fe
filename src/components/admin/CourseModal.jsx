@@ -44,35 +44,40 @@ export default function CourseModal({ isOpen, onClose, onSuccess, course }) {
     if (!isOpen) return null;
 
     return (
-        <Modal title={course ? "Chỉnh sửa môn học" : "Thêm môn học"} onClose={onClose} width={500}>
+        <Modal
+            title={<span style={{ color: "#fff" }}>{course ? "Chỉnh sửa môn học" : "Thêm môn học"}</span>}
+            onClose={onClose}
+            width={500}
+        >
+
             <form onSubmit={handleSubmit} className="modal-form-custom">
                 <div className="form-group">
                     <label className="form-label">Tên môn học *</label>
-                    <input 
-                        className="input-style" 
-                        value={formData.courseName} 
-                        onChange={e => setFormData({...formData, courseName: e.target.value})} 
-                        required 
+                    <input
+                        className="input-style"
+                        value={formData.courseName}
+                        onChange={e => setFormData({ ...formData, courseName: e.target.value })}
+                        required
                     />
                 </div>
                 <div className="form-group">
                     <label className="form-label">Số ngày học (Dự kiến) *</label>
-                    <input 
-                        type="number" 
+                    <input
+                        type="number"
                         min="1"
-                        className="input-style" 
-                        value={formData.durationDays} 
-                        onChange={e => setFormData({...formData, durationDays: e.target.value})} 
-                        required 
+                        className="input-style"
+                        value={formData.durationDays}
+                        onChange={e => setFormData({ ...formData, durationDays: e.target.value })}
+                        required
                     />
                 </div>
                 <div className="form-group">
                     <label className="form-label">Mô tả</label>
-                    <textarea 
-                        className="input-style" 
+                    <textarea
+                        className="input-style"
                         rows="3"
-                        value={formData.description} 
-                        onChange={e => setFormData({...formData, description: e.target.value})} 
+                        value={formData.description}
+                        onChange={e => setFormData({ ...formData, description: e.target.value })}
                     />
                 </div>
                 <div className="modal-footer">

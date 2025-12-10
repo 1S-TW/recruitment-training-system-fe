@@ -2,10 +2,10 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Input from "./Form/Input";
 import api from "../services/api";
-import { useAuth } from "../contexts/AuthContext"; // ✅ 1. Import AuthContext
+import { useAuth } from "../contexts/AuthContext";
 import "../styles/AddResultModal.css";
 
-// ✅ Helper functions: Thêm lại hàm getPlanName bị thiếu
+// ✅ Helper functions
 const getPlanName = (candidate) => {
   if (!candidate) return "—";
   return candidate.recruitmentPlanName || "Không rõ kế hoạch";
@@ -34,14 +34,14 @@ const initialState = {
   phoneNumber: "",
   cvLink: "",
   interviewDate: "",
-  planId: "", // ✅ Thêm trường planId để sửa kế hoạch
+  planId: "",
 
   // Kết quả
   attendedInterview: "NO",
   testScore: "",
   interviewScore: "",
   comment: "",
-  finalResult: "Không đạt", // Mặc định là Không đạt
+  finalResult: "Không đạt",
   candidateStatus: "Chưa có kết quả",
   note: "",
   internshipDate: "",
@@ -79,7 +79,7 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
 
   // State
   const [formData, setFormData] = useState(initialState);
-  const [planOptions, setPlanOptions] = useState([]); // ✅ List kế hoạch để HR chọn
+  const [planOptions, setPlanOptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState(null);
   const [errors, setErrors] = useState({});
@@ -120,7 +120,6 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
         phoneNumber: candidate.phoneNumber || candidate.phone || "",
         cvLink: candidate.cvLink || "",
         interviewDate: formatDateTimeLocal(candidate.interviewDate),
-        // ✅ Map planId từ candidate vào form
         planId: candidate.recruitmentPlanId || "",
       };
 
@@ -214,6 +213,23 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
     );
   }, [formData.testScore, formData.interviewScore, formData.finalResult]);
 
+
+  // ✅ LOGIC QUYẾT ĐỊNH HIỂN THỊ SECTION TRẠNG THÁI
+  const shouldShowStatusSection = useMemo(() => {
+    // 1. Nếu đang xem chi tiết (LEAD) hoặc đã chốt kết quả -> Phải hiện để người ta xem
+    if (isViewOnlyMode || isLockedByFinalStatus) return true;
+
+    // 2. Nếu chọn "Không đến" phỏng vấn -> Hiện luôn để set trạng thái hủy/fail
+    if (formData.attendedInterview === "NO") return true;
+
+    // 3. Nếu chọn "Có đến" -> CHỈ HIỆN KHI ĐÃ CÓ ĐỦ ĐIỂM
+    const hasTestScore = formData.testScore !== "" && formData.testScore !== null;
+    const hasInterviewScore = formData.interviewScore !== "" && formData.interviewScore !== null;
+    
+    return hasTestScore && hasInterviewScore;
+  }, [isViewOnlyMode, isLockedByFinalStatus, formData.attendedInterview, formData.testScore, formData.interviewScore]);
+
+
   // --- AUTO STATUS UPDATE ---
   useEffect(() => {
     if (isLockedByFinalStatus || isViewOnlyMode) return;
@@ -277,9 +293,8 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
       <div className="modal-content" style={{ maxWidth: "700px" }} role="dialog">
         <div className="modal-header">
           <h3 className="modal-title" style={{ color: "#fff" }}>
-  Thông tin & Kết quả ứng viên
-</h3>
-
+            Thông tin & Kết quả ứng viên
+          </h3>
           <button className="modal-close-btn" onClick={onClose}>✕</button>
         </div>
 
@@ -334,11 +349,9 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
                     error={errors.cvLink}
                 />
                 
-                {/* ✅ SỬA KẾ HOẠCH (Dành cho HR/Admin) */}
                 <div className="form-group">
                     <label>Kế hoạch tuyển dụng</label>
                     {isInfoLocked ? (
-                        // Nếu bị khóa (QLDT/LEAD) -> Hiện Input Readonly
                         <input 
                             className="input-style" 
                             value={getPlanName(candidate)} 
@@ -346,7 +359,6 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
                             disabled 
                         />
                     ) : (
-                        // Nếu được sửa (HR/Admin) -> Hiện Select
                         <select
                             name="planId"
                             value={formData.planId}
@@ -354,7 +366,6 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
                             className="input-style"
                         >
                             <option value="" disabled>-- Chọn kế hoạch --</option>
-                            {/* Fallback: nếu list chưa load xong, hiện plan hiện tại */}
                             {!planOptions.some(p => String(p.planId) === String(formData.planId)) && formData.planId && (
                                 <option value={formData.planId} disabled>{getPlanName(candidate)}</option>
                             )}
@@ -439,65 +450,71 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
               </select>
             </div>
 
-            {/* --- Phần 3: Trạng Thái (Option hiển thị theo Role) --- */}
-            <h4 className="form-section-title">Trạng Thái</h4>
-            <div className="candidate-form-grid">
-              <div className="form-column">
-                <div className="form-group">
-                  <label>Cập nhật trạng thái</label>
-                  <select
-                    name="candidateStatus"
-                    value={formData.candidateStatus}
-                    onChange={handleChange}
-                    className="input-style"
-                    disabled={isStatusLocked} 
-                  >
-                    {availableStatuses.map(st => (
-                      <option 
-                        key={st} 
-                        value={st}
-                        disabled={
-                          (st === "Đã nhận việc" && formData.finalResult === 'Không đạt') ||
-                          (st === "Đã có kết quả" && !canSetResultStatus)
-                        }
-                      >
-                        {st}
-                      </option>
-                    ))}
-                    
-                    {!availableStatuses.includes(formData.candidateStatus) && (
-                       <option value={formData.candidateStatus} disabled>
-                         {formData.candidateStatus} (Hiện tại)
-                       </option>
-                    )}
-                  </select>
-                </div>
-              </div>
-              <div className="form-column">
-                <Input
-                  label="Lưu ý"
-                  name="note"
-                  value={formData.note}
-                  onChange={handleChange}
-                  disabled={isLockedByFinalStatus || isViewOnlyMode}
-                />
-              </div>
-            </div>
+            {/* --- Phần 3: Trạng Thái --- */}
+            {/* ✅ BIẾN MẤT HOÀN TOÀN NẾU CHƯA CÓ ĐIỂM (shouldShowStatusSection == false) */}
+            {shouldShowStatusSection && (
+                <>
+                    <h4 className="form-section-title">Trạng Thái</h4>
+                    <div className="candidate-form-grid">
+                      <div className="form-column">
+                        <div className="form-group">
+                          <label>Cập nhật trạng thái</label>
+                          <select
+                            name="candidateStatus"
+                            value={formData.candidateStatus}
+                            onChange={handleChange}
+                            className="input-style"
+                            disabled={isStatusLocked} 
+                          >
+                            {availableStatuses.map(st => (
+                              <option 
+                                key={st} 
+                                value={st}
+                                disabled={
+                                  (st === "Đã nhận việc" && formData.finalResult === 'Không đạt') ||
+                                  (st === "Đã có kết quả" && !canSetResultStatus)
+                                }
+                              >
+                                {st}
+                              </option>
+                            ))}
+                            
+                            {!availableStatuses.includes(formData.candidateStatus) && (
+                               <option value={formData.candidateStatus} disabled>
+                                 {formData.candidateStatus} (Hiện tại)
+                               </option>
+                            )}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="form-column">
+                        <Input
+                          label="Lưu ý"
+                          name="note"
+                          value={formData.note}
+                          onChange={handleChange}
+                          disabled={isLockedByFinalStatus || isViewOnlyMode}
+                        />
+                      </div>
+                    </div>
 
-            {showInternshipDate && (
-              <div className="form-group" style={{ maxWidth: "323px" }}>
-                <Input
-                  label="Chọn ngày thực tập *"
-                  name="internshipDate"
-                  type="date"
-                  value={formData.internshipDate}
-                  onChange={handleChange}
-                  required
-                  disabled={isLockedByFinalStatus || isViewOnlyMode}
-                  error={errors.internshipDate}
-                />
-              </div>
+                    {showInternshipDate && (
+                      <div className="form-group" style={{ maxWidth: "323px" }}>
+                        <Input
+                          label="Chọn ngày thực tập *"
+                          name="internshipDate"
+                          type="date"
+                          value={formData.internshipDate}
+                          onChange={handleChange}
+                          required
+                          disabled={isLockedByFinalStatus || isViewOnlyMode}
+                          error={errors.internshipDate}
+                        />
+                      </div>
+                    )}
+                </>
             )}
+
           </div>
 
           <div className="modal-footer justify-end">

@@ -527,7 +527,7 @@ const RecruitmentPlanPage = () => {
     const outputRequired = techRows.reduce((sum, qc) => sum + (qc.soLuong || 0), 0);
     const statusRaw = (planMeta.requestStatus || "").toUpperCase();
     const parsedReject = parseRejectReason(planMeta.requestRejectReason || "");
-    
+
     const trainingCount = planMeta.trainingCount != null ? planMeta.trainingCount : 0;
     const handoverCount = planMeta.handoverCount != null ? planMeta.handoverCount : planMeta.deliveredCount != null ? planMeta.deliveredCount : 0;
     const hasRejectReason = !!(parsedReject.reason || planMeta.requestRejectReason);
@@ -717,7 +717,7 @@ const RecruitmentPlanPage = () => {
                           <div style={!canInteract ? { pointerEvents: "none", opacity: 0.4, cursor: "not-allowed" } : {}} title={!canInteract ? "Bạn không có quyền thao tác" : ""}>
                             <ActionButtons
                               onView={() => handleViewDetails(plan)}
-                              onEdit={() => {}}
+                              onEdit={() => { }}
                               canEdit={(role === 'HR' || role === 'SUPER_ADMIN') && plan.status === 'NEW'}
                             />
                           </div>
@@ -749,7 +749,11 @@ const RecruitmentPlanPage = () => {
       <AddPlanModal open={openAddModal} onClose={() => setOpenAddModal(false)} form={form} onChange={setForm} onSubmit={submitPlan} techSummary={techSummary} requestTitle={requestTitle} mode={modalMode} requestOptions={requestOptions} onPickRequest={handlePickRequest} />
 
       {modalStep === 1 && selectedPlan && (
-        <Modal title="Chi tiết Kế hoạch tuyển dụng" subtitle={<span className={`status-badge ${planStatusClass}`}>{planStatusLabel}</span>} onClose={handleCloseModal} width={640}>
+        <Modal title={
+          <span style={{ color: "#fff" }}>
+            Chi tiết Kế hoạch tuyển dụng
+          </span>
+        } subtitle={<span className={`status-badge ${planStatusClass}`}>{planStatusLabel}</span>} onClose={handleCloseModal} width={640}>
           {renderPlanDetails(selectedPlan, false)}
           <div className="section-block progress-block">
             <div className="process-header"><h4 className="process-title">Quy trình thực hiện</h4><span className="process-sub">Tuân theo thứ tự bước (có thể xem người thực hiện và lý do)</span></div>
