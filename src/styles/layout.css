@@ -131,7 +131,7 @@
   width:8px; height:8px;
   background:#ef4444;
   border-radius:9999px;
-  box-shadow:0 0 0 4px var(--panel);
+
 }
 .notification__menu{
   width: 36rem;
@@ -417,5 +417,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 0 2px var(--bg-header, #0b1020);
+  /* BỎ viền đen */
+  box-shadow: none; /* hoặc đơn giản là xóa hẳn dòng box-shadow */
 }

@@ -1,5 +1,4 @@
 // src/components/Header.jsx
-// Header.jsx (pure CSS)
 import { Bell, User, LogOut, Check } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -26,14 +25,14 @@ export default function Header() {
   const bellRef = useRef(null);
   const userRef = useRef(null);
 
-  // theme
+  // ===== Theme =====
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle("theme-dark", isDark);
     localStorage.setItem("theme", isDark ? "dark" : "light");
   }, [isDark]);
 
-  // logout
+  // ===== Logout =====
   const handleLogout = () => setShowConfirm(true);
   const cancelLogout = () => setShowConfirm(false);
   const confirmLogout = () => {
@@ -44,7 +43,7 @@ export default function Header() {
     window.location.href = "/login";
   };
 
-  // load notifications
+  // ===== Load notifications =====
   useEffect(() => {
     const loadNotifications = async () => {
       try {
@@ -60,7 +59,7 @@ export default function Header() {
     return () => clearInterval(interval);
   }, []);
 
-  // click outside -> đóng menu
+  // ===== Click outside =====
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (bellRef.current && !bellRef.current.contains(e.target)) {
@@ -76,25 +75,84 @@ export default function Header() {
   }, []);
 
   const unreadNotifications = notifications.filter((n) => !n.read);
-  const readNotifications = notifications.filter((n) => n.read);
   const unreadCount = unreadNotifications.length;
 
-   const extractQuotedText = (text = "") => {
+  const extractQuotedText = (text = "") => {
     const match = text.match(/"([^"]+)"/);
     return match ? match[1] : "";
   };
 
+  /**
+   * Xác định trang cần điều hướng khi click từng loại thông báo
+   */
   const getNotificationTarget = (notification = {}) => {
-    const combinedText = `${notification.title || ""} ${notification.content || ""}`.toLowerCase();
+    const combinedText = `${notification.title || ""} ${
+      notification.content || ""
+    }`.toLowerCase();
 
+    // 1) Nhu cầu nhân sự mới -> sang trang Nhu cầu, mở luôn modal chi tiết theo title
     if (combinedText.includes("nhu cầu nhân sự mới")) {
-      const requestTitle = extractQuotedText(notification.content || notification.title);
-      return { path: "/recruitment/needs", state: requestTitle ? { requestTitle } : undefined };
+      const requestTitle =
+        extractQuotedText(notification.content || notification.title) || "";
+      if (!requestTitle) return { path: "/recruitment/needs" };
+
+      return {
+        path: "/recruitment/needs",
+        state: { requestTitle },
+      };
     }
 
+    // 1b) Nhu cầu nhân sự bị từ chối -> cũng sang Nhu cầu, mở modal chi tiết theo title
+    if (combinedText.includes("nhu cầu nhân sự bị từ chối")) {
+      const requestTitle =
+        extractQuotedText(notification.content || notification.title) || "";
+      if (!requestTitle) return { path: "/recruitment/needs" };
+
+      return {
+        path: "/recruitment/needs",
+        state: { requestTitle },
+      };
+    }
+
+    // 2) Nhu cầu nhân sự đã được duyệt -> sang Kế hoạch tuyển dụng,
+    // kèm requestTitle để RecruitmentPlanPage bắt đúng kế hoạch
+    if (combinedText.includes("nhu cầu nhân sự đã được duyệt")) {
+      const requestTitle =
+        extractQuotedText(notification.content || notification.title) || "";
+      if (!requestTitle) return { path: "/recruitment/plan" };
+
+      const query = new URLSearchParams({ requestTitle }).toString();
+      return { path: `/recruitment/plan?${query}` };
+    }
+
+    // 3) Kế hoạch tuyển dụng mới -> sang Kế hoạch tuyển dụng, mở đúng kế hoạch theo tên
+    if (combinedText.includes("kế hoạch tuyển dụng mới")) {
+      const planName =
+        extractQuotedText(notification.content || notification.title) || "";
+      if (!planName) return { path: "/recruitment/plan" };
+
+      const query = new URLSearchParams({ planName }).toString();
+      return { path: `/recruitment/plan?${query}` };
+    }
+
+    // ✅ 3b) Kế hoạch tuyển dụng bị từ chối -> sang Kế hoạch tuyển dụng, mở chi tiết kế hoạch đó
+    if (combinedText.includes("kế hoạch tuyển dụng bị từ chối")) {
+      const planName =
+        extractQuotedText(notification.content || notification.title) || "";
+      if (!planName) return { path: "/recruitment/plan" };
+
+      const query = new URLSearchParams({ planName }).toString();
+      return { path: `/recruitment/plan?${query}` };
+    }
+
+    // 4) Kế hoạch tuyển dụng đã được duyệt -> sang Kế hoạch tuyển dụng, tìm theo tên kế hoạch
     if (combinedText.includes("kế hoạch tuyển dụng đã được duyệt")) {
-      const planName = extractQuotedText(notification.content || notification.title);
-      return { path: "/recruitment/plan", state: planName ? { planName } : undefined };
+      const planName =
+        extractQuotedText(notification.content || notification.title) || "";
+      if (!planName) return { path: "/recruitment/plan" };
+
+      const query = new URLSearchParams({ planName }).toString();
+      return { path: `/recruitment/plan?${query}` };
     }
 
     return null;
@@ -108,9 +166,14 @@ export default function Header() {
           item.id === notification.id ? { ...item, read: true } : item
         )
       );
+
       const target = getNotificationTarget(notification);
       if (target) {
-        navigate(target.path, { state: target.state });
+        if (target.state) {
+          navigate(target.path, { state: target.state });
+        } else {
+          navigate(target.path);
+        }
         setShowBell(false);
       }
     } catch (error) {
@@ -118,7 +181,6 @@ export default function Header() {
     }
   };
 
-  // danh sách sẽ render theo tab
   const listToRender =
     activeTab === "unread" ? unreadNotifications : notifications;
 
@@ -149,7 +211,6 @@ export default function Header() {
 
             {showBell && (
               <div className="dropdown__menu notification__menu">
-                {/* Header + tổng chưa đọc */}
                 <div className="notification__header">
                   <span>Thông báo</span>
                   {unreadCount > 0 && (
@@ -164,9 +225,7 @@ export default function Header() {
                   <button
                     type="button"
                     className={`notification__tab ${
-                      activeTab === "all"
-                        ? "notification__tab--active"
-                        : ""
+                      activeTab === "all" ? "notification__tab--active" : ""
                     }`}
                     onClick={() => setActiveTab("all")}
                   >
@@ -190,7 +249,6 @@ export default function Header() {
                   </button>
                 </div>
 
-                {/* Nội dung theo tab */}
                 {listToRender.length === 0 ? (
                   <div className="notification__empty">
                     {activeTab === "unread"
