@@ -14,7 +14,19 @@ export default function TechRow({
   };
 
   const handleQtyChange = (e) => {
-    onChange(index, "soLuong", e.target.value);
+    const raw = e.target.value;
+    // Chỉ giữ lại ký tự số 0–9, bỏ hết chữ & ký tự đặc biệt
+    const onlyDigits = raw.replace(/\D/g, "");
+
+    // Cho phép rỗng để user xóa hết rồi gõ lại
+    onChange(index, "soLuong", onlyDigits);
+  };
+
+  // 🔹 NEW: nếu để trống (hoặc 0) rồi blur ra ngoài thì auto trả về 1
+  const handleQtyBlur = () => {
+    if (!tech.soLuong || tech.soLuong === "0") {
+      onChange(index, "soLuong", "1");
+    }
   };
 
   return (
@@ -37,12 +49,14 @@ export default function TechRow({
       </select>
 
       <input
-        type="number"
+        type="text"               // giữ như bản trước
         className="qty-input-custom"
-        min="1"
         placeholder="Số lượng"
         value={tech.soLuong}
+        inputMode="numeric"
+        pattern="[0-9]*"
         onChange={handleQtyChange}
+        onBlur={handleQtyBlur}    // 🔹 thêm dòng này
       />
 
       {/* ẨN HOÀN TOÀN NÚT X NẾU CHỈ CÓ 1 DÒNG */}

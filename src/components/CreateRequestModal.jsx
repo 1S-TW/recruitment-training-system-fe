@@ -17,7 +17,7 @@ export default function CreateRequestModal({
   const [titleMain, setTitleMain] = useState("");
   const [expectedDate, setExpectedDate] = useState("");
   const [note, setNote] = useState("");
-  const [techs, setTechs] = useState([{ technologyId: "", soLuong: "" }]);
+  const [techs, setTechs] = useState([{ technologyId: "", soLuong: "1" }]);
   const [technologies, setTechnologies] = useState([]);
   const [dateError, setDateError] = useState("");
 
@@ -68,9 +68,12 @@ export default function CreateRequestModal({
         initialData.techQuantities?.length > 0
           ? initialData.techQuantities.map((t) => ({
               technologyId: String(t.technologyId),
-              soLuong: t.soLuong?.toString() ?? "",
+              soLuong:
+                t.soLuong !== undefined && t.soLuong !== null
+                  ? t.soLuong.toString()
+                  : "1",
             }))
-          : [{ technologyId: "", soLuong: "" }]
+          : [{ technologyId: "", soLuong: "1" }]
       );
       setDateError("");
     } else if (!isEdit) {
@@ -78,7 +81,7 @@ export default function CreateRequestModal({
       setNote("");
       const defaultDate = new Date(minDate);
       setExpectedDate(defaultDate.toISOString().split("T")[0]);
-      setTechs([{ technologyId: "", soLuong: "" }]);
+      setTechs([{ technologyId: "", soLuong: "1" }]);
       setDateError("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -117,7 +120,7 @@ export default function CreateRequestModal({
 
   // ====== Tech rows ======
   const addTech = () =>
-    setTechs((prev) => [...prev, { technologyId: "", soLuong: "" }]);
+    setTechs((prev) => [...prev, { technologyId: "", soLuong: "1" }]);
 
   const updateTech = (i, field, value) => {
     setTechs((prev) => {
