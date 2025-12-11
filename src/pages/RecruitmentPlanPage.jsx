@@ -155,6 +155,26 @@ const INITIAL_PLAN_META = {
   handoverCount: 0,
 };
 
+const extractMainRequestName = (title = "") => {
+  if (!title) return "";
+  let main = title.trim();
+
+  // Bỏ tiền tố "Nhu cầu nhân sự"
+  const prefixRegex = /^Nhu cầu nhân sự\s*/i;
+  if (prefixRegex.test(main)) {
+    main = main.replace(prefixRegex, "");
+  }
+
+  // Cắt phần hậu tố tháng/năm ("tháng 12/2025" hoặc "tháng 12, 2025")
+  const monthRegex = /tháng\s*\d{1,2}(?:[\/\,]\s*|\s*,\s*)?\d{4}/i;
+  const monthMatch = main.match(monthRegex);
+  if (monthMatch && monthMatch.index !== undefined) {
+    main = main.slice(0, monthMatch.index);
+  }
+
+  return main.trim();
+};
+
 const RecruitmentPlanPage = () => {
   const { user } = useAuth();
   const role = user?.role;
@@ -710,9 +730,12 @@ const RecruitmentPlanPage = () => {
     try {
       const res = await axiosAuth.get(`/api/hr-request/${id}/plan-defaults`);
       const d = res.data;
+      const defaultPlanName = extractMainRequestName(
+        d.requestTitle || d.suggestedPlanName || ""
+      );
       setForm({
         requestId: d.requestId,
-        planName: "",
+        planName: defaultPlanName,
         status: d.status || "NEW",
         recruitmentDeadline: d.recruitmentDeadline || "",
         deliveryDeadline: d.deliveryDeadline || "",
