@@ -1,154 +1,158 @@
 // src/pages/HrRequestPage.jsx
-import React, { useState, useEffect, useCallback } from "react";
-import { useSearchParams, useLocation } from "react-router-dom";
-import useHrRequests from "../hooks/useHrRequests";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import {
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
+import axios from "axios";
+
 import Layout from "../components/Layout";
-import ActionButtons from "../components/ActionButtons.jsx";
 import Pagination from "../components/Pagination";
-import CreateRequestModal from "../components/CreateRequestModal.jsx";
-import HRRequestModal from "../components/HRRequestModal.jsx";
+import ActionButtons from "../components/ActionButtons";
+import CreateRequestModal from "../components/CreateRequestModal";
+import HRRequestModal from "../components/HRRequestModal";
 import DatePicker from "../components/DatePicker";
 import { useAuth } from "../contexts/AuthContext";
 
-import { HiUserGroup } from "react-icons/hi"; 
+import "../styles/plan.css"; // bạn đang dùng chung style table/filter
+import { HiUserGroup } from "react-icons/hi";
 import { FiSearch } from "react-icons/fi";
 
-import "../styles/request.css";
-import "../styles/toast.css";
+const formatDate = (dateString) => {
+  if (!dateString) return "—";
+  return new Date(dateString).toLocaleDateString("vi-VN");
+};
 
-// Map mã trạng thái -> label tiếng Việt
 const getStatusLabel = (status) => {
   switch (String(status || "").toUpperCase()) {
-    case "NEW": return "Đã gửi";
-    case "FAILED": case "FAILURE": return "Thất bại";
-    case "PENDING": return "Đang chờ";
-    case "IN_PROGRESS": return "Đang tiến hành";
-    case "COMPLETED": return "Đã hoàn thành";
-    case "CANCELED": return "Bị từ chối";
-    default: return status || "Không rõ";
+    case "NEW":
+      return "Mới tạo";
+    case "SENT":
+      return "Đã gửi";
+    case "IN_PROGRESS":
+      return "Đang tiến hành";
+    case "REJECTED":
+      return "Bị từ chối";
+    case "DONE":
+      return "Hoàn thành";
+    default:
+      return status || "Không rõ";
   }
 };
 
-// Map mã trạng thái -> className để tô màu badge
 const getStatusClass = (status) => {
   switch (String(status || "").toUpperCase()) {
-    case "NEW": return "status-new";
-    case "FAILED": case "FAILURE": return "status-failed";
-    case "IN_PROGRESS": return "status-inprogress";
-    case "COMPLETED": return "status-completed";
-    case "CANCELED": return "status-canceled";
-    case "PENDING": return "status-pending";
-    default: return "status-unknown";
+    case "NEW":
+      return "status-new";
+    case "SENT":
+    case "IN_PROGRESS":
+      return "status-confirmed";
+    case "REJECTED":
+      return "status-rejected";
+    case "DONE":
+      return "status-completed";
+    default:
+      return "status-unknown";
   }
 };
 
-const deriveRequestStatus = (req = {}) => {
-  const raw = String(req.status || "").toUpperCase();
-  if (raw === "FAILED" || raw === "FAILURE") return "FAILED";
-  const rejectReason = (req.rejectReason || "").trim();
-  if (raw === "COMPLETED" && rejectReason) return "FAILED";
-  return raw;
-};
-
-export default function HrRequestPage() {
-  const { requests, loading, error, refetch } = useHrRequests();
+const HrRequestPage = () => {
   const { user } = useAuth();
   const role = user?.role;
 
-  // ================= PHÂN QUYỀN =================
-  const canCreateRequest = role === "SUPER_ADMIN" || role === "LEAD";
-  const canEditRequestByRole = role === "SUPER_ADMIN" || role === "LEAD";
+  const canCreate = role === "SUPER_ADMIN" || role === "LEAD";
+  const canInteract = role !== "QLDT"; // QLĐT không tạo/sửa nhu cầu
+  const canApproveReject = role === "SUPER_ADMIN" || role === "HR";
 
-  // ================= URL SYNC =================
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const location = useLocation();
+  const navigate = useNavigate();
 
+  // ====== URL PARAMS ======
   const urlSearch = searchParams.get("search") || "";
   const urlStatus = searchParams.get("status") || "";
-  const urlDate   = searchParams.get("date") || "";
-  const urlPage   = Number(searchParams.get("page")) || 1;
+  const urlDate = searchParams.get("date") || "";
+  const urlPage = Number(searchParams.get("page")) || 1;
+  const urlRequestTitle = searchParams.get("requestTitle") || "";
+
+  // ====== STATE ======
+  const [requests, setRequests] = useState([]);
+  const [filteredRequests, setFilteredRequests] = useState([]);
 
   const [searchName, setSearchName] = useState(urlSearch);
   const [statusFilter, setStatusFilter] = useState(urlStatus);
+  const [selectedDate, setSelectedDate] = useState(null);
 
-  // FIX HOÀN HẢO: selectedDate có đủ value + displayText + filterMode + displayMonth/displayYear
-  const [selectedDate, setSelectedDate] = useState(() => {
-    if (!urlDate) return null;
-
-    const parts = urlDate.split("-").map(Number);
-    const y = parts[0];
-    const m = parts[1] ? parts[1] - 1 : 0;
-    const d = parts[2] || 1;
-    const date = new Date(y, m, d);
-
-    if (parts.length === 1) {
-      // Chỉ năm
-      return { value: date, displayText: `Năm ${y}`, filterMode: "year", displayYear: y };
-    } else if (parts.length === 2) {
-      // Năm-tháng
-      const months = ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6", "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"];
-      return { value: date, displayText: `${months[m]} ${y}`, filterMode: "month", displayMonth: m, displayYear: y };
-    } else {
-      // Ngày đầy đủ
-      return { value: date, displayText: date.toLocaleDateString("vi-VN"), filterMode: "day" };
-    }
-  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [currentPage, setCurrentPage] = useState(urlPage);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  const [openCreateModal, setOpenCreateModal] = useState(false);
+  const [editingRequest, setEditingRequest] = useState(null);
+
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+  // 👉 NEW: để auto mở modal từ notification (requestTitle query)
   const [pendingRequestTitle, setPendingRequestTitle] = useState("");
 
-  // Cập nhật URL
-  const updateSearchParams = useCallback((updates) => {
-    setSearchParams(prev => {
-      const newParams = new URLSearchParams(prev);
-      Object.entries(updates).forEach(([key, value]) => {
-        if (value === "" || value === null || value === undefined) {
-          newParams.delete(key);
-        } else {
-          newParams.set(key, value);
-        }
-      });
-      return newParams;
-    });
-  }, [setSearchParams]);
+  const token = localStorage.getItem("token");
+  const axiosAuth = axios.create({
+    baseURL: "http://localhost:8080",
+    headers: { Authorization: `Bearer ${token}` },
+  });
 
-  // Debounce search
+  // ====== ĐỒNG BỘ requestTitle TỪ URL ======
   useEffect(() => {
-    const timer = setTimeout(() => {
-      updateSearchParams({ search: searchName.trim() || "", page: 1 });
-      setCurrentPage(1);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchName, updateSearchParams]);
+    if (urlRequestTitle) {
+      setPendingRequestTitle(urlRequestTitle);
+      // cũng đồng thời set vào ô search để list chỉ còn một item
+      setSearchName(urlRequestTitle);
+    }
+  }, [urlRequestTitle]);
 
-  // Đồng bộ khi F5/back/forward – FIX HOÀN HẢO CHO NĂM/THÁNG
+  // ====== CẬP NHẬT URL KHI SEARCH / STATUS ĐỔI ======
   useEffect(() => {
-    setSearchName(urlSearch);
-    setStatusFilter(urlStatus);
+    const params = new URLSearchParams(searchParams);
 
-    if (!urlDate) {
-      setSelectedDate(null);
-    } else {
-      const parts = urlDate.split("-").map(Number);
-      const y = parts[0];
-      const m = parts[1] ? parts[1] - 1 : 0;
-      const d = parts[2] || 1;
-      const date = new Date(y, m, d);
+    if (searchName) params.set("search", searchName);
+    else params.delete("search");
 
-      if (parts.length === 1) {
-        setSelectedDate({ value: date, displayText: `Năm ${y}`, filterMode: "year", displayYear: y });
-      } else if (parts.length === 2) {
-        const months = ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6", "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"];
-        setSelectedDate({ value: date, displayText: `${months[m]} ${y}`, filterMode: "month", displayMonth: m, displayYear: y });
-      } else {
-        setSelectedDate({ value: date, displayText: date.toLocaleDateString("vi-VN"), filterMode: "day" });
-      }
+    if (statusFilter) params.set("status", statusFilter);
+    else params.delete("status");
+
+    // giữ nguyên requestTitle nếu có
+    if (pendingRequestTitle || urlRequestTitle) {
+      params.set("requestTitle", pendingRequestTitle || urlRequestTitle);
     }
 
-    setCurrentPage(urlPage);
-  }, [urlSearch, urlStatus, urlDate, urlPage]);
+    params.set("page", "1");
+    navigate(`${location.pathname}?${params.toString()}`, {
+      replace: true,
+    });
+  }, [searchName, statusFilter]);
 
-  // FIX CUỐI: BẤM ÁP DỤNG → LỌC ĐÚNG NGAY LẦN ĐẦU + URL ĐÚNG + Ô LỌC HIỆN ĐÚNG
+  // ====== CẬP NHẬT URL KHI PAGE ĐỔI ======
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams);
+    if (currentPage !== urlPage) {
+      params.set("page", String(currentPage));
+      navigate(`${location.pathname}?${params.toString()}`, {
+        replace: true,
+      });
+    }
+  }, [currentPage]);
+
+  // ====== XỬ LÝ DATE PICKER ======
   const handleDateChange = (payload) => {
     setSelectedDate(payload);
 
@@ -158,189 +162,261 @@ export default function HrRequestPage() {
       if (payload.filterMode === "year") {
         dateStr = `${d.getFullYear()}`;
       } else if (payload.filterMode === "month") {
-        dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+          2,
+          "0"
+        )}`;
       } else {
-        dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        dateStr = `${d.getFullYear()}-${String(
+          d.getMonth() + 1
+        ).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       }
     }
 
-    updateSearchParams({
-      date: dateStr,
-      page: 1
+    const params = new URLSearchParams(searchParams);
+    if (dateStr) params.set("date", dateStr);
+    else params.delete("date");
+    params.set("page", "1");
+
+    navigate(`${location.pathname}?${params.toString()}`, {
+      replace: true,
     });
-    setCurrentPage(1);
   };
 
-  // Cập nhật URL cho status + page
+  // sync khi F5
   useEffect(() => {
-    updateSearchParams({
-      status: statusFilter || "",
-      page: currentPage
-    });
-  }, [statusFilter, currentPage, updateSearchParams]);
+    if (!urlDate) {
+      setSelectedDate(null);
+      return;
+    }
 
-  // Phân trang
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [isAnimating, setIsAnimating] = useState(false);
+    const parts = urlDate.split("-").map(Number);
+    const y = parts[0];
+    const m = parts[1] ? parts[1] - 1 : 0;
+    const d = parts[2] || 1;
+    const date = new Date(y, m, d);
+
+    if (parts.length === 1) {
+      setSelectedDate({
+        value: date,
+        displayText: `Năm ${y}`,
+        filterMode: "year",
+        displayYear: y,
+      });
+    } else if (parts.length === 2) {
+      const months = [
+        "Tháng 1",
+        "Tháng 2",
+        "Tháng 3",
+        "Tháng 4",
+        "Tháng 5",
+        "Tháng 6",
+        "Tháng 7",
+        "Tháng 8",
+        "Tháng 9",
+        "Tháng 10",
+        "Tháng 11",
+        "Tháng 12",
+      ];
+      setSelectedDate({
+        value: date,
+        displayText: `${months[m]} ${y}`,
+        filterMode: "month",
+        displayMonth: m,
+        displayYear: y,
+      });
+    } else {
+      setSelectedDate({
+        value: date,
+        displayText: date.toLocaleDateString("vi-VN"),
+        filterMode: "day",
+      });
+    }
+  }, [urlDate]);
+
+  // ====== ĐỒNG BỘ SEARCH/STATUS/PAGE TỪ URL ======
+  useEffect(() => {
+    setSearchName(urlSearch);
+    setStatusFilter(urlStatus);
+    setCurrentPage(urlPage);
+  }, [urlSearch, urlStatus, urlPage]);
+
+  // ====== LOAD DATA ======
+  const loadRequests = async () => {
+    try {
+      setLoading(true);
+      const res = await axiosAuth.get("/api/hr-request");
+      const list = res.data || [];
+      setRequests(list);
+      setFilteredRequests(list);
+      setError(null);
+    } catch (e) {
+      console.error(e);
+      setError("Không thể tải danh sách nhu cầu nhân sự");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!token) {
+      setError("Bạn chưa đăng nhập hoặc token đã hết hạn");
+      setLoading(false);
+      return;
+    }
+    loadRequests();
+  }, []);
+
+  // ====== AUTO MỞ MODAL KHI CÓ requestTitle TỪ NOTIFICATION ======
+  const handleViewDetails = useCallback((req) => {
+    setSelectedRequest(req);
+    setIsDetailOpen(true);
+  }, []);
+
+  useEffect(() => {
+    if (!pendingRequestTitle || !requests.length) return;
+
+    const matched = requests.find((r) =>
+      (r.requestTitle || "")
+        .trim()
+        .toLowerCase() === pendingRequestTitle.trim().toLowerCase()
+    );
+
+    if (matched) {
+      handleViewDetails(matched); // ✅ mở modal “Chi tiết yêu cầu nhân sự”
+      setPendingRequestTitle(""); // tránh lặp lại
+    }
+  }, [pendingRequestTitle, requests, handleViewDetails]);
+
+  // ====== FILTER LIST ======
+  useEffect(() => {
+    let filtered = [...requests];
+
+    if (searchName.trim()) {
+      const keyword = searchName.toLowerCase();
+      filtered = filtered.filter((r) =>
+        (r.requestTitle || "").toLowerCase().includes(keyword)
+      );
+    }
+
+    if (statusFilter) {
+      filtered = filtered.filter(
+        (r) => String(r.status || "").toUpperCase() === statusFilter
+      );
+    }
+
+    if (selectedDate?.value) {
+      const filterMode = selectedDate.filterMode || "day";
+      const selectedDay = selectedDate.value.getDate();
+      const selectedMonth =
+        selectedDate.displayMonth ?? selectedDate.value.getMonth();
+      const selectedYear =
+        selectedDate.displayYear ?? selectedDate.value.getFullYear();
+
+      filtered = filtered.filter((r) => {
+        const created = r.createdAt ? new Date(r.createdAt) : null;
+        if (!created) return false;
+
+        if (filterMode === "day") {
+          return (
+            created.getDate() === selectedDay &&
+            created.getMonth() === selectedMonth &&
+            created.getFullYear() === selectedYear
+          );
+        } else if (filterMode === "month") {
+          return (
+            created.getMonth() === selectedMonth &&
+            created.getFullYear() === selectedYear
+          );
+        } else if (filterMode === "year") {
+          return created.getFullYear() === selectedYear;
+        }
+        return true;
+      });
+    }
+
+    setFilteredRequests(filtered);
+    setCurrentPage(1);
+  }, [searchName, statusFilter, selectedDate, requests]);
+
+  // ====== SORT + PAGINATION ======
+  const filteredSorted = useMemo(
+    () =>
+      [...filteredRequests].sort((a, b) => {
+        const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return db - da;
+      }),
+    [filteredRequests]
+  );
+
+  const totalPages =
+    Math.ceil(filteredSorted.length / itemsPerPage) || 1;
+  const indexOfLast = currentPage * itemsPerPage;
+  const indexOfFirst = indexOfLast - itemsPerPage;
+  const currentRequests = filteredSorted.slice(
+    indexOfFirst,
+    indexOfLast
+  );
 
   const handleChangeItemsPerPage = (e) => {
     setItemsPerPage(Number(e.target.value));
     setCurrentPage(1);
-    updateSearchParams({ page: 1 });
   };
 
-  const handlePageChange = (page) => {
-    if (page < 1 || page > totalPages) return;
+  const handlePageChange = (p) => {
+    if (p < 1 || p > totalPages) return;
     setIsAnimating(true);
     setTimeout(() => {
-      setCurrentPage(page);
+      setCurrentPage(p);
       setIsAnimating(false);
     }, 180);
   };
 
-  // Lọc dữ liệu (giữ nguyên logic cũ)
-  const filteredRequests = (requests || []).filter((req) => {
-    const matchesName = (req.requestTitle || "")
-      .toLowerCase()
-      .includes(searchName.toLowerCase());
-    const derivedStatus = deriveRequestStatus(req);
-    const matchesStatus = statusFilter
-      ? derivedStatus === statusFilter
-      : true;
-
-    let matchesDate = true;
-    if (selectedDate?.value) {
-      const createdFilter = new Date(selectedDate.value);
-      const filterMode = selectedDate.filterMode || "day";
-
-      const selectedDay = createdFilter.getDate();
-      const selectedMonth =
-        selectedDate.displayMonth ?? createdFilter.getMonth();
-      const selectedYear =
-        selectedDate.displayYear ?? createdFilter.getFullYear();
-
-      const created = req.createdAt ? new Date(req.createdAt) : null;
-
-      if (created) {
-        if (filterMode === "day") {
-          matchesDate =
-            created.getDate() === selectedDay &&
-            created.getMonth() === selectedMonth &&
-            created.getFullYear() === selectedYear;
-        } else if (filterMode === "month") {
-          matchesDate =
-            created.getMonth() === selectedMonth &&
-            created.getFullYear() === selectedYear;
-        } else if (filterMode === "year") {
-          matchesDate = created.getFullYear() === selectedYear;
-        }
-      }
-    }
-    return matchesName && matchesStatus && matchesDate;
-  });
-
-  const filteredSorted = [...filteredRequests].sort((a, b) => {
-    const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    return db - da;
-  });
-
-  const totalPages = Math.ceil(filteredSorted.length / itemsPerPage) || 1;
-  const indexOfLast = currentPage * itemsPerPage;
-  const indexOfFirst = indexOfLast - itemsPerPage;
-  const currentRequests = filteredSorted.slice(indexOfFirst, indexOfLast);
-
-  const [showModal, setShowModal] = useState(false);
-  const [editData, setEditData] = useState(null);
-  const [selectedRequest, setSelectedRequest] = useState(null);
-
-  const [toast, setToast] = useState(null);
-  const showToast = (msg, type = "success") => {
-    setToast({ msg, type });
-    window.clearTimeout(showToast._t);
-    showToast._t = window.setTimeout(() => setToast(null), 2500);
-  };
-
-  const isStatusEditable = (status) =>
-    String(status || "").toUpperCase() === "NEW";
-
+  // ====== CREATE / EDIT ======
   const openCreate = () => {
-    setEditData(null);
-    setShowModal(true);
+    setEditingRequest(null);
+    setOpenCreateModal(true);
   };
 
-  const openEdit = (req) => {
-    setEditData({
-      requestId: req.requestId,
-      requestTitle: req.requestTitle || "",
-      expectedDeliveryDate: req.expectedDeliveryDate || "",
-      note: req.note || "",
-      techQuantities: req.techQuantities || [],
-      status: req.status,
-    });
-    setShowModal(true);
+  const handleEdit = (req) => {
+    setEditingRequest(req);
+    setOpenCreateModal(true);
   };
 
-  const flashEditTooltip = (btnWrapperEl, message) => {
-    const tip = btnWrapperEl?.querySelector(".action-tooltip");
-    if (!tip) return;
-    const original = tip.textContent;
-    tip.textContent = message;
-    tip.style.opacity = "1";
-    tip.style.transform = "translateX(-50%) scale(1)";
-    setTimeout(() => {
-      tip.textContent = original;
-      tip.removeAttribute("style");
-    }, 1500);
+  const handleCreatedOrUpdated = async () => {
+    await loadRequests();
   };
 
-  useEffect(() => {
-    const handler = () => {
-      refetch?.();
-      setCurrentPage(1);
-    };
-    window.addEventListener("hr:requests:changed", handler);
-    return () => window.removeEventListener("hr:requests:changed", handler);
-  }, [refetch]);
-
-  useEffect(() => {
-    if (location.state?.requestTitle) {
-      setPendingRequestTitle(location.state.requestTitle);
-    }
-  }, [location.state]);
-
-  useEffect(() => {
-    if (!pendingRequestTitle || !requests?.length) return;
-
-    const matchedRequest = requests.find(
-      (req) => (req.requestTitle || "").toLowerCase() === pendingRequestTitle.toLowerCase()
-    );
-
-    if (matchedRequest) {
-      setSelectedRequest(matchedRequest);
-      setSearchName(pendingRequestTitle);
-    }
-
-    setPendingRequestTitle("");
-  }, [pendingRequestTitle, requests]);
+  const handleCloseDetail = () => {
+    setIsDetailOpen(false);
+    setSelectedRequest(null);
+  };
 
   return (
     <Layout>
+      {/* BREADCRUMB */}
       <div className="breadcrumb-container fade-slide">
         <div className="breadcrumb-left">
-          <span className="breadcrumb-icon"><HiUserGroup /></span>
+          <span className="breadcrumb-icon">
+            <HiUserGroup />
+          </span>
           <span className="breadcrumb-item">Tuyển dụng</span>
           <span className="breadcrumb-separator">&gt;</span>
-          <span className="breadcrumb-current">Nhu cầu nhân sự</span>
+          <span className="breadcrumb-current">
+            Nhu cầu tuyển dụng
+          </span>
         </div>
       </div>
 
+      {/* CONTENT */}
       <div className="recruitment-page fade-slide">
+        {/* TITLE + FILTER BAR */}
         <div className="title-row">
           <h2 className="page-title-small">Nhu cầu tuyển dụng</h2>
 
           <div className="filter-bar">
-            {/* Cột Search */}
+            {/* Search by name */}
             <div className="filter-item">
               <input
                 type="text"
@@ -349,26 +425,28 @@ export default function HrRequestPage() {
                 value={searchName}
                 onChange={(e) => setSearchName(e.target.value)}
               />
-              <span className="filter-icon"><FiSearch /></span>
+              <span className="filter-icon">
+                <FiSearch />
+              </span>
             </div>
 
-            {/* Cột Select Status */}
+            {/* Status filter */}
             <div className="filter-item">
               <select
-                className="filter-select"
+                className="filter-select smooth-dropdown"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="">Chọn trạng thái</option>
-                <option value="NEW">Đã gửi</option>
+                <option value="NEW">Mới tạo</option>
+                <option value="SENT">Đã gửi</option>
                 <option value="IN_PROGRESS">Đang tiến hành</option>
-                <option value="COMPLETED">Đã hoàn thành</option>
-                <option value="CANCELED">Bị từ chối</option>
-                <option value="FAILED">Thất bại</option>
+                <option value="REJECTED">Bị từ chối</option>
+                <option value="DONE">Hoàn thành</option>
               </select>
             </div>
 
-            {/* NGÀY/THÁNG/NĂM – HOÀN HẢO 100% */}
+            {/* Date filter */}
             <div className="filter-item">
               <DatePicker
                 selectedDate={selectedDate}
@@ -376,24 +454,32 @@ export default function HrRequestPage() {
               />
             </div>
 
-            <div style={{ flex: 1 }}></div>
+            <div style={{ flex: 1 }} />
 
-            <div className="filter-item add-btn-wrapper">
-              {canCreateRequest && (
-                <button className="add-plan-btn clean" onClick={openCreate}>
-                  Thêm nhu cầu tuyển dụng
+            {/* Add button */}
+            {canCreate && (
+              <div className="filter-item add-btn-wrapper">
+                <button
+                  className="add-plan-btn modern-add"
+                  onClick={openCreate}
+                >
+                  Thêm nhu cầu nhân sự
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Bảng, phân trang, modal – giữ nguyên 100% */}
-        <div className={`table-container table-fade ${isAnimating ? "fade-out" : "fade-in"}`}>
+        {/* TABLE */}
+        <div
+          className={`table-container ${
+            isAnimating ? "fade-out" : "fade-in"
+          }`}
+        >
           {loading ? (
             <p className="loading-text">Đang tải dữ liệu...</p>
           ) : error ? (
-            <p className="text-center text-error">{error}</p>
+            <p className="error-text">{error}</p>
           ) : (
             <table className="styled-table">
               <thead>
@@ -409,73 +495,85 @@ export default function HrRequestPage() {
               <tbody>
                 {currentRequests.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="text-center">Không có dữ liệu</td>
+                    <td colSpan="6" className="text-center">
+                      Không có dữ liệu
+                    </td>
                   </tr>
                 ) : (
-                  currentRequests.map((req, index) => {
-                    const displayStatus = deriveRequestStatus(req);
-                    const canEditRow = canEditRequestByRole && isStatusEditable(req.status);
-
-                    const rowAttrs = {
-                      "data-status": displayStatus || req.status || "",
-                      "data-editable": canEditRow ? "true" : "false",
-                    };
-
-                    return (
-                      <tr key={req.requestId || index} {...rowAttrs}>
-                        <td>{indexOfFirst + index + 1}</td>
-                        <td>{req.requestTitle}</td>
-                        <td>
-                          {req.createdAt
-                            ? new Date(req.createdAt).toLocaleDateString("vi-VN")
-                            : "—"}
-                        </td>
-                        <td>
-                          <span className={`status-badge ${getStatusClass(displayStatus)}`}>
-                            {getStatusLabel(displayStatus)}
-                          </span>
-                        </td>
-                        <td>{req.createdByName || "Không rõ"}</td>
-                        <td className="actions-cell text-center">
+                  currentRequests.map((req, idx) => (
+                    <tr
+                      key={req.requestId || idx}
+                    >
+                      <td>{indexOfFirst + idx + 1}</td>
+                      <td>{req.requestTitle}</td>
+                      <td>
+                        {req.createdAt
+                          ? formatDate(req.createdAt)
+                          : "—"}
+                      </td>
+                      <td>
+                        <span
+                          className={`status-badge ${getStatusClass(
+                            req.status
+                          )}`}
+                        >
+                          {getStatusLabel(req.status)}
+                        </span>
+                      </td>
+                      <td>
+                        {req.createdBy?.fullName ||
+                          req.createdByName ||
+                          "Không rõ"}
+                      </td>
+                      <td className="actions-cell text-center">
+                        <div
+                          style={
+                            !canInteract
+                              ? {
+                                  pointerEvents: "none",
+                                  opacity: 0.4,
+                                  cursor: "not-allowed",
+                                }
+                              : {}
+                          }
+                          title={
+                            !canInteract
+                              ? "Bạn không có quyền thao tác"
+                              : ""
+                          }
+                        >
                           <ActionButtons
-                            onView={() => setSelectedRequest(req)}
-                            onEdit={(e) => {
-                              if (!canEditRow) {
-                                e?.preventDefault?.();
-                                const wrapper =
-                                  e?.currentTarget?.closest(".btn-action-wrapper")
-                                  || e?.target?.closest(".btn-action-wrapper");
-                                
-                                const msg = !canEditRequestByRole 
-                                  ? "Bạn không có quyền chỉnh sửa mục này" 
-                                  : "Chỉ trạng thái ĐÃ GỬI mới được sửa";
-                                flashEditTooltip(wrapper, msg);
-                                return;
-                              }
-                              openEdit(req);
-                            }}
-                            canEdit={canEditRow}
+                            onView={() => handleViewDetails(req)}
+                            onEdit={() => handleEdit(req)}
+                            canEdit={
+                              (role === "LEAD" ||
+                                role === "SUPER_ADMIN") &&
+                              String(req.status || "").toUpperCase() ===
+                                "NEW"
+                            }
                           />
-                        </td>
-                      </tr>
-                    );
-                  })
+                        </div>
+                      </td>
+                    </tr>
+                  ))
                 )}
               </tbody>
             </table>
           )}
         </div>
 
-         {filteredSorted.length > 0 && (
+        {/* PAGINATION */}
+        {filteredSorted.length > 0 && (
           <div className="pagination-bar">
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={handlePageChange}
             />
-
             <div className="mini-pagination">
-              <label className="mini-pagination-label">Hiển thị:</label>
+              <label className="mini-pagination-label">
+                Hiển thị:
+              </label>
               <select
                 value={itemsPerPage}
                 onChange={handleChangeItemsPerPage}
@@ -490,47 +588,24 @@ export default function HrRequestPage() {
         )}
       </div>
 
-      {/* Modal giữ nguyên */}
+      {/* MODAL TẠO / SỬA NHU CẦU */}
       <CreateRequestModal
-        isOpen={showModal}
-        onClose={() => {
-          setShowModal(false);
-          setEditData(null);
-        }}
-        onSuccess={(msgFromBE) => {
-          refetch?.();
-          setCurrentPage(1);
-          setShowModal(false);
-          setEditData(null);
-          showToast(
-            msgFromBE ||
-            (editData ? "Cập nhật thành công!" : "Tạo mới thành công!"),
-            "success"
-          );
-        }}
-        initialData={editData}
+        isOpen={openCreateModal}
+        onClose={() => setOpenCreateModal(false)}
+        onSuccess={handleCreatedOrUpdated}
+        initialData={editingRequest}
       />
 
+      {/* MODAL CHI TIẾT NHU CẦU */}
       <HRRequestModal
-        isOpen={!!selectedRequest}
-        onClose={() => setSelectedRequest(null)}
+        isOpen={isDetailOpen}
+        onClose={handleCloseDetail}
         request={selectedRequest}
-        onActionSuccess={() => {
-          refetch?.();
-          setSelectedRequest(null);
-          showToast("Thực hiện thành công!", "success");
-        }}
-        onActionError={(msg) => showToast(msg || "Có lỗi xảy ra", "error")}
+        canApproveReject={canApproveReject}
+        onStatusChange={loadRequests}
       />
-
-      {toast && (
-        <div
-          className={`toast-container ${toast.type === "success" ? "toast-success" : "toast-error"}`}
-          role="status"
-        >
-          {toast.msg}
-        </div>
-      )}
     </Layout>
   );
-}
+};
+
+export default HrRequestPage;

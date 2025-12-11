@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../contexts/AuthContext";
 import { getNotifications, markAsRead } from "../services/notificationService";
+import api from "../services/api"; // baseURL: http://localhost:8080/api
 
 export default function Header() {
   const [isDark] = useState(() => localStorage.getItem("theme") === "dark");
@@ -15,13 +16,11 @@ export default function Header() {
   const [showBell, setShowBell] = useState(false);
   const [notifications, setNotifications] = useState([]);
 
-  // TAB hiện tại: "all" | "unread"
   const [activeTab, setActiveTab] = useState("all");
 
   const { user, logoutUser } = useAuth();
   const navigate = useNavigate();
 
-  // ref để bắt click outside
   const bellRef = useRef(null);
   const userRef = useRef(null);
 
@@ -83,50 +82,37 @@ export default function Header() {
   };
 
   /**
-   * Xác định trang cần điều hướng khi click từng loại thông báo
+   * Các loại thông báo xử lý được chỉ bằng title/content
+   * (requestTitle nằm trong dấu ngoặc kép)
    */
   const getNotificationTarget = (notification = {}) => {
+    const { eventType } = notification;
     const combinedText = `${notification.title || ""} ${
       notification.content || ""
     }`.toLowerCase();
 
-    // 1) Nhu cầu nhân sự mới -> sang trang Nhu cầu, mở luôn modal chi tiết theo title
-    if (combinedText.includes("nhu cầu nhân sự mới")) {
+    // ===== Nhu cầu nhân sự: tạo / duyệt / từ chối -> sang Nhu cầu + mở modal =====
+    if (
+      eventType === "HR_REQUEST_CREATED" ||
+      eventType === "HR_REQUEST_APPROVED" ||
+      eventType === "HR_REQUEST_REJECTED" ||
+      combinedText.includes("nhu cầu nhân sự mới") ||
+      combinedText.includes("nhu cầu nhân sự đã được duyệt") ||
+      combinedText.includes("nhu cầu nhân sự bị từ chối")
+    ) {
       const requestTitle =
         extractQuotedText(notification.content || notification.title) || "";
       if (!requestTitle) return { path: "/recruitment/needs" };
-
-      return {
-        path: "/recruitment/needs",
-        state: { requestTitle },
-      };
-    }
-
-    // 1b) Nhu cầu nhân sự bị từ chối -> cũng sang Nhu cầu, mở modal chi tiết theo title
-    if (combinedText.includes("nhu cầu nhân sự bị từ chối")) {
-      const requestTitle =
-        extractQuotedText(notification.content || notification.title) || "";
-      if (!requestTitle) return { path: "/recruitment/needs" };
-
-      return {
-        path: "/recruitment/needs",
-        state: { requestTitle },
-      };
-    }
-
-    // 2) Nhu cầu nhân sự đã được duyệt -> sang Kế hoạch tuyển dụng,
-    // kèm requestTitle để RecruitmentPlanPage bắt đúng kế hoạch
-    if (combinedText.includes("nhu cầu nhân sự đã được duyệt")) {
-      const requestTitle =
-        extractQuotedText(notification.content || notification.title) || "";
-      if (!requestTitle) return { path: "/recruitment/plan" };
 
       const query = new URLSearchParams({ requestTitle }).toString();
-      return { path: `/recruitment/plan?${query}` };
+      return { path: `/recruitment/needs?${query}` };
     }
 
-    // 3) Kế hoạch tuyển dụng mới -> sang Kế hoạch tuyển dụng, mở đúng kế hoạch theo tên
-    if (combinedText.includes("kế hoạch tuyển dụng mới")) {
+    // ===== Kế hoạch tuyển dụng mới -> sang Kế hoạch (mở chi tiết kế hoạch) =====
+    if (
+      eventType === "PLAN_CREATED" ||
+      combinedText.includes("kế hoạch tuyển dụng mới")
+    ) {
       const planName =
         extractQuotedText(notification.content || notification.title) || "";
       if (!planName) return { path: "/recruitment/plan" };
@@ -135,27 +121,53 @@ export default function Header() {
       return { path: `/recruitment/plan?${query}` };
     }
 
-    // ✅ 3b) Kế hoạch tuyển dụng bị từ chối -> sang Kế hoạch tuyển dụng, mở chi tiết kế hoạch đó
-    if (combinedText.includes("kế hoạch tuyển dụng bị từ chối")) {
-      const planName =
-        extractQuotedText(notification.content || notification.title) || "";
-      if (!planName) return { path: "/recruitment/plan" };
-
-      const query = new URLSearchParams({ planName }).toString();
-      return { path: `/recruitment/plan?${query}` };
-    }
-
-    // 4) Kế hoạch tuyển dụng đã được duyệt -> sang Kế hoạch tuyển dụng, tìm theo tên kế hoạch
-    if (combinedText.includes("kế hoạch tuyển dụng đã được duyệt")) {
-      const planName =
-        extractQuotedText(notification.content || notification.title) || "";
-      if (!planName) return { path: "/recruitment/plan" };
-
-      const query = new URLSearchParams({ planName }).toString();
-      return { path: `/recruitment/plan?${query}` };
+    // PLAN_CONFIRMED / PLAN_REJECTED xử lý riêng bằng referenceId
+    if (
+      eventType === "PLAN_CONFIRMED" ||
+      eventType === "PLAN_REJECTED" ||
+      combinedText.includes("kế hoạch tuyển dụng đã được duyệt") ||
+      combinedText.includes("kế hoạch tuyển dụng bị từ chối")
+    ) {
+      return null;
     }
 
     return null;
+  };
+
+  /**
+   * Riêng PLAN_CONFIRMED / PLAN_REJECTED:
+   *  - Dùng referenceType = "RECRUITMENT_PLAN" + referenceId = planId
+   *  - GET /api/recruitment-plans/{planId} lấy request.requestTitle
+   *  - Navigate sang /recruitment/needs?requestTitle=...
+   */
+  const openRequestFromPlanNotification = async (notification) => {
+    const { referenceType, referenceId } = notification;
+
+    if (referenceType !== "RECRUITMENT_PLAN" || !referenceId) {
+      navigate("/recruitment/needs");
+      return;
+    }
+
+    try {
+      const res = await api.get(`/recruitment-plans/${referenceId}`);
+      const plan = res.data;
+      const requestTitle = plan?.request?.requestTitle || "";
+
+      if (requestTitle) {
+        const query = new URLSearchParams({ requestTitle }).toString();
+        navigate(`/recruitment/needs?${query}`, {
+          state: {
+            fromNotification: "PLAN_TO_REQUEST",
+            requestTitle,
+          },
+        });
+      } else {
+        navigate("/recruitment/needs");
+      }
+    } catch (err) {
+      console.error("Không lấy được kế hoạch từ notification:", err);
+      navigate("/recruitment/needs");
+    }
   };
 
   const handleNotificationClick = async (notification) => {
@@ -167,17 +179,24 @@ export default function Header() {
         )
       );
 
+      // Ưu tiên: PLAN_CONFIRMED / PLAN_REJECTED -> sang Nhu cầu + mở modal nhu cầu
+      if (
+        notification.eventType === "PLAN_CONFIRMED" ||
+        notification.eventType === "PLAN_REJECTED"
+      ) {
+        await openRequestFromPlanNotification(notification);
+        setShowBell(false);
+        return;
+      }
+
       const target = getNotificationTarget(notification);
       if (target) {
-        if (target.state) {
-          navigate(target.path, { state: target.state });
-        } else {
-          navigate(target.path);
-        }
-        setShowBell(false);
+        navigate(target.path, { state: target.state });
       }
+
+      setShowBell(false);
     } catch (error) {
-      console.error("Failed to mark notification as read", error);
+      console.error("Failed to handle notification click", error);
     }
   };
 
@@ -234,9 +253,7 @@ export default function Header() {
                   <button
                     type="button"
                     className={`notification__tab ${
-                      activeTab === "unread"
-                        ? "notification__tab--active"
-                        : ""
+                      activeTab === "unread" ? "notification__tab--active" : ""
                     }`}
                     onClick={() => setActiveTab("unread")}
                   >
@@ -249,6 +266,7 @@ export default function Header() {
                   </button>
                 </div>
 
+                {/* Nội dung */}
                 {listToRender.length === 0 ? (
                   <div className="notification__empty">
                     {activeTab === "unread"
