@@ -19,6 +19,7 @@ export default function Header() {
   const [activeTab, setActiveTab] = useState("all");
 
   const { user, logoutUser } = useAuth();
+  const role = user?.role; // 👈 dùng để phân nhánh HR / LEAD
   const navigate = useNavigate();
 
   const bellRef = useRef(null);
@@ -83,7 +84,7 @@ export default function Header() {
 
   /**
    * Các loại thông báo xử lý được chỉ bằng title/content
-   * (requestTitle nằm trong dấu ngoặc kép)
+   * (requestTitle hoặc planName nằm trong dấu ngoặc kép)
    */
   const getNotificationTarget = (notification = {}) => {
     const { eventType } = notification;
@@ -126,7 +127,9 @@ export default function Header() {
       eventType === "PLAN_CONFIRMED" ||
       eventType === "PLAN_REJECTED" ||
       combinedText.includes("kế hoạch tuyển dụng đã được duyệt") ||
-      combinedText.includes("kế hoạch tuyển dụng bị từ chối")
+      combinedText.includes("kế hoạch tuyển dụng bị từ chối") ||
+      combinedText.includes("kế hoạch tuyển dụng bạn phụ trách đã được duyệt") ||
+      combinedText.includes("kế hoạch tuyển dụng bạn phụ trách bị từ chối")
     ) {
       return null;
     }
@@ -135,10 +138,25 @@ export default function Header() {
   };
 
   /**
-   * Riêng PLAN_CONFIRMED / PLAN_REJECTED:
-   *  - Dùng referenceType = "RECRUITMENT_PLAN" + referenceId = planId
-   *  - GET /api/recruitment-plans/{planId} lấy request.requestTitle
-   *  - Navigate sang /recruitment/needs?requestTitle=...
+   * Nhận diện thông báo quyết định KẾ HOẠCH (duyệt / từ chối)
+   */
+  const isPlanDecisionNotification = (notification = {}) => {
+    const combinedText = `${notification.title || ""} ${
+      notification.content || ""
+    }`.toLowerCase();
+
+    return (
+      notification.eventType === "PLAN_CONFIRMED" ||
+      notification.eventType === "PLAN_REJECTED" ||
+      combinedText.includes("kế hoạch tuyển dụng đã được duyệt") ||
+      combinedText.includes("kế hoạch tuyển dụng bị từ chối") ||
+      combinedText.includes("kế hoạch tuyển dụng bạn phụ trách đã được duyệt") ||
+      combinedText.includes("kế hoạch tuyển dụng bạn phụ trách bị từ chối")
+    );
+  };
+
+  /**
+   * LEAD: từ thông báo kế hoạch -> mở Nhu cầu (Chi tiết yêu cầu nhân sự)
    */
   const openRequestFromPlanNotification = async (notification) => {
     const { referenceType, referenceId } = notification;
@@ -149,8 +167,13 @@ export default function Header() {
     }
 
     try {
-      const res = await api.get(`/recruitment-plans/${referenceId}`);
-      const plan = res.data;
+      const res = await api.get("/recruitment-plans");
+      const plans = Array.isArray(res.data) ? res.data : [];
+
+      const plan = plans.find(
+        (p) => String(p.recruitmentPlanId) === String(referenceId)
+      );
+
       const requestTitle = plan?.request?.requestTitle || "";
 
       if (requestTitle) {
@@ -170,6 +193,48 @@ export default function Header() {
     }
   };
 
+  /**
+   * HR: từ thông báo kế hoạch -> mở modal "Chi tiết Kế hoạch tuyển dụng"
+   */
+  const openPlanFromPlanNotification = async (notification) => {
+    const { referenceType, referenceId, title, content } = notification;
+
+    if (referenceType !== "RECRUITMENT_PLAN" || !referenceId) {
+      navigate("/recruitment/plan");
+      return;
+    }
+
+    try {
+      const res = await api.get("/recruitment-plans");
+      const plans = Array.isArray(res.data) ? res.data : [];
+
+      const plan = plans.find(
+        (p) => String(p.recruitmentPlanId) === String(referenceId)
+      );
+
+      // Ưu tiên lấy tên kế hoạch từ plan, nếu thiếu thì fallback lấy từ text trong ngoặc kép
+      const planName =
+        plan?.planName ||
+        extractQuotedText(content || title) ||
+        "";
+
+      if (planName) {
+        const query = new URLSearchParams({ planName }).toString();
+        navigate(`/recruitment/plan?${query}`, {
+          state: {
+            fromNotification: "PLAN_DECISION",
+            planName,
+          },
+        });
+      } else {
+        navigate("/recruitment/plan");
+      }
+    } catch (err) {
+      console.error("Không lấy được danh sách kế hoạch từ notification:", err);
+      navigate("/recruitment/plan");
+    }
+  };
+
   const handleNotificationClick = async (notification) => {
     try {
       await markAsRead(notification.id);
@@ -179,16 +244,24 @@ export default function Header() {
         )
       );
 
-      // Ưu tiên: PLAN_CONFIRMED / PLAN_REJECTED -> sang Nhu cầu + mở modal nhu cầu
-      if (
-        notification.eventType === "PLAN_CONFIRMED" ||
-        notification.eventType === "PLAN_REJECTED"
-      ) {
-        await openRequestFromPlanNotification(notification);
+      // 🔥 Ưu tiên xử lý PLAN_CONFIRMED / PLAN_REJECTED theo ROLE
+      if (isPlanDecisionNotification(notification)) {
+        if (role === "LEAD") {
+          // LEAD -> sang Nhu cầu + mở modal "Chi tiết yêu cầu nhân sự"
+          await openRequestFromPlanNotification(notification);
+        } else if (role === "HR" || role === "SUPER_ADMIN") {
+          // HR (và SUPER_ADMIN nếu bạn muốn) -> sang Kế hoạch + mở modal "Chi tiết Kế hoạch"
+          await openPlanFromPlanNotification(notification);
+        } else {
+          // Fallback: nếu role khác, cho sang trang kế hoạch
+          await openPlanFromPlanNotification(notification);
+        }
+
         setShowBell(false);
         return;
       }
 
+      // Các loại thông báo khác xử lý như cũ
       const target = getNotificationTarget(notification);
       if (target) {
         navigate(target.path, { state: target.state });
