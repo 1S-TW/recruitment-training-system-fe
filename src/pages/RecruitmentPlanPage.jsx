@@ -1054,7 +1054,7 @@ const RecruitmentPlanPage = () => {
           ...steps[3],
           status: "success",
           actor: baseActorHandover,
-          detail: `Đã bàn giao ${handoverCount} nhân sự`,
+          detail: `Đã bàn giao nhân sự: ${handoverCount}/${outputRequired}`,
         };
       } else if (isFailure || (planStatus === "COMPLETED" && hasRejectReason)) {
         const baseDetail =
@@ -1073,10 +1073,7 @@ const RecruitmentPlanPage = () => {
           rejectReason: rejectText,
         };
       } else {
-        const text =
-          handoverCount > 0
-            ? `Đã bàn giao ${handoverCount} nhân sự`
-            : "Đã bàn giao 0 nhân sự";
+        const text = `Đã bàn giao nhân sự: ${handoverCount}/${outputRequired}`;
         steps[3] = {
           ...steps[3],
           status: "pending",

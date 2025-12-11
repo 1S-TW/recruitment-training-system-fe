@@ -757,7 +757,7 @@ export default function HRRequestModal({
             ...steps[6],
             status: "success",
             actor: baseActorHandover,
-            detail: `Đã bàn giao ${handoverCount} nhân sự`,
+            detail: `Đã bàn giao nhân sự: ${handoverCount}/${outputRequired}`,
           };
         } else if (isFailure) {
           // ✅ Tất cả TTS đã chấm nhưng không đủ / không có TTS PASS → THẤT BẠI
@@ -778,10 +778,7 @@ export default function HRRequestModal({
           };
         } else {
           // ⏳ Chưa kết luận (đang đào tạo hoặc còn TTS chưa chấm)
-          const text =
-            handoverCount > 0
-              ? `Đã bàn giao ${handoverCount} nhân sự`
-              : "Đã bàn giao 0 nhân sự";
+          const text = `Đã bàn giao nhân sự: ${handoverCount}/${outputRequired}`;
           steps[6] = {
             ...steps[6],
             status: "pending",
