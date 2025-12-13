@@ -63,6 +63,10 @@ const derivePlanStatus = (plan = {}, meta = {}) => {
   if (base === "FAILED" || base === "FAILURE") return "FAILED";
 
   const techRows = plan.request?.quantityCandidates || [];
+  const inputRequired = techRows.reduce(
+    (sum, qc) => sum + (qc.soLuong || 0) * 2,
+    0
+  );
   const outputRequired = techRows.reduce(
     (sum, qc) => sum + (qc.soLuong || 0),
     0
@@ -410,29 +414,41 @@ const RecruitmentPlanPage = () => {
 
   // Khởi tạo: đọc query (planName / requestTitle), load data
   useEffect(() => {
-    const paramsForSearch = new URLSearchParams(location.search);
-    const planNameFromUrl = paramsForSearch.get("planName");
-    const requestTitleFromUrl = paramsForSearch.get("requestTitle");
+  const paramsForSearch = new URLSearchParams(location.search);
+  const planNameFromUrl = paramsForSearch.get("planName");
+  const requestTitleFromUrl = paramsForSearch.get("requestTitle");
 
-    if (planNameFromUrl) {
-      // dùng cho filter nếu muốn
-      setSearchName(planNameFromUrl);
+  // ✅ NEW: mặc định auto-open, trừ khi autoOpen=0
+  const autoOpenFlag = paramsForSearch.get("autoOpen");
+  const shouldAutoOpen = autoOpenFlag !== "0";
+
+  if (planNameFromUrl) {
+    // ✅ luôn filter đúng plan
+    setSearchName(planNameFromUrl);
+
+    // ✅ chỉ auto-open modal nếu không bị chặn
+    if (shouldAutoOpen) {
       setPendingPlanOpen({ mode: "planName", value: planNameFromUrl });
       hasAutoOpenRef.current = false;
     }
+  }
 
-    if (requestTitleFromUrl) {
+  if (requestTitleFromUrl) {
+    // ✅ chỉ auto-open modal nếu không bị chặn
+    if (shouldAutoOpen) {
       setPendingPlanOpen({ mode: "requestTitle", value: requestTitleFromUrl });
       hasAutoOpenRef.current = false;
     }
+  }
 
-    if (!token) {
-      setError("Bạn chưa đăng nhập hoặc token đã hết hạn");
-      setLoading(false);
-      return;
-    }
-    loadPlans();
-  }, []);
+  if (!token) {
+    setError("Bạn chưa đăng nhập hoặc token đã hết hạn");
+    setLoading(false);
+    return;
+  }
+  loadPlans();
+}, []);
+
 
   // Nhận dữ liệu từ navigate(..., { state })
   useEffect(() => {
@@ -466,8 +482,7 @@ const RecruitmentPlanPage = () => {
       );
     } else if (pendingPlanOpen.mode === "requestTitle") {
       matched = plans.find(
-        (p) =>
-          (p.request?.requestTitle || "").toLowerCase() === valueLower
+        (p) => (p.request?.requestTitle || "").toLowerCase() === valueLower
       );
     }
 
@@ -528,9 +543,7 @@ const RecruitmentPlanPage = () => {
               params: { planId },
             })
           );
-          requests.push(
-            axiosAuth.get("/api/candidates", { params: { planId } })
-          );
+          requests.push(axiosAuth.get("/api/candidates", { params: { planId } }));
           requests.push(
             axiosAuth.get("/api/trainings/count-by-plan", { params: { planId } })
           );
@@ -614,9 +627,7 @@ const RecruitmentPlanPage = () => {
     let filtered = [...plans];
     if (searchName.trim()) {
       filtered = filtered.filter((p) =>
-        (p.planName || "")
-          .toLowerCase()
-          .includes(searchName.toLowerCase())
+        (p.planName || "").toLowerCase().includes(searchName.toLowerCase())
       );
     }
     if (statusFilter) {
@@ -761,11 +772,7 @@ const RecruitmentPlanPage = () => {
         alert("Vui lòng chọn nhu cầu trước khi tạo kế hoạch.");
         return;
       }
-      if (
-        !form.planName ||
-        !form.recruitmentDeadline ||
-        !form.deliveryDeadline
-      ) {
+      if (!form.planName || !form.recruitmentDeadline || !form.deliveryDeadline) {
         alert("Vui lòng nhập tên kế hoạch và thời hạn.");
         return;
       }
@@ -786,8 +793,7 @@ const RecruitmentPlanPage = () => {
       setOpenAddModal(false);
       await loadPlans();
     } catch (e) {
-      const msg =
-        e?.response?.data?.message || e?.message || "Lỗi không xác định";
+      const msg = e?.response?.data?.message || e?.message || "Lỗi không xác định";
       alert(`Không thể tạo kế hoạch: ${msg}`);
     }
   };
@@ -837,10 +843,9 @@ const RecruitmentPlanPage = () => {
     }
     try {
       const formattedReason = `Kế hoạch tuyển dụng: ${rejectReason.trim()}`;
-      const res = await axiosAuth.post(
-        `/api/recruitment-plans/${planId}/reject`,
-        { rejectionReason: formattedReason }
-      );
+      const res = await axiosAuth.post(`/api/recruitment-plans/${planId}/reject`, {
+        rejectionReason: formattedReason,
+      });
       const updated = res.data;
       setPlans((prev) =>
         prev.map((p) => (p.recruitmentPlanId === planId ? updated : p))
@@ -868,31 +873,28 @@ const RecruitmentPlanPage = () => {
       plan.request?.createdBy?.fullName ||
       plan.request?.createdByName ||
       "Không rõ";
-    const approverName =
-      plan.confirmedByName || plan.updatedByName || "Người phê duyệt";
-    const rejectActor =
-      plan.rejectedByName || approverName || createdBy || "Không rõ";
+    const approverName = plan.confirmedByName || plan.updatedByName || "Người phê duyệt";
+    const rejectActor = plan.rejectedByName || approverName || createdBy || "Không rõ";
     const techRows = plan.request?.quantityCandidates || [];
-    const outputRequired = techRows.reduce(
-      (sum, qc) => sum + (qc.soLuong || 0),
+
+    // ✅ FIX: khai báo inputRequired (giữ nguyên các chỗ khác)
+    const inputRequired = techRows.reduce(
+      (sum, qc) => sum + (qc.soLuong || 0) * 2,
       0
     );
-    const statusRaw = (planMeta.requestStatus || "").toUpperCase();
-    const parsedReject = parseRejectReason(
-      planMeta.requestRejectReason || ""
-    );
 
-    const trainingCount =
-      planMeta.trainingCount != null ? planMeta.trainingCount : 0;
+    const outputRequired = techRows.reduce((sum, qc) => sum + (qc.soLuong || 0), 0);
+    const statusRaw = (planMeta.requestStatus || "").toUpperCase();
+    const parsedReject = parseRejectReason(planMeta.requestRejectReason || "");
+
+    const trainingCount = planMeta.trainingCount != null ? planMeta.trainingCount : 0;
     const handoverCount =
       planMeta.handoverCount != null
         ? planMeta.handoverCount
         : planMeta.deliveredCount != null
         ? planMeta.deliveredCount
         : 0;
-    const hasRejectReason = !!(
-      parsedReject.reason || planMeta.requestRejectReason
-    );
+    const hasRejectReason = !!(parsedReject.reason || planMeta.requestRejectReason);
 
     const steps = [
       {
@@ -925,21 +927,14 @@ const RecruitmentPlanPage = () => {
       },
     ];
 
-    if (
-      planStatus === "CONFIRMED" ||
-      planStatus === "COMPLETED" ||
-      planStatus === "FAILED"
-    ) {
+    if (planStatus === "CONFIRMED" || planStatus === "COMPLETED" || planStatus === "FAILED") {
       steps[0] = {
         ...steps[0],
         status: "success",
         actor: approverName || createdBy,
         detail: `"${planLabel}" đã được phê duyệt`,
       };
-    } else if (
-      planStatus === "REJECTED" ||
-      planStatus === "CANCELED"
-    ) {
+    } else if (planStatus === "REJECTED" || planStatus === "CANCELED") {
       const reason =
         plan.note && plan.note.trim().length > 0
           ? plan.note.trim()
@@ -967,27 +962,19 @@ const RecruitmentPlanPage = () => {
     }
 
     if (planStatus !== "NEW") {
-      const candidatePassedCount =
-        planMeta.candidatePassedCount != null
-          ? planMeta.candidatePassedCount
-          : 0;
+      const candidateCount = planMeta.candidateCount != null ? planMeta.candidateCount : 0;
       const baseActorCandidate =
-        steps[1].actor && steps[1].actor !== "Chưa thực hiện"
-          ? steps[1].actor
-          : createdBy;
-      const candidateLinkDisabled = candidatePassedCount <= 0;
+        steps[1].actor && steps[1].actor !== "Chưa thực hiện" ? steps[1].actor : createdBy;
+      const candidateLinkDisabled = candidateCount <= 0;
       const detail = (
         <div className="timeline-desc-stack">
           <span>
-            Số lượng ứng viên ứng tuyển: {candidatePassedCount}/
-            {outputRequired}
+            Số lượng ứng viên ứng tuyển: {candidateCount}/{inputRequired || outputRequired}
           </span>
           {selectedPlan?.recruitmentPlanId && (
             <button
               type="button"
-              className={`timeline-link ${
-                candidateLinkDisabled ? "disabled" : ""
-              }`}
+              className={`timeline-link ${candidateLinkDisabled ? "disabled" : ""}`}
               disabled={candidateLinkDisabled}
               onClick={handleOpenCandidateManagement}
             >
@@ -1000,15 +987,13 @@ const RecruitmentPlanPage = () => {
         ...steps[1],
         actor: baseActorCandidate,
         detail,
-        status: candidatePassedCount > 0 ? "success" : "pending",
+        status: candidateCount > 0 ? "success" : "pending",
       };
     }
 
     if (planStatus !== "NEW") {
       const baseActorTraining =
-        steps[2].actor && steps[2].actor !== "Chưa thực hiện"
-          ? steps[2].actor
-          : createdBy;
+        steps[2].actor && steps[2].actor !== "Chưa thực hiện" ? steps[2].actor : createdBy;
       const trainingLinkDisabled = trainingCount <= 0;
       const detail = (
         <div className="timeline-desc-stack">
@@ -1016,9 +1001,7 @@ const RecruitmentPlanPage = () => {
           {selectedPlan?.recruitmentPlanId && (
             <button
               type="button"
-              className={`timeline-link ${
-                trainingLinkDisabled ? "disabled" : ""
-              }`}
+              className={`timeline-link ${trainingLinkDisabled ? "disabled" : ""}`}
               disabled={trainingLinkDisabled}
               onClick={handleOpenTrainingManagement}
             >
@@ -1037,19 +1020,13 @@ const RecruitmentPlanPage = () => {
 
     if (outputRequired > 0) {
       const baseActorHandover =
-        steps[3].actor && steps[3].actor !== "Chưa thực hiện"
-          ? steps[3].actor
-          : createdBy;
+        steps[3].actor && steps[3].actor !== "Chưa thực hiện" ? steps[3].actor : createdBy;
       const isFailure =
         planStatus === "FAILED" ||
         (hasRejectReason &&
           statusRaw === "COMPLETED" &&
           (handoverCount || 0) < outputRequired);
-      if (
-        planStatus === "COMPLETED" &&
-        !hasRejectReason &&
-        handoverCount >= outputRequired
-      ) {
+      if (planStatus === "COMPLETED" && !hasRejectReason && handoverCount >= outputRequired) {
         steps[3] = {
           ...steps[3],
           status: "success",
@@ -1090,11 +1067,7 @@ const RecruitmentPlanPage = () => {
     if (!plan) return null;
     const request = plan.request;
     if (!request)
-      return (
-        <p className="error-text">
-          Lỗi: Kế hoạch này thiếu thông tin nhu cầu (request).
-        </p>
-      );
+      return <p className="error-text">Lỗi: Kế hoạch này thiếu thông tin nhu cầu (request).</p>;
     const techRows = request.quantityCandidates || [];
     const derivedStatus = derivePlanStatus(plan, planMeta);
 
@@ -1136,22 +1109,16 @@ const RecruitmentPlanPage = () => {
         </table>
         <div className="detail-item">
           <span className="detail-label">Thời hạn tuyển dụng:</span>
-          <span className="detail-value">
-            {formatDate(plan.recruitmentDeadline)}
-          </span>
+          <span className="detail-value">{formatDate(plan.recruitmentDeadline)}</span>
         </div>
         <div className="detail-item">
           <span className="detail-label">Thời hạn bàn giao:</span>
-          <span className="detail-value">
-            {formatDate(plan.deliveryDeadline)}
-          </span>
+          <span className="detail-value">{formatDate(plan.deliveryDeadline)}</span>
         </div>
         {showStatus && (
           <div className="detail-item">
             <span className="detail-label">Trạng thái:</span>
-            <span
-              className={`detail-value ${getStatusClass(derivedStatus)}`}
-            >
+            <span className={`detail-value ${getStatusClass(derivedStatus)}`}>
               {getStatusLabel(derivedStatus)}
             </span>
           </div>
@@ -1160,9 +1127,7 @@ const RecruitmentPlanPage = () => {
     );
   };
 
-  const derivedPlanStatus = selectedPlan
-    ? derivePlanStatus(selectedPlan, planMeta)
-    : "";
+  const derivedPlanStatus = selectedPlan ? derivePlanStatus(selectedPlan, planMeta) : "";
   const planStatusLabel = getStatusLabel(derivedPlanStatus);
   const planStatusClass = getStatusClass(derivedPlanStatus);
 
@@ -1213,20 +1178,14 @@ const RecruitmentPlanPage = () => {
             </div>
 
             <div className="filter-item">
-              <DatePicker
-                selectedDate={selectedDate}
-                onDateChange={handleDateChange}
-              />
+              <DatePicker selectedDate={selectedDate} onDateChange={handleDateChange} />
             </div>
 
             <div style={{ flex: 1 }}></div>
 
             {canCreate && (
               <div className="filter-item add-btn-wrapper">
-                <button
-                  className="add-plan-btn modern-add"
-                  onClick={openEmptyAddModal}
-                >
+                <button className="add-plan-btn modern-add" onClick={openEmptyAddModal}>
                   Thêm kế hoạch tuyển dụng
                 </button>
               </div>
@@ -1234,11 +1193,7 @@ const RecruitmentPlanPage = () => {
           </div>
         </div>
 
-        <div
-          className={`table-container ${
-            isAnimating ? "fade-out" : "fade-in"
-          }`}
-        >
+        <div className={`table-container ${isAnimating ? "fade-out" : "fade-in"}`}>
           {loading ? (
             <p className="loading-text">Đang tải dữ liệu...</p>
           ) : error ? (
@@ -1266,22 +1221,12 @@ const RecruitmentPlanPage = () => {
                   currentPlans.map((plan, index) => {
                     const rowStatus = derivePlanStatus(plan);
                     return (
-                      <tr
-                        key={plan.recruitmentPlanId || index}
-                      >
+                      <tr key={plan.recruitmentPlanId || index}>
                         <td>{indexOfFirst + index + 1}</td>
                         <td>{plan.planName}</td>
+                        <td>{plan.createdAt ? formatDate(plan.createdAt) : "—"}</td>
                         <td>
-                          {plan.createdAt
-                            ? formatDate(plan.createdAt)
-                            : "—"}
-                        </td>
-                        <td>
-                          <span
-                            className={`status-badge ${getStatusClass(
-                              rowStatus
-                            )}`}
-                          >
+                          <span className={`status-badge ${getStatusClass(rowStatus)}`}>
                             {getStatusLabel(rowStatus)}
                           </span>
                         </td>
@@ -1297,18 +1242,13 @@ const RecruitmentPlanPage = () => {
                                   }
                                 : {}
                             }
-                            title={
-                              !canInteract
-                                ? "Bạn không có quyền thao tác"
-                                : ""
-                            }
+                            title={!canInteract ? "Bạn không có quyền thao tác" : ""}
                           >
                             <ActionButtons
                               onView={() => handleViewDetails(plan)}
                               onEdit={() => {}}
                               canEdit={
-                                (role === "HR" ||
-                                  role === "SUPER_ADMIN") &&
+                                (role === "HR" || role === "SUPER_ADMIN") &&
                                 plan.status === "NEW"
                               }
                             />
@@ -1331,9 +1271,7 @@ const RecruitmentPlanPage = () => {
               onPageChange={handlePageChange}
             />
             <div className="mini-pagination">
-              <label className="mini-pagination-label">
-                Hiển thị:
-              </label>
+              <label className="mini-pagination-label">Hiển thị:</label>
               <select
                 value={itemsPerPage}
                 onChange={handleChangeItemsPerPage}
@@ -1364,11 +1302,7 @@ const RecruitmentPlanPage = () => {
       {modalStep === 1 && selectedPlan && (
         <Modal
           title={<span style={{ color: "#fff" }}>Chi tiết Kế hoạch tuyển dụng</span>}
-          subtitle={
-            <span className={`status-badge ${planStatusClass}`}>
-              {planStatusLabel}
-            </span>
-          }
+          subtitle={<span className={`status-badge ${planStatusClass}`}>{planStatusLabel}</span>}
           onClose={handleCloseModal}
           width={640}
         >
@@ -1408,40 +1342,24 @@ const RecruitmentPlanPage = () => {
                         {step.status === "pending" && "•"}
                         {step.status === "rejected" && "✕"}
                       </span>
-                      {!isLast && (
-                        <span className="timeline-connector" />
-                      )}
+                      {!isLast && <span className="timeline-connector" />}
                     </div>
                     <div className="timeline-content">
                       <div className="timeline-title-row">
-                        <div className="timeline-title">
-                          {step.title}
-                        </div>
-                        <span
-                          className={`timeline-badge ${statusClass}`}
-                        >
-                          {statusText}
-                        </span>
+                        <div className="timeline-title">{step.title}</div>
+                        <span className={`timeline-badge ${statusClass}`}>{statusText}</span>
                       </div>
-                      <div className="timeline-desc">
-                        {step.detail}
-                      </div>
+                      <div className="timeline-desc">{step.detail}</div>
                       {step.status === "rejected" && (
                         <div className="timeline-reject-reason">
-                          <span className="reject-label-inline">
-                            Lý do:
-                          </span>
+                          <span className="reject-label-inline">Lý do:</span>
                           <span className="reject-text-inline">
-                            {step.rejectReason ||
-                              step.detail ||
-                              "Không rõ lý do"}
+                            {step.rejectReason || step.detail || "Không rõ lý do"}
                           </span>
                         </div>
                       )}
                       {step.key === "plan-approve" && (
-                        <div className="timeline-meta">
-                          Người thực hiện: {step.actor}
-                        </div>
+                        <div className="timeline-meta">Người thực hiện: {step.actor}</div>
                       )}
                     </div>
                   </div>
@@ -1453,51 +1371,35 @@ const RecruitmentPlanPage = () => {
           {selectedPlan.status === "NEW" ? (
             canApproveReject ? (
               <div className="modal-footer modal-footer-actions">
-                <button
-                  className="modal-btn btn-reject"
-                  onClick={handleStartReject}
-                >
+                <button className="modal-btn btn-reject" onClick={handleStartReject}>
                   Từ chối
                 </button>
-                <button
-                  className="modal-btn btn-approve btn-approve-green"
-                  onClick={handleApprove}
-                >
+                <button className="modal-btn btn-approve btn-approve-green" onClick={handleApprove}>
                   Phê duyệt
                 </button>
               </div>
             ) : (
               <div className="modal-footer justify-end">
-                <button
-                  className="modal-btn btn-secondary"
-                  onClick={handleCloseModal}
-                >
+                <button className="modal-btn btn-secondary" onClick={handleCloseModal}>
                   Đóng
                 </button>
               </div>
             )
-          ) : selectedPlan.status === "CANCELED" ||
-            selectedPlan.status === "REJECTED" ? (
+          ) : selectedPlan.status === "CANCELED" || selectedPlan.status === "REJECTED" ? (
             <div className="rejection-card">
               <p className="rejection-title">
                 LÝ DO KẾ HOẠCH BỊ{" "}
-                {selectedPlan.status === "CANCELED"
-                  ? "HỦY"
-                  : "TỪ CHỐI"}
-                :
+                {selectedPlan.status === "CANCELED" ? "HỦY" : "TỪ CHỐI"}:
               </p>
               <p className="rejection-reason-text">
-                {selectedPlan.note ||
-                  "Không có lý do cụ thể được ghi lại."}
+                {selectedPlan.note || "Không có lý do cụ thể được ghi lại."}
               </p>
               <div className="modal-footer justify-end" />
             </div>
           ) : (
             <div className="modal-footer justify-center only-view-footer">
               <p className="only-view-text">
-                Kế hoạch đang ở trạng thái "
-                {getStatusLabel(selectedPlan.status)}". Chỉ có thể
-                xem.
+                Kế hoạch đang ở trạng thái "{getStatusLabel(selectedPlan.status)}". Chỉ có thể xem.
               </p>
             </div>
           )}
@@ -1505,20 +1407,11 @@ const RecruitmentPlanPage = () => {
       )}
 
       {modalStep === 3 && selectedPlan && (
-        <Modal
-          title="Lý do Từ chối Kế hoạch"
-          onClose={handleCloseModal}
-          width={520}
-        >
+        <Modal title="Lý do Từ chối Kế hoạch" onClose={handleCloseModal} width={520}>
           <div className="reject-form">
-            <label
-              htmlFor="rejectReason"
-              className="reject-label"
-            >
+            <label htmlFor="rejectReason" className="reject-label">
               Vui lòng nhập lý do từ chối kế hoạch:{" "}
-              <span className="reject-plan-name">
-                "{selectedPlan.planName}"
-              </span>
+              <span className="reject-plan-name">"{selectedPlan.planName}"</span>
             </label>
             <textarea
               id="rejectReason"
@@ -1529,10 +1422,7 @@ const RecruitmentPlanPage = () => {
             />
           </div>
           <div className="modal-footer modal-footer-actions">
-            <button
-              className="modal-btn btn-secondary"
-              onClick={handleCloseModal}
-            >
+            <button className="modal-btn btn-secondary" onClick={handleCloseModal}>
               Hủy
             </button>
             <button
