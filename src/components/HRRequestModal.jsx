@@ -25,21 +25,48 @@ export default function HRRequestModal({
 
   const navigate = useNavigate();
   const { user } = useAuth(); // ✅ Lấy thông tin user
-  const role = user?.role;    // ✅ Lấy role
+  const role = user?.role; // ✅ Lấy role
 
+  // ====== helpers lấy tên người duyệt kế hoạch cho chắc ======
+  const getPlanApproverName = (plan) => {
+    if (!plan) return "";
+    return (
+      plan?.confirmedBy?.fullName ||
+      plan?.confirmedBy?.email ||
+      plan?.confirmedByName ||
+      plan?.approvedByName ||
+      plan?.updatedBy?.fullName ||
+      plan?.updatedBy?.email ||
+      plan?.updatedByName ||
+      ""
+    );
+  };
+
+  const getPlanCreatorName = (plan, fallback = "") => {
+    if (!plan) return fallback || "";
+    return (
+      plan?.createdBy?.fullName ||
+      plan?.createdBy?.email ||
+      plan?.createdByName ||
+      plan?.request?.createdBy?.fullName ||
+      plan?.request?.createdBy?.email ||
+      plan?.request?.createdByName ||
+      fallback ||
+      ""
+    );
+  };
+
+  // ✅ FIX: khi click link kế hoạch => chỉ sang trang Kế hoạch tuyển dụng + filter đúng planName
+  // và thêm noAutoOpen=1 để RecruitmentPlanPage KHÔNG auto-open modal chi tiết
   const handleGoToPlanPage = useCallback(() => {
-  const planName = planMeta?.planName || "";
-  if (!planName) {
-    navigate(`/recruitment/plan?autoOpen=0`);
-    return;
-  }
+    const planName = planMeta?.planName || "";
+    const searchParam = planName
+      ? `?planName=${encodeURIComponent(planName)}&noAutoOpen=1`
+      : `?noAutoOpen=1`;
 
-  // ✅ autoOpen=0 để RecruitmentPlanPage KHÔNG auto mở modal chi tiết
-  // ✅ search=... để lọc đúng kế hoạch đó
-  navigate(
-    `/recruitment/plan?search=${encodeURIComponent(planName)}&planName=${encodeURIComponent(planName)}&autoOpen=0`
-  );
-}, [navigate, planMeta?.planName]);
+    navigate(`/recruitment/plan${searchParam}`);
+    onClose?.();
+  }, [navigate, planMeta?.planName, onClose]);
 
   // ====== LOAD DANH MỤC CÔNG NGHỆ ======
   useEffect(() => {
@@ -83,11 +110,13 @@ export default function HRRequestModal({
           return;
         }
 
-        const createdByName =
-          matched.request?.createdBy?.fullName ||
-          matched.request?.createdBy?.email ||
-          request.createdByName ||
-          "";
+        const createdByName = getPlanCreatorName(
+          matched,
+          request.createdByName || ""
+        );
+
+        // ✅ FIX: lấy đúng người phê duyệt kế hoạch (QLDT) từ plan
+        const confirmedByName = getPlanApproverName(matched);
 
         const quantityList = matched.request?.quantityCandidates || [];
         const inputRequired = quantityList.reduce(
@@ -103,6 +132,7 @@ export default function HRRequestModal({
           status: matched.status || "",
           planName: matched.planName || "",
           createdByName,
+          confirmedByName, // ✅ NEW
           recruitmentPlanId: matched.recruitmentPlanId,
           inputRequired,
           candidateCount: 0,
@@ -133,9 +163,10 @@ export default function HRRequestModal({
       .then((list) => {
         const count = Array.isArray(list) ? list.length : 0;
         const hiredCount = Array.isArray(list)
-          ? list.filter((c) =>
-              typeof c.status === "string" &&
-              c.status.trim().toLowerCase() === "đã nhận việc"
+          ? list.filter(
+              (c) =>
+                typeof c.status === "string" &&
+                c.status.trim().toLowerCase() === "đã nhận việc"
             ).length
           : 0;
         setPlanMeta((prev) =>
@@ -177,8 +208,7 @@ export default function HRRequestModal({
         return res.json();
       })
       .then((count) => {
-        const num =
-          typeof count === "number" ? count : Number(count ?? 0) || 0;
+        const num = typeof count === "number" ? count : Number(count ?? 0) || 0;
         setPlanMeta((prev) =>
           prev
             ? {
@@ -217,8 +247,7 @@ export default function HRRequestModal({
         return res.json();
       })
       .then((count) => {
-        const num =
-          typeof count === "number" ? count : Number(count ?? 0) || 0;
+        const num = typeof count === "number" ? count : Number(count ?? 0) || 0;
 
         setPlanMeta((prev) =>
           prev
@@ -254,7 +283,9 @@ export default function HRRequestModal({
     if (!planMeta?.recruitmentPlanId) return;
 
     const planId = planMeta.recruitmentPlanId;
-    const planName = planMeta.planName ? encodeURIComponent(planMeta.planName) : "";
+    const planName = planMeta.planName
+      ? encodeURIComponent(planMeta.planName)
+      : "";
     const query = [`planId=${planId}`];
 
     if (planName) {
@@ -269,7 +300,9 @@ export default function HRRequestModal({
     if (!planMeta?.recruitmentPlanId) return;
 
     const planId = planMeta.recruitmentPlanId;
-    const planName = planMeta.planName ? encodeURIComponent(planMeta.planName) : "";
+    const planName = planMeta.planName
+      ? encodeURIComponent(planMeta.planName)
+      : "";
     const query = [`planId=${planId}`];
 
     if (planName) {
@@ -411,25 +444,30 @@ export default function HRRequestModal({
     const requestTitle = request?.requestTitle || "nhu cầu";
     const requestLabel = ` "${requestTitle}"`;
 
-    const approverName =
+    const requestApproverName =
       request?.approvedByName || request?.updatedByName || "Người phê duyệt";
 
     // 🔹 Lấy thông tin kế hoạch từ planMeta
     const planName = planMeta?.planName || "";
     const planLabel = planName || "Kế hoạch tuyển dụng";
 
-    // ✅ NEW: chỉ cho phép click khi plan được phê duyệt
-    const planStatusRaw = (planMeta?.status || "").toUpperCase();
-    const planLinkEnabled = ["CONFIRMED", "APPROVED", "IN_PROGRESS", "COMPLETED", "FAILED"].includes(
-      planStatusRaw
+    const planStatus = (planMeta?.status || "").toUpperCase();
+
+    // ✅ FIX: xác định plan đã được duyệt hay chưa
+    const isPlanApproved = ["CONFIRMED", "APPROVED", "IN_PROGRESS", "COMPLETED"].includes(
+      planStatus
     );
 
+    // ✅ FIX: link kế hoạch chỉ click khi plan đã duyệt
     const planLinkButton = planName ? (
       <button
         type="button"
-        className={`timeline-link ${!planLinkEnabled ? "disabled" : ""}`}
-        disabled={!planLinkEnabled}
-        onClick={planLinkEnabled ? handleGoToPlanPage : undefined}
+        className={`timeline-link ${!isPlanApproved ? "disabled" : ""}`}
+        disabled={!isPlanApproved}
+        onClick={() => {
+          if (!isPlanApproved) return;
+          handleGoToPlanPage();
+        }}
       >
         {planLabel}
       </button>
@@ -446,9 +484,14 @@ export default function HRRequestModal({
       );
     };
 
-    const planStatus = (planMeta?.status || "").toUpperCase();
     const planCreator = planMeta?.createdByName || createdBy;
-    const planApprover = approverName || planCreator;
+
+    // ✅ FIX: ưu tiên đúng người duyệt kế hoạch (QLDT) từ planMeta.confirmedByName
+    const planApprover =
+      planMeta?.confirmedByName ||
+      request?.planApprovedByName ||
+      requestApproverName ||
+      "Người phê duyệt";
 
     const steps = [
       {
@@ -477,6 +520,7 @@ export default function HRRequestModal({
         title: "Phê duyệt kế hoạch",
         status: "pending",
         actor: "Chưa thực hiện",
+        // ✅ nếu chưa duyệt => link disabled (xám, ko bấm)
         detail: buildPlanDetail("Chờ phê duyệt ", " để triển khai tuyển dụng"),
       },
       {
@@ -507,14 +551,14 @@ export default function HRRequestModal({
       steps[1] = {
         ...steps[1],
         status: "success",
-        actor: approverName,
+        actor: requestApproverName,
         detail: `${requestLabel} đã được phê duyệt`,
       };
     } else if (statusRaw === "IN_PROGRESS") {
       steps[1] = {
         ...steps[1],
         status: "success",
-        actor: approverName,
+        actor: requestApproverName,
         detail: `${requestLabel} đã được phê duyệt`,
       };
       steps[2] = {
@@ -568,10 +612,7 @@ export default function HRRequestModal({
         rejectIndex = 1;
       } else if (reasonLower.includes("khởi tạo kế hoạch")) {
         rejectIndex = 2;
-      } else if (
-        reasonLower.includes("phê duyệt kế hoạch") ||
-        reasonLower.includes("kế hoạch")
-      ) {
+      } else if (reasonLower.includes("phê duyệt kế hoạch") || reasonLower.includes("kế hoạch")) {
         rejectIndex = 3;
       } else if (reasonLower.includes("ứng viên")) {
         rejectIndex = 4;
@@ -596,8 +637,7 @@ export default function HRRequestModal({
             ...s,
             status: "rejected",
             actor: rejectActor,
-            detail:
-              parsedReject.reason || request?.rejectReason || "Không rõ lý do",
+            detail: parsedReject.reason || request?.rejectReason || "Không rõ lý do",
             rejectReason:
               parsedReject.reason || request?.rejectReason || "Không rõ lý do",
           };
@@ -609,13 +649,6 @@ export default function HRRequestModal({
 
     // ===== 2. GHI ĐÈ THEO TRẠNG THÁI KẾ HOẠCH + SỐ LƯỢNG ỨNG VIÊN / TTS =====
     if (statusRaw !== "CANCELED" && planStatus) {
-      const isPlanApproved = [
-        "CONFIRMED",
-        "APPROVED",
-        "IN_PROGRESS",
-        "COMPLETED",
-      ].includes(planStatus);
-
       const isPlanRejected = ["REJECTED", "CANCELED"].includes(planStatus);
 
       // Có kế hoạch => coi như nhu cầu đã được phê duyệt
@@ -623,7 +656,7 @@ export default function HRRequestModal({
         steps[1] = {
           ...steps[1],
           status: "success",
-          actor: approverName,
+          actor: requestApproverName,
           detail: `Phê duyệt ${requestLabel} để lập ${planLabel}`,
         };
       }
@@ -643,7 +676,7 @@ export default function HRRequestModal({
         steps[3] = {
           ...steps[3],
           status: "success",
-          actor: planApprover,
+          actor: planApprover || "Không rõ",
           detail: buildPlanDetail("", " đã được phê duyệt"),
         };
       } else if (isPlanRejected) {
@@ -663,8 +696,8 @@ export default function HRRequestModal({
       } else {
         steps[3] = {
           ...steps[3],
-          status: steps[3].status === "success" ? steps[3].status : "pending",
-          actor: steps[3].actor || "Chưa thực hiện",
+          status: "pending",
+          actor: "Chưa thực hiện",
           detail: buildPlanDetail("Chờ phê duyệt ", ""),
         };
       }
@@ -689,13 +722,16 @@ export default function HRRequestModal({
         const candidateDetail = (
           <div className="timeline-desc-stack">
             <span>
-              Số lượng ứng viên ứng tuyển: {candidateCount}/{inputRequired || outputRequired}
+              Số lượng ứng viên ứng tuyển: {candidateCount}/
+              {inputRequired || outputRequired}
             </span>
 
             {planMeta?.recruitmentPlanId && (
               <button
                 type="button"
-                className={`timeline-link ${candidateLinkDisabled ? "disabled" : ""}`}
+                className={`timeline-link ${
+                  candidateLinkDisabled ? "disabled" : ""
+                }`}
                 disabled={candidateLinkDisabled}
                 onClick={handleOpenCandidateManagement}
               >
@@ -726,7 +762,9 @@ export default function HRRequestModal({
             {planMeta?.recruitmentPlanId && (
               <button
                 type="button"
-                className={`timeline-link ${trainingLinkDisabled ? "disabled" : ""}`}
+                className={`timeline-link ${
+                  trainingLinkDisabled ? "disabled" : ""
+                }`}
                 disabled={trainingLinkDisabled}
                 onClick={handleOpenTrainingManagement}
               >
@@ -750,8 +788,7 @@ export default function HRRequestModal({
             ? steps[6].actor
             : planCreator;
 
-        const hasRejectReason =
-          !!(parsedReject.reason || request?.rejectReason);
+        const hasRejectReason = !!(parsedReject.reason || request?.rejectReason);
         const isFailure =
           hasRejectReason &&
           (statusRaw === "FAILED" ||
@@ -827,7 +864,6 @@ export default function HRRequestModal({
 
     setLoading(true);
     try {
-      // Chỉ chuyển sang bước tạo kế hoạch; không phê duyệt ở bước này để tránh bắn thông báo sớm
       onClose();
       navigate(`/recruitment/plan?requestId=${request.requestId}`);
     } finally {
@@ -900,8 +936,7 @@ export default function HRRequestModal({
 
   // ✅ LOGIC CHUẨN: Chỉ Admin hoặc HR mới được Duyệt/Từ chối.
   const showActionButtons =
-    request?.status === "NEW" &&
-    (role === "SUPER_ADMIN" || role === "HR");
+    request?.status === "NEW" && (role === "SUPER_ADMIN" || role === "HR");
 
   return (
     <>
@@ -913,9 +948,7 @@ export default function HRRequestModal({
             <div className="hrmodal-header">
               <div>
                 <h3 className="hrmodal-title">Chi tiết yêu cầu nhân sự</h3>
-                <span
-                  className={`status-pill status-${statusRaw.toLowerCase()}`}
-                >
+                <span className={`status-pill status-${statusRaw.toLowerCase()}`}>
                   {statusLabel}
                 </span>
               </div>
@@ -941,9 +974,7 @@ export default function HRRequestModal({
                     </p>
                   </div>
                   <div className="overview-status" aria-label="Trạng thái">
-                    <span
-                      className={`status-dot status-${statusRaw.toLowerCase()}`}
-                    />
+                    <span className={`status-dot status-${statusRaw.toLowerCase()}`} />
                     <span className="overview-status-text">{statusLabel}</span>
                   </div>
                 </div>
@@ -1017,9 +1048,7 @@ export default function HRRequestModal({
                           <div className="timeline-desc">{step.detail}</div>
                           {step.status === "rejected" && (
                             <div className="timeline-reject-reason">
-                              <span className="reject-label-inline">
-                                Lý do:
-                              </span>
+                              <span className="reject-label-inline">Lý do:</span>
                               <span className="reject-text-inline">
                                 {step.rejectReason ||
                                   step.detail ||
@@ -1070,11 +1099,12 @@ export default function HRRequestModal({
             <div className="hrmodal-footer">
               <div className="footer-left" />
               <div className="footer-actions">
-                {/* ✅ CHỈ RENDER NẾU LÀ ADMIN HOẶC HR (LEAD & QLDT BỊ ẨN) */}
                 {showActionButtons && (
                   <>
                     <button
-                      className={`btn-reject-main ${disableActions ? "btn-disabled" : ""}`}
+                      className={`btn-reject-main ${
+                        disableActions ? "btn-disabled" : ""
+                      }`}
                       onClick={handleStartReject}
                       disabled={disableActions}
                     >
@@ -1082,7 +1112,9 @@ export default function HRRequestModal({
                     </button>
 
                     <button
-                      className={`btn-approve-main ${disableActions ? "btn-disabled" : ""}`}
+                      className={`btn-approve-main ${
+                        disableActions ? "btn-disabled" : ""
+                      }`}
                       onClick={handleApprove}
                       disabled={disableActions}
                     >
@@ -1091,7 +1123,6 @@ export default function HRRequestModal({
                   </>
                 )}
 
-                {/* ✅ NẾU KHÔNG CÓ NÚT HÀNH ĐỘNG THÌ HIỆN NÚT ĐÓNG */}
                 {!showActionButtons && (
                   <button className="btn-close-main" onClick={onClose}>
                     Đóng
@@ -1113,9 +1144,7 @@ export default function HRRequestModal({
           <div className="reject-form">
             <label htmlFor="rejectReason" className="reject-label">
               Vui lòng nhập lý do từ chối nhu cầu:{" "}
-              <span className="reject-plan-name">
-                "{request.requestTitle}"
-              </span>
+              <span className="reject-plan-name">"{request.requestTitle}"</span>
             </label>
             <textarea
               id="rejectReason"

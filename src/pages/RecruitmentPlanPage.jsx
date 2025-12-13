@@ -873,8 +873,23 @@ const RecruitmentPlanPage = () => {
       plan.request?.createdBy?.fullName ||
       plan.request?.createdByName ||
       "Không rõ";
-    const approverName = plan.confirmedByName || plan.updatedByName || "Người phê duyệt";
-    const rejectActor = plan.rejectedByName || approverName || createdBy || "Không rõ";
+    const approverName =
+  plan?.confirmedBy?.fullName ||
+  plan?.confirmedBy?.email ||
+  plan?.confirmedByName ||
+  plan?.updatedBy?.fullName ||
+  plan?.updatedBy?.email ||
+  plan?.updatedByName ||
+  "Người phê duyệt";
+
+const rejectActor =
+  plan?.rejectedBy?.fullName ||
+  plan?.rejectedBy?.email ||
+  plan?.rejectedByName ||
+  approverName ||
+  createdBy ||
+  "Không rõ";
+
     const techRows = plan.request?.quantityCandidates || [];
 
     // ✅ FIX: khai báo inputRequired (giữ nguyên các chỗ khác)
