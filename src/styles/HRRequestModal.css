@@ -25,18 +25,22 @@
 
 /* Header */
 .hrmodal-header {
-  padding: 16px 20px 14px;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 18px 24px;
+  background: linear-gradient(135deg, #1e40af, #1d4ed8);
+  color: white;
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .hrmodal-title {
   margin: 0 0 4px;
   font-size: 1.25rem;
   font-weight: 700;
-  color: #111827;
+  color: #ffffff;
 }
 
 .status-pill {
@@ -75,7 +79,7 @@
 
 .hrmodal-close {
   border: none;
-  background: transparent;
+  background:#6692e9 ;
   width: 32px;
   height: 32px;
   border-radius: 999px;

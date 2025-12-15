@@ -947,10 +947,7 @@ export default function HRRequestModal({
             {/* Header */}
             <div className="hrmodal-header">
               <div>
-                <h3 className="hrmodal-title">Chi tiết yêu cầu nhân sự</h3>
-                <span className={`status-pill status-${statusRaw.toLowerCase()}`}>
-                  {statusLabel}
-                </span>
+                <h3 className="hrmodal-title">Chi tiết nhu cầu nhân sự</h3>
               </div>
               <button
                 className="hrmodal-close"
