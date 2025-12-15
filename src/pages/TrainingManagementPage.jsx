@@ -74,7 +74,7 @@ export default function TrainingManagementPage() {
 
   // LẤY DANH SÁCH MÔN THEO display_order
   const fetchCourses = async () => {
-     // LẤY DANH SÁCH MÔN THEO display_order
+
     try {
       const res = await api.get("/courses"); 
       const sortedCourses = Array.isArray(res.data) ? res.data : [];
