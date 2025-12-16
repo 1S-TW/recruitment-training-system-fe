@@ -1,3 +1,4 @@
+// src/components/CreateRequestModal.jsx
 import { useState, useEffect } from "react";
 import { Plus, Send, X } from "lucide-react";
 import { BaseModal, ModalFooter } from "./Modal";
@@ -297,11 +298,16 @@ export default function CreateRequestModal({
               width: "auto",
               display: "flex",
               alignItems: "center",
-              gap: "8px",
-              fontSize: "0.875rem"
+              gap: "6px", // Giảm gap
+              
+              // ✅ SỬA: Giảm padding mạnh hơn và size chữ/icon
+              fontSize: "0.75rem", // Xuống 12px
+              padding: "2px 8px", // Giảm padding
+              borderRadius: "6px" // Bo viền nhẹ hơn
             }}
           >
-            <Plus size={14} /> Thêm công nghệ
+            {/* Giảm kích thước icon Plus từ 14 xuống 12 */}
+            <Plus size={12} /> Thêm công nghệ
           </button>
         </div>
 

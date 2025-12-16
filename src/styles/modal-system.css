@@ -489,3 +489,66 @@
     transition: none;
   }
 }
+/* ✅ FIX: Đảm bảo Modal Footer xếp các nút theo hàng ngang */
+
+.modal-footer {
+  /* Bắt buộc phải là Flex Container */
+  display: flex !important;         
+  
+  /* Bắt buộc xếp theo hàng ngang */
+  flex-direction: row !important;   
+  
+  /* Đẩy các nút về phía bên phải */
+  justify-content: flex-end !important; 
+  
+  /* Căn giữa theo chiều dọc */
+  align-items: center !important; 
+  
+  /* Khoảng cách giữa các nút */
+  gap: 10px;                        
+  
+  /* Đảm bảo chiều rộng footer chiếm toàn bộ */
+  width: 100%;
+}
+
+/* Đảm bảo các nút không chiếm toàn bộ chiều rộng nếu chúng bị set display: block ở đâu đó */
+.modal-footer .modal-btn {
+  width: auto !important;
+  max-width: none !important;
+  flex-shrink: 0;
+}
+/* src/styles/modal-system.css (hoặc file CSS chung cho modal) */
+
+/* =========== FIX ÉP KIỂU NÚT FOOTER TÁCH HAI BÊN =========== */
+
+.modal-footer {
+    /* Ép kiểu display và direction để đảm bảo xếp ngang */
+    display: flex !important;
+    flex-direction: row !important; 
+    
+    /* ✅ ÉP KIỂU TÁCH SANG HAI BÊN */
+    justify-content: space-between !important; 
+    
+    /* Đảm bảo chiều rộng footer chiếm toàn bộ modal */
+    width: 100% !important;
+    
+    /* Đảm bảo các nút nằm giữa theo chiều dọc */
+    align-items: center !important; 
+    
+    /* Thêm màu nền trắng, đề phòng file CreateRequestModal.css không đủ mạnh */
+    background-color: #ffffff !important; 
+}
+
+/* Đảm bảo các phần tử con của footer cũng là flex, và các nút không bị rộng 100% */
+.modal-footer > div {
+    display: flex !important;
+    width: auto !important;
+    gap: 10px; /* Khoảng cách giữa các nút nếu có nhiều nút ở 1 bên */
+}
+
+.modal-footer button {
+    width: auto !important;
+    flex-shrink: 0 !important;
+}
+
+/* ========================================================= */
