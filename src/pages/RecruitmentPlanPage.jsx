@@ -1316,10 +1316,11 @@ const rejectActor =
 
       {modalStep === 1 && selectedPlan && (
         <Modal
-          title={<span style={{ color: "#fff" }}>Chi tiết Kế hoạch tuyển dụng</span>}
+          title="Chi tiết Kế hoạch tuyển dụng"
           subtitle={<span className={`status-badge ${planStatusClass}`}>{planStatusLabel}</span>}
           onClose={handleCloseModal}
           width={640}
+          className="admin-modal"
         >
           {renderPlanDetails(selectedPlan, false)}
           <div className="section-block progress-block">
@@ -1422,7 +1423,12 @@ const rejectActor =
       )}
 
       {modalStep === 3 && selectedPlan && (
-        <Modal title="Lý do Từ chối Kế hoạch" onClose={handleCloseModal} width={520}>
+        <Modal
+          title="Lý do Từ chối Kế hoạch"
+          onClose={handleCloseModal}
+          width={520}
+          className="admin-modal"
+        >
           <div className="reject-form">
             <label htmlFor="rejectReason" className="reject-label">
               Vui lòng nhập lý do từ chối kế hoạch:{" "}

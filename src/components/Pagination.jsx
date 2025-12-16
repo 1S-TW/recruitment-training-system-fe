@@ -41,6 +41,7 @@ const Pagination = ({
       {/* Nút quay về trang đầu */}
       <button
         className="nav-btn"
+        type="button"
         onClick={() => onPageChange(1)}
         disabled={currentPage === 1}
       >
@@ -57,6 +58,7 @@ const Pagination = ({
           ) : (
             <button
               key={num}
+              type="button"
               onClick={() => onPageChange(num)}
               className={`btn-page-number ${
                 currentPage === num ? "active-page" : ""
@@ -71,6 +73,7 @@ const Pagination = ({
       {/* Nút tới trang cuối */}
       <button
         className="nav-btn"
+        type="button"
         onClick={() => onPageChange(totalPages)}
         disabled={currentPage === totalPages}
       >

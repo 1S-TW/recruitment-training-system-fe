@@ -1,5 +1,6 @@
 // src/components/AddResultModal.jsx
 import React, { useState, useEffect, useMemo } from "react";
+import { BaseModal, ModalFooter } from "./Modal";
 import Input from "./Form/Input";
 import api from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
@@ -288,18 +289,14 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
   };
 
   return (
-    <>
-      <div className="modal-backdrop" onClick={onClose} />
-      <div className="modal-content" style={{ maxWidth: "700px" }} role="dialog">
-        <div className="modal-header">
-          <h3 className="modal-title" style={{ color: "#fff" }}>
-            Thông tin & Kết quả ứng viên
-          </h3>
-          <button className="modal-close-btn" onClick={onClose}>✕</button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="modal-scroll-form">
-          <div className="modal-body">
+    <BaseModal
+      isOpen={isOpen}
+      title="Thông tin & Kết quả ứng viên"
+      onClose={onClose}
+      size="lg"
+    >
+      <form onSubmit={handleSubmit}>
+          <div>
 
             {/* --- Phần 1: Thông tin (Chỉ HR & Admin sửa) --- */}
             <h4 className="form-section-title">Thông tin ứng viên</h4>
@@ -517,19 +514,21 @@ export default function AddResultModal({ isOpen, onClose, onSuccess, candidate }
 
           </div>
 
-          <div className="modal-footer justify-end">
-            <button type="button" className="modal-btn btn-secondary" onClick={onClose} disabled={loading}>
-                {isViewOnlyMode ? "Đóng" : "Hủy"}
-            </button>
-            
-            {!isViewOnlyMode && (
-                <button type="submit" className="modal-btn btn-save" disabled={loading || isLockedByFinalStatus}>
-                  {loading ? "Đang lưu..." : "Lưu"}
-                </button>
-            )}
-          </div>
-        </form>
-      </div>
-    </>
+        <ModalFooter
+          secondaryAction={{
+            label: isViewOnlyMode ? "Đóng" : "Hủy",
+            onClick: onClose,
+            disabled: loading
+          }}
+          primaryAction={!isViewOnlyMode ? {
+            label: loading ? "Đang lưu..." : "Lưu",
+            onClick: handleSubmit,
+            disabled: loading || isLockedByFinalStatus,
+            loading: loading,
+            type: "submit"
+          } : undefined}
+        />
+      </form>
+    </BaseModal>
   );
 }

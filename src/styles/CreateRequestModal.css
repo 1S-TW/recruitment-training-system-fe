@@ -1,12 +1,7 @@
 /* === MODAL – FORM THÊM === */
-.modal-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.35);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 60;
+.create-request-modal-backdrop {
+    background: rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(14px);
 }
 
 .modal-card {
@@ -73,7 +68,7 @@
     color: #111827;
 }
 
-.modal-body {
+.modal-content.create-request-modal .modal-body {
     padding: 16px 20px 12px;
     overflow-y: auto;
 }
@@ -173,7 +168,7 @@ input.error {
 /* Hàng công nghệ (version A) */
 .tech-row {
     display: grid;
-    grid-template-columns: 60% 20% 36px;
+    grid-template-columns: 1fr 120px 36px;
     gap: 12px;
     align-items: center;
     margin-bottom: 12px;
@@ -187,6 +182,27 @@ input.error {
     color: #111827;
     font-size: 0.9375rem;
     height: 44px;
+}
+
+.tech-select {
+    width: 100%;
+    appearance: none;
+    border-radius: 12px;
+    border-color: rgba(15, 23, 42, 0.12);
+    background-color: rgba(255, 255, 255, 0.96);
+    padding-right: 40px;
+    background-image: linear-gradient(45deg, transparent 50%, #94a3b8 50%),
+        linear-gradient(135deg, #94a3b8 50%, transparent 50%);
+    background-position: calc(100% - 16px) calc(1em + 2px),
+        calc(100% - 11px) calc(1em + 2px);
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+}
+
+.tech-select:focus {
+    outline: none;
+    border-color: rgba(0, 122, 255, 0.65);
+    box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.12);
 }
 
 .qty-input {
@@ -245,20 +261,41 @@ input.error {
 }
 .tech-row-custom {
     display: grid;
-    grid-template-columns: 60% 20% 32px;
+    grid-template-columns: 1fr 120px 36px;
     gap: 12px;
     align-items: center;
     margin-bottom: 12px;
 }
+
 .tech-select-custom,
 .qty-input-custom {
     height: 44px;
     padding: 0 0.75rem;
     border: 1px solid #d1d5db;
     border-radius: 10px;
-    background: #ffffff;
-    color: #111827;
     font-size: 0.9375rem;
+    background: #fff;
+}
+
+.tech-select-custom {
+    width: 100%;
+    appearance: none;
+    border-radius: 12px;
+    border-color: rgba(15, 23, 42, 0.12);
+    background-color: rgba(255, 255, 255, 0.96);
+    padding-right: 40px;
+    background-image: linear-gradient(45deg, transparent 50%, #94a3b8 50%),
+        linear-gradient(135deg, #94a3b8 50%, transparent 50%);
+    background-position: calc(100% - 16px) calc(1em + 2px),
+        calc(100% - 11px) calc(1em + 2px);
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+}
+
+.tech-select-custom:focus {
+    outline: none;
+    border-color: rgba(0, 122, 255, 0.65);
+    box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.12);
 }
 .qty-input-custom {
     text-align: center;
@@ -284,7 +321,7 @@ input.error {
 }
 
 /* Footer của modal (nút Hủy / Gửi) */
-.modal-footer {
+.modal-content.create-request-modal .modal-footer {
     padding: 20px 24px;
     background: #f1f5f9;
     border-top: 1px solid #e2e8f0;
@@ -328,4 +365,13 @@ input.error {
     background: #e5e7eb;
     color: #9ca3af;
     cursor: not-allowed;
+}
+
+.modal-content.create-request-modal .tech-row-custom {
+    grid-template-columns: minmax(0, 1fr) 120px 36px;
+}
+
+.modal-content.create-request-modal .tech-select-custom {
+    width: 100%;
+    min-width: 0;
 }

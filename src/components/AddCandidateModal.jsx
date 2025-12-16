@@ -1,8 +1,8 @@
 // src/components/AddCandidateModal.jsx
 import React, { useState, useEffect } from "react";
+import { BaseModal, ModalFooter } from "./Modal";
 import Input from "./Form/Input";
 import api from "../services/api";
-import "../styles/AddCandidateModal.css";
 
 export default function AddCandidateModal({
   isOpen,
@@ -129,140 +129,133 @@ export default function AddCandidateModal({
 
   return (
     <>
-      {/* Overlay giống EditTrainingModal */}
-      <div className="modal-overlay" onClick={onClose} />
-
-      {/* Modal content - stopPropagation */}
-      <div
-        className=" add-candidate-modal" // thêm class riêng nếu cần
-        style={{ maxWidth: "700px" }}
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
+      <BaseModal
+        isOpen={isOpen}
+        title="Thông tin ứng viên"
+        onClose={onClose}
+        size="lg"
       >
-        <div className="modal-header">
-      <h3 className="modal-title" style={{ color: "#fff" }}>
-Thông tin ứng viên
-      </h3>
-
-          <button className="modal-close-btn" onClick={onClose}>
-            ×
-          </button>
-        </div>
-
         <form onSubmit={handleSubmit}>
-          <div className="modal-body candidate-form-grid">
-            {apiError && <div className="api-error-box">{apiError}</div>}
+          {apiError && <div className="modal-alert alert-error">{apiError}</div>}
 
+          <div className="modal-form-grid">
             {/* Cột 1 */}
-            <div className="form-column">
-              <Input
-                label="Họ và tên ứng viên *"
+            <div className="modal-form-group">
+              <label className="modal-form-label">Họ và tên ứng viên *</label>
+              <input
+                className={`modal-form-input ${errors.fullName ? "error" : ""}`}
                 name="fullName"
                 value={formData.fullName}
                 onChange={handleChange}
                 placeholder="Nhập họ và tên ứng viên..."
-                error={errors.fullName}
                 required
               />
-              <Input
-                label="Số điện thoại *"
-                name="phoneNumber"
-                value={formData.phoneNumber}
-                onChange={handleChange}
-                placeholder="Nhập SĐT"
-                error={errors.phoneNumber}
-                required
-              />
-              <Input
-                label="Thời gian hẹn phỏng vấn *"
-                name="interviewDate"
-                type="datetime-local"
-                value={formData.interviewDate}
-                onChange={handleChange}
-                error={errors.interviewDate}
-                required
-              />
+              {errors.fullName && <span className="modal-error-message">{errors.fullName}</span>}
             </div>
 
-            {/* Cột 2 */}
-            <div className="form-column">
-              <Input
-                label="Email *"
+            <div className="modal-form-group">
+              <label className="modal-form-label">Email *</label>
+              <input
+                className={`modal-form-input ${errors.email ? "error" : ""}`}
                 name="email"
                 type="email"
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="Nhập email ứng viên..."
-                error={errors.email}
                 required
               />
+              {errors.email && <span className="modal-error-message">{errors.email}</span>}
+            </div>
 
-              <Input
-                label="Link CV *"
+            <div className="modal-form-group">
+              <label className="modal-form-label">Số điện thoại *</label>
+              <input
+                className={`modal-form-input ${errors.phoneNumber ? "error" : ""}`}
+                name="phoneNumber"
+                value={formData.phoneNumber}
+                onChange={handleChange}
+                placeholder="Nhập SĐT"
+                required
+              />
+              {errors.phoneNumber && <span className="modal-error-message">{errors.phoneNumber}</span>}
+            </div>
+
+            <div className="modal-form-group">
+              <label className="modal-form-label">Link CV *</label>
+              <input
+                className={`modal-form-input ${errors.cvLink ? "error" : ""}`}
                 name="cvLink"
                 value={formData.cvLink}
                 onChange={handleChange}
                 placeholder="Link CV (Google Drive, TopCV...)"
-                error={errors.cvLink}
                 required
               />
+              {errors.cvLink && <span className="modal-error-message">{errors.cvLink}</span>}
+            </div>
 
-              <div className="form-group">
-                <label>Kế hoạch tuyển dụng *</label>
-                <select
-                  name="planId"
-                  value={formData.planId}
-                  onChange={handleChange}
-                  className={`input-style ${errors.planId ? "input-error" : ""}`}
-                  required
-                >
-                  <option value="">— Chọn kế hoạch đã duyệt —</option>
-                  {planOptions.map((raw) => {
-                    const plan = normalizePlan(raw);
-                    if (!plan.id) return null;
-                    return (
-                      <option key={plan.id} value={plan.id}>
-                        {plan.name}
-                      </option>
-                    );
-                  })}
-                </select>
-                {errors.planId && (
-                  <span className="error-message">{errors.planId}</span>
-                )}
-              </div>
+            <div className="modal-form-group">
+              <label className="modal-form-label">Thời gian hẹn phỏng vấn *</label>
+              <input
+                className={`modal-form-input ${errors.interviewDate ? "error" : ""}`}
+                name="interviewDate"
+                type="datetime-local"
+                value={formData.interviewDate}
+                onChange={handleChange}
+                required
+              />
+              {errors.interviewDate && <span className="modal-error-message">{errors.interviewDate}</span>}
+            </div>
+
+            <div className="modal-form-group">
+              <label className="modal-form-label">Kế hoạch tuyển dụng *</label>
+              <select
+                name="planId"
+                value={formData.planId}
+                onChange={handleChange}
+                className={`modal-form-select ${errors.planId ? "error" : ""}`}
+                required
+              >
+                <option value="">— Chọn kế hoạch đã duyệt —</option>
+                {planOptions.map((raw) => {
+                  const plan = normalizePlan(raw);
+                  if (!plan.id) return null;
+                  return (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.name}
+                    </option>
+                  );
+                })}
+              </select>
+              {errors.planId && <span className="modal-error-message">{errors.planId}</span>}
             </div>
           </div>
 
-          {/* Footer giống EditTrainingModal */}
-          <div className="modal-footer">
-            <div className="footer-left">
-              {/* Có thể để trống hoặc thêm nút khác sau này */}
-            </div>
-            <div className="footer-right">
-              <button
-                type="button"
-                className="modal-btn btn-secondary"
-                onClick={onClose}
-                disabled={loading}
-              >
-                Hủy
-              </button>
-              <button
-                type="submit"
-                className="modal-btn btn-add-candidate"
-                disabled={loading}
-              >
-                {loading ? "Đang thêm..." : "Thêm"}
-              </button>
-            </div>
-          </div>
+          <ModalFooter
+            secondaryAction={{
+              label: "Hủy",
+              onClick: onClose,
+              disabled: loading
+            }}
+            primaryAction={{
+              label: loading ? "Đang thêm..." : "Thêm",
+              onClick: handleSubmit,
+              loading: loading,
+              type: "submit"
+            }}
+          />
         </form>
-      </div>
+      </BaseModal>
 
-      {/* Toast giống hệt EditTrainingModal */}
+      {/* Toast notification */}
       {toast && (
-        <div className={`toast ${toast.type === "success" ? "toast-success" : "toast-error"}`}>
+        <div className={`modal-alert ${toast.type === "success" ? "alert-success" : "alert-error"}`} 
+             style={{ 
+               position: "fixed", 
+               top: "20px", 
+               right: "20px", 
+               zIndex: 10000,
+               minWidth: "300px"
+             }}>
           {toast.msg}
         </div>
       )}

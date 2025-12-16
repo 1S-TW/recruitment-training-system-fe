@@ -1,9 +1,9 @@
 // src/components/HRRequestModal.jsx
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { BaseModal, ModalFooter } from "./Modal";
 import "../styles/HRRequestModal.css";
-import Modal from "./Modal";
-import { useAuth } from "../contexts/AuthContext"; // ✅ 1. Import AuthContext
+import { useAuth } from "../contexts/AuthContext";
 
 export default function HRRequestModal({
   isOpen,
@@ -1133,40 +1133,42 @@ export default function HRRequestModal({
 
       {/* ====== BƯỚC 2: MODAL LÝ DO TỪ CHỐI ====== */}
       {showRejectModal && (
-        <Modal
+        <BaseModal
+          isOpen={showRejectModal}
           title="Lý do Từ chối Nhu cầu"
           onClose={() => setShowRejectModal(false)}
-          width={520}
+          size="sm"
         >
-          <div className="reject-form">
-            <label htmlFor="rejectReason" className="reject-label">
+          <div className="modal-form-group">
+            <label className="modal-form-label" htmlFor="rejectReason">
               Vui lòng nhập lý do từ chối nhu cầu:{" "}
-              <span className="reject-plan-name">"{request.requestTitle}"</span>
+              <span style={{ fontWeight: "bold", color: "var(--modal-primary)" }}>
+                "{request.requestTitle}"
+              </span>
             </label>
             <textarea
               id="rejectReason"
-              className="reject-textarea"
+              className="modal-form-textarea"
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               placeholder="Nhập lý do cụ thể, rõ ràng để người lập nhu cầu dễ dàng điều chỉnh..."
+              rows="4"
             />
           </div>
-          <div className="modal-footer modal-footer-actions">
-            <button
-              className="modal-btn btn-secondary"
-              onClick={() => setShowRejectModal(false)}
-            >
-              Hủy
-            </button>
-            <button
-              className="modal-btn btn-reject"
-              onClick={handleSubmitReject}
-              disabled={!rejectReason.trim() || loading}
-            >
-              Xác nhận từ chối
-            </button>
-          </div>
-        </Modal>
+          
+          <ModalFooter
+            secondaryAction={{
+              label: "Hủy",
+              onClick: () => setShowRejectModal(false)
+            }}
+            primaryAction={{
+              label: "Xác nhận từ chối",
+              onClick: handleSubmitReject,
+              disabled: !rejectReason.trim() || loading,
+              loading: loading
+            }}
+          />
+        </BaseModal>
       )}
     </>
   );

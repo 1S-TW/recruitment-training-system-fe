@@ -1,6 +1,7 @@
 import React from "react";
 import Modal from "./Modal";
 import "../styles/admin.css"; // Để lấy style nút bấm
+import "../styles/editmodal.css";
 
 export default function ConfirmModal({ 
   isOpen, 
@@ -16,7 +17,7 @@ export default function ConfirmModal({
   if (!isOpen) return null;
 
   return (
-    <Modal title={title} onClose={onClose} width={420}>
+    <Modal title={title} onClose={onClose} width={420} className="admin-modal">
       <div style={{ padding: "10px 0 20px 0", color: "#374151", fontSize: "0.95rem", lineHeight: "1.5" }}>
         {message}
       </div>

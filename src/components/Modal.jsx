@@ -1,36 +1,36 @@
-// src/components/Modal.jsx
+// src/components/Modal.jsx - Updated to use new modal system
 import React from "react";
-import ReactDOM from "react-dom";
+import { BaseModal as BaseModalComponent, ModalFooter as ModalFooterComponent } from "./Modal/index";
 
-export default function Modal({ title, width = 600, onClose, children }) {
-  const handleBackdropClick = (e) => {
-    if (e.target.classList.contains("modal-backdrop")) {
-      onClose && onClose();
-    }
-  };
+// Re-export components for backward compatibility
+export const BaseModal = BaseModalComponent;
+export const ModalFooter = ModalFooterComponent;
 
-  return ReactDOM.createPortal(
-    <>
-      {/* Nền mờ */}
-      <div className="modal-backdrop" onClick={handleBackdropClick} />
+// Legacy Modal component for backward compatibility
+export default function Modal({ 
+  title, 
+  width = 600, 
+  onClose, 
+  children, 
+  className = "",
+  isOpen = true 
+}) {
+  // Map width to size
+  let size = "md";
+  if (width <= 400) size = "sm";
+  else if (width <= 600) size = "md";
+  else if (width <= 800) size = "lg";
+  else size = "xl";
 
-      {/* Khung modal */}
-      <div
-        className="modal-content"
-        style={{
-          maxWidth: width,
-        }}
-      >
-        <div className="modal-header">
-          <h3 className="modal-title">{title}</h3>
-          <button className="modal-close-btn" onClick={onClose}>
-            ✕
-          </button>
-        </div>
-
-        <div className="modal-body">{children}</div>
-      </div>
-    </>,
-    document.body // ⭐ Quan trọng: đưa modal ra ngoài layout
+  return (
+    <BaseModalComponent
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      size={size}
+      className={className}
+    >
+      {children}
+    </BaseModalComponent>
   );
 }

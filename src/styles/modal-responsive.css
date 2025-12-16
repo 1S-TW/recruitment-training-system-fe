@@ -1,0 +1,436 @@
+/* ===================================================================
+   MODAL RESPONSIVE DESIGN - Mobile-First Responsive Styles
+   Responsive breakpoints and mobile optimization for modals
+   =================================================================== */
+
+/* ==================== RESPONSIVE BREAKPOINTS ==================== */
+:root {
+  /* Responsive Breakpoints */
+  --modal-breakpoint-xs: 480px;
+  --modal-breakpoint-sm: 768px;
+  --modal-breakpoint-md: 1024px;
+  --modal-breakpoint-lg: 1280px;
+  --modal-breakpoint-xl: 1536px;
+  
+  /* Mobile Specific Variables */
+  --modal-mobile-padding: 16px;
+  --modal-mobile-gap: 12px;
+  --modal-mobile-border-radius: 8px;
+  --modal-touch-target-min: 44px;
+}
+
+/* ==================== EXTRA SMALL DEVICES (< 480px) ==================== */
+@media (max-width: 479px) {
+  /* Full Screen Modal on Very Small Devices */
+  .modal-content {
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    max-width: 100vw;
+    border-radius: 0;
+    top: 0;
+    left: 0;
+    transform: none;
+    position: fixed;
+  }
+  
+  /* Adjust Header for Mobile */
+  .modal-header {
+    padding: var(--modal-mobile-padding);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  
+  .modal-title {
+    font-size: 1.1rem;
+    line-height: 1.3;
+  }
+  
+  .modal-close-btn {
+    width: var(--modal-touch-target-min);
+    height: var(--modal-touch-target-min);
+    font-size: 20px;
+  }
+  
+  /* Mobile Body Styling */
+  .modal-body {
+    padding: var(--modal-mobile-padding);
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Mobile Footer */
+  .modal-footer {
+    padding: var(--modal-mobile-padding);
+    flex-direction: column;
+    gap: var(--modal-mobile-gap);
+    position: sticky;
+    bottom: 0;
+  }
+  
+  .modal-footer .modal-btn {
+    width: 100%;
+    height: var(--modal-touch-target-min);
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  
+  /* Mobile Form Elements */
+  .modal-form-input,
+  .modal-form-select,
+  .modal-form-textarea {
+    height: var(--modal-touch-target-min);
+    font-size: 16px; /* Prevent zoom on iOS */
+    border-radius: var(--modal-mobile-border-radius);
+  }
+  
+  .modal-form-textarea {
+    min-height: 120px;
+  }
+  
+  /* Mobile Form Layout */
+  .modal-form-grid {
+    grid-template-columns: 1fr;
+    gap: var(--modal-mobile-gap);
+  }
+  
+  .modal-form-row {
+    flex-direction: column;
+    gap: var(--modal-mobile-gap);
+  }
+  
+  /* Mobile Components */
+  .modal-tabs {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  
+  .modal-tab {
+    flex: 1;
+    min-width: 80px;
+    padding: var(--modal-mobile-gap);
+    font-size: 0.875rem;
+  }
+  
+  .modal-steps {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--modal-mobile-gap);
+  }
+  
+  .modal-step {
+    flex-direction: row;
+    align-items: center;
+  }
+  
+  .modal-step:not(:last-child)::after {
+    display: none;
+  }
+}
+
+/* ==================== SMALL DEVICES (480px - 767px) ==================== */
+@media (min-width: 480px) and (max-width: 767px) {
+  .modal-content {
+    width: 95vw;
+    max-width: 95vw;
+    max-height: 90vh;
+    border-radius: var(--modal-border-radius);
+  }
+  
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: var(--modal-padding-sm);
+  }
+  
+  .modal-title {
+    font-size: 1.15rem;
+  }
+  
+  .modal-close-btn {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .modal-footer {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--modal-gap-sm);
+  }
+  
+  .modal-footer .modal-btn {
+    flex: 1;
+    min-width: 120px;
+    height: 40px;
+  }
+  
+  .modal-form-input,
+  .modal-form-select,
+  .modal-form-textarea {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+  
+  .modal-form-grid {
+    grid-template-columns: 1fr;
+    gap: var(--modal-gap);
+  }
+}
+
+/* ==================== MEDIUM DEVICES (768px - 1023px) ==================== */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .modal-content {
+    width: 90vw;
+    max-width: 700px;
+  }
+  
+  .modal-form-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--modal-gap);
+  }
+  
+  .modal-footer {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+  
+  .modal-footer .modal-btn {
+    width: auto;
+    min-width: 100px;
+  }
+}
+
+/* ==================== LARGE DEVICES (1024px - 1279px) ==================== */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .modal-content.modal-lg {
+    max-width: 900px;
+  }
+  
+  .modal-content.modal-xl {
+    max-width: 1100px;
+  }
+}
+
+/* ==================== EXTRA LARGE DEVICES (≥ 1280px) ==================== */
+@media (min-width: 1280px) {
+  .modal-content.modal-xl {
+    max-width: var(--modal-width-xl);
+  }
+}
+
+/* ==================== ORIENTATION SPECIFIC STYLES ==================== */
+
+/* Landscape Orientation on Mobile */
+@media (max-width: 767px) and (orientation: landscape) {
+  .modal-content {
+    max-height: 95vh;
+    overflow: hidden;
+  }
+  
+  .modal-header {
+    padding: var(--modal-mobile-gap) var(--modal-mobile-padding);
+  }
+  
+  .modal-body {
+    padding: var(--modal-mobile-gap) var(--modal-mobile-padding);
+  }
+  
+  .modal-footer {
+    padding: var(--modal-mobile-gap) var(--modal-mobile-padding);
+    flex-direction: row;
+  }
+  
+  .modal-footer .modal-btn {
+    width: auto;
+    flex: 1;
+  }
+  
+  .modal-title {
+    font-size: 1rem;
+  }
+}
+
+/* Portrait Orientation Specific */
+@media (max-width: 767px) and (orientation: portrait) {
+  .modal-form-grid.mobile-single-column {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==================== TOUCH DEVICE OPTIMIZATIONS ==================== */
+
+/* Touch-friendly Interactive Elements */
+@media (hover: none) and (pointer: coarse) {
+  .modal-btn,
+  .modal-close-btn,
+  .modal-tab {
+    min-height: var(--modal-touch-target-min);
+    min-width: var(--modal-touch-target-min);
+  }
+  
+  .modal-form-input,
+  .modal-form-select,
+  .modal-form-textarea {
+    min-height: var(--modal-touch-target-min);
+  }
+  
+  /* Larger tap targets for small elements */
+  .modal-close-btn {
+    width: var(--modal-touch-target-min);
+    height: var(--modal-touch-target-min);
+  }
+  
+  /* Remove hover effects on touch devices */
+  .modal-btn:hover,
+  .modal-close-btn:hover,
+  .modal-form-input:hover,
+  .modal-form-select:hover,
+  .modal-form-textarea:hover {
+    transform: none;
+  }
+  
+  /* Enhanced focus states for touch */
+  .modal-btn:focus,
+  .modal-form-input:focus,
+  .modal-form-select:focus,
+  .modal-form-textarea:focus {
+    transform: scale(1.02);
+  }
+}
+
+/* ==================== HIGH DPI DISPLAYS ==================== */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .modal-content {
+    box-shadow: 0 32px 90px rgba(0, 0, 0, 0.2);
+  }
+  
+  .modal-backdrop {
+    backdrop-filter: blur(16px);
+  }
+}
+
+/* ==================== REDUCED MOTION PREFERENCES ==================== */
+@media (prefers-reduced-motion: reduce) {
+  .modal-content,
+  .modal-backdrop {
+    animation: none;
+  }
+  
+  .modal-btn,
+  .modal-form-input,
+  .modal-form-select,
+  .modal-form-textarea,
+  .modal-close-btn {
+    transition: none;
+  }
+  
+  .modal-btn:hover,
+  .modal-close-btn:hover {
+    transform: none;
+  }
+}
+
+/* ==================== PRINT STYLES ==================== */
+@media print {
+  .modal-backdrop {
+    display: none;
+  }
+  
+  .modal-content {
+    position: static;
+    transform: none;
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    box-shadow: none;
+    border: 1px solid #000;
+    page-break-inside: avoid;
+  }
+  
+  .modal-header {
+    background: none !important;
+    color: #000 !important;
+    border-bottom: 1px solid #000;
+  }
+  
+  .modal-close-btn {
+    display: none;
+  }
+  
+  .modal-footer {
+    background: none !important;
+    border-top: 1px solid #000;
+  }
+  
+  .modal-btn {
+    display: none;
+  }
+}
+
+/* ==================== ACCESSIBILITY ENHANCEMENTS ==================== */
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .modal-content {
+    border: 2px solid;
+  }
+  
+  .modal-header {
+    border-bottom: 2px solid;
+  }
+  
+  .modal-footer {
+    border-top: 2px solid;
+  }
+  
+  .modal-btn {
+    border: 2px solid;
+  }
+  
+  .modal-form-input,
+  .modal-form-select,
+  .modal-form-textarea {
+    border: 2px solid;
+  }
+}
+
+/* Focus Visible Enhancement for Keyboard Navigation */
+@supports selector(:focus-visible) {
+  .modal-btn:focus:not(:focus-visible),
+  .modal-close-btn:focus:not(:focus-visible),
+  .modal-form-input:focus:not(:focus-visible),
+  .modal-form-select:focus:not(:focus-visible),
+  .modal-form-textarea:focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
+/* ==================== CONTAINER QUERIES (Future Enhancement) ==================== */
+/* Note: Container queries are not widely supported yet, but included for future use */
+
+@supports (container-type: inline-size) {
+  .modal-content {
+    container-type: inline-size;
+  }
+  
+  @container (max-width: 500px) {
+    .modal-form-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .modal-footer {
+      flex-direction: column;
+    }
+    
+    .modal-footer .modal-btn {
+      width: 100%;
+    }
+  }
+  
+  @container (min-width: 600px) {
+    .modal-form-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+}

@@ -55,8 +55,9 @@ body {
 .nav__item { color: var(--muted); }
 .nav__item svg { stroke: currentColor; } /* icon menu trái theo màu item */
 .nav__item--active { color: var(--accent-text); }
+
 /* 1. CONTAINER CHÍNH: Xử lý bo góc và màu nền */
-.modal-content {
+.legacy-modal .modal-content {
   background-color: white;
   /* BO GÓC: Tăng lên 12px hoặc 16px để nhìn mượt hơn */
   border-radius: 12px; 
@@ -74,7 +75,7 @@ body {
 }
 
 /* 2. HEADER: Thêm padding riêng (vì đã bỏ padding ở container) */
-.modal-header {
+.legacy-modal .modal-header {
   padding: 20px 24px;
   border-bottom: 1px solid #e5e7eb;
   background-color: #fff;
@@ -83,7 +84,7 @@ body {
   align-items: center;
 }
 
-.modal-header h3, .modal-title {
+.legacy-modal .modal-header h3, .legacy-modal .modal-title {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
@@ -91,14 +92,14 @@ body {
 }
 
 /* 3. BODY: Cuộn nội dung ở giữa */
-.modal-body {
+.legacy-modal .modal-body {
   padding: 24px; /* Chuyển padding từ container vào đây */
   overflow-y: auto; /* Chỉ cuộn phần body */
   flex: 1; /* Chiếm hết khoảng trống còn lại */
 }
 
 /* 4. FOOTER: Xử lý tô màu kín và cân đối nút */
-.modal-footer {
+.legacy-modal .modal-footer {
   /* TÔ MÀU KÍN: Vì container padding=0 nên footer sẽ tràn ra tận mép */
   background-color: #f9fafb; 
   border-top: 1px solid #e5e7eb;
@@ -115,7 +116,7 @@ body {
 }
 
 /* 5. BUTTONS: Kích thước đồng đều */
-.modal-footer button, 
+.legacy-modal .modal-footer button, 
 .modal-btn {
   /* CÙNG KÍCH THƯỚC: Đặt chiều rộng tối thiểu */
   min-width: 100px; 
@@ -148,10 +149,10 @@ body {
 
 /* Style riêng cho nút Lưu (Primary) */
 .btn-save {
-  background-color: #2563eb; /* Màu xanh */
+  background-color: #007aff; /* Màu xanh iOS */
   color: white;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 .btn-save:hover {
-  background-color: #1d4ed8;
+  background-color: #006ae6;
 }

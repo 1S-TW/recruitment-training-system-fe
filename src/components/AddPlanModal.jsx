@@ -48,7 +48,7 @@ export default function AddPlanModal({
 
   return (
     <>
-      <div className="modal-backdrop" />
+      <div className="modal-backdrop add-plan-backdrop" />
 
       <div className="modal add-plan-modal" role="dialog" aria-modal="true">
         {/* Header */}

@@ -168,7 +168,8 @@
 .training-table-container {
     width: 100%;
     display: flex;
-    overflow-x: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
     position: relative;
 }
 

@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { Plus, Send, X } from "lucide-react"; // Giữ nguyên icon
+import { Plus, Send, X } from "lucide-react";
+import { BaseModal, ModalFooter } from "./Modal";
 import TechRow from "./TechRow";
 import useCreateRequest from "../hooks/useCreateRequest.jsx";
 import useUpdateRequest from "../hooks/useUpdateRequest.jsx";
 import axios from "axios";
-
-import "../styles/CreateRequestModal.css"
+import "../styles/CreateRequestModal.css";
 
 export default function CreateRequestModal({
   isOpen,
@@ -41,6 +41,7 @@ export default function CreateRequestModal({
     const onKey = (e) => {
       if (e.key === "Escape") onClose?.();
     };
+
     document.body.style.overflow = "";
     window.addEventListener("keydown", onKey);
     return () => {
@@ -221,165 +222,136 @@ export default function CreateRequestModal({
 
   if (!isOpen) return null;
 
+  const titleText = isEdit ? "Chỉnh sửa nhu cầu nhân sự" : "Tạo nhu cầu nhân sự";
+
   return (
-    <>
-      <div
-        className="modal-backdrop"
-        onClick={() => !loading && onClose?.()}
-      >
-      <div
-        className="modal-card"
-        role="dialog"
-        aria-modal="true"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* HEADER */}
-        <div className="modal-header-custom">
-          <div className="header-title-group">
-            <h3>{isEdit ? "Chỉnh sửa nhu cầu" : "Tạo nhu cầu nhân sự"}</h3>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={titleText}
+      className="create-request-modal"
+    >
+      <form onSubmit={handleSubmit}>
+        {/* Tên nhu cầu */}
+        <div className="modal-form-group full-width">
+          <label className="modal-form-label">
+            Tên nhu cầu <span style={{ color: "var(--modal-error)" }}>*</span>
+          </label>
+          <div className="modal-form-row">
+            <span style={{ 
+              padding: "10px 12px", 
+              background: "var(--modal-secondary)", 
+              borderRadius: "var(--modal-border-radius-sm)",
+              fontSize: "var(--modal-body-size)",
+              fontWeight: "600"
+            }}>
+              Nhu cầu nhân sự
+            </span>
+            <input
+              type="text"
+              maxLength={maxMainLength}
+              placeholder="VD: tuyển lập trình viên Java Backend"
+              value={titleMain}
+              onChange={(e) => setTitleMain(e.target.value)}
+              required
+              className="modal-form-input"
+              style={{ flex: 1 }}
+            />
+            <span style={{ 
+              padding: "10px 12px", 
+              background: "var(--modal-secondary)", 
+              borderRadius: "var(--modal-border-radius-sm)",
+              fontSize: "var(--modal-body-size)",
+              fontWeight: "600"
+            }}>
+              {monthDisplay}
+            </span>
           </div>
-          <button
-            onClick={() => !loading && onClose?.()}
-            className="btn-close"
-            aria-label="Đóng modal"
-          >
-            <X size={22} />
-          </button>
         </div>
 
-        <div className="modal-body">
-        {/* FORM */}
-        <form onSubmit={handleSubmit} className="modal-form">
-          <div className="form-grid">
-            {/* Tên nhu cầu */}
-            <div className="form-group full-width">
-              <label htmlFor="title">
-                Tên nhu cầu <span className="required">*</span>
-              </label>
-              <div className="title-input-row">
-                <span className="title-static">Nhu cầu nhân sự</span>
-                <input
-                  id="title"
-                  type="text"
-                  maxLength={maxMainLength}
-                  placeholder="VD: tuyển lập trình viên Java Backend"
-                  value={titleMain}
-                  onChange={(e) => setTitleMain(e.target.value)}
-                  required
-                  className="title-main-input"
-                />
-                <span className="title-month-text">{monthDisplay}</span>
-              </div>
-            </div>
-
-            {/* Công nghệ */}
-            <div className="form-group full-width tech-section">
-              <div className="section-header">
-                <label>
-                  Công nghệ <span className="required">*</span>
-                </label>
-              </div>
-
-              <div className="tech-list-custom">
-                {techs.map((tech, i) => (
-                  <TechRow
-                    key={i}
-                    tech={tech}
-                    index={i}
-                    onChange={updateTech}
-                    onRemove={removeTech}
-                    technologies={getAvailableTechnologies(i)}
-                    totalTechs={techs.length}
-                  />
-                ))}
-              </div>
-
-              {/* Nút thêm công nghệ */}
-              <button
-                type="button"
-                onClick={addTech}
-                className="btn-add-tech-custom"
-              >
-                <Plus size={14} /> Thêm công nghệ
-              </button>
-            </div>
-
-            {/* Deadline - Đã sửa */}
-            <div className="form-group">
-              <label htmlFor="deadline">
-                Thời hạn bàn giao <span className="required">*</span>
-              </label>
-              <div className="input-wrapper-date">
-                <input
-                  id="deadline"
-                  type="date"
-                  // 1. Chặn ngày quá khứ/gần theo logic BE
-                  min={minDateStr}
-                  value={expectedDate}
-                  onChange={(e) => handleDateChange(e.target.value)}
-                  required
-                  // 2. Đổi class để CSS hiển thị icon
-                  className={`input-style-date ${dateError ? "error" : ""}`}
-                  // 3. Click vào ô input là hiện lịch luôn
-                  onClick={(e) => e.target.showPicker && e.target.showPicker()}
-                />
-              </div>
-              {dateError && (
-                <small className="error-text">{dateError}</small>
-              )}
-            </div>
-
-            {/* Ghi chú */}
-            <div className="form-group full-width">
-              <label htmlFor="note">Ghi chú (tùy chọn)</label>
-              <textarea
-                id="note"
-                rows="4"
-                maxLength="255"
-                placeholder="Ghi chú bổ sung..."
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
+        {/* Công nghệ */}
+        <div className="modal-form-group full-width">
+          <label className="modal-form-label">
+            Công nghệ <span style={{ color: "var(--modal-error)" }}>*</span>
+          </label>
+          
+          <div style={{ maxHeight: "240px", overflowY: "auto", marginBottom: "12px" }}>
+            {techs.map((tech, i) => (
+              <TechRow
+                key={i}
+                tech={tech}
+                index={i}
+                onChange={updateTech}
+                onRemove={removeTech}
+                technologies={getAvailableTechnologies(i)}
+                totalTechs={techs.length}
               />
-            </div>
+            ))}
           </div>
-        </form>
-        </div>
 
-        {/* FOOTER */}
-        <div className="modal-footer">
-          <div className="footer-left">
-          </div>
-          <div className="footer-right">
           <button
             type="button"
-            onClick={onClose}
-            className="btn btn-cancel"
-            disabled={loading}
+            onClick={addTech}
+            className="modal-btn btn-secondary"
+            style={{ 
+              width: "auto",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              fontSize: "0.875rem"
+            }}
           >
-            Hủy
+            <Plus size={14} /> Thêm công nghệ
           </button>
-          <button
-            type="submit"
-            disabled={
-              loading || !!dateError || hasInvalidTech || !titleMain.trim()
-            }
-            className="btn btn-submit"
-            aria-busy={loading ? "true" : "false"}
-          >
-            {loading ? (
-              <>
-                <span className="spinner" /> Đang xử lý...
-              </>
-            ) : (
-              <>
-                {isEdit ? "Cập nhật" : "Gửi"} <Send size={18} />
-              </>
-            )}
-          </button>
-          </div>
         </div>
-      </div>
-      </div>
-    </>
+
+        {/* Thời hạn bàn giao */}
+        <div className="modal-form-group">
+          <label className="modal-form-label">
+            Thời hạn bàn giao <span style={{ color: "var(--modal-error)" }}>*</span>
+          </label>
+          <input
+            type="date"
+            min={minDateStr}
+            value={expectedDate}
+            onChange={(e) => handleDateChange(e.target.value)}
+            required
+            className={`modal-form-input ${dateError ? "error" : ""}`}
+            onClick={(e) => e.target.showPicker && e.target.showPicker()}
+          />
+          {dateError && (
+            <span className="modal-error-message">{dateError}</span>
+          )}
+        </div>
+
+        {/* Ghi chú */}
+        <div className="modal-form-group full-width">
+          <label className="modal-form-label">Ghi chú (tùy chọn)</label>
+          <textarea
+            rows="4"
+            maxLength="255"
+            placeholder="Ghi chú bổ sung..."
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            className="modal-form-textarea"
+          />
+        </div>
+
+        <ModalFooter
+          secondaryAction={{
+            label: "Hủy",
+            onClick: onClose,
+            disabled: loading
+          }}
+          primaryAction={{
+            label: loading ? "Đang xử lý..." : (isEdit ? "Cập nhật" : "Gửi"),
+            onClick: handleSubmit,
+            loading: loading,
+            disabled: loading || !!dateError || hasInvalidTech || !titleMain.trim(),
+            type: "submit"
+          }}
+        />
+      </form>
+    </BaseModal>
   );
 }

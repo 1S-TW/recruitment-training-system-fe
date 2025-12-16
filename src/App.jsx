@@ -5,10 +5,10 @@ import AppRoutes from './routes/AppRoutes';
 import { AuthProvider } from './contexts/AuthContext';
 import AccountLockedModal from './components/AccountLockedModal';
 import './styles/style.css'; // Import CSS toàn cục
+import './styles/editmodal.css';
 
 function App() {
   return (
-
     <AuthProvider>
       {/* 1. Bọc toàn bộ App trong NotificationProvider*/}
       <NotificationProvider>

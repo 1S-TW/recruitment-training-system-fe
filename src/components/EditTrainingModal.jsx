@@ -1,5 +1,6 @@
 // src/components/EditTrainingModal.jsx
 import React, { useEffect, useState } from "react";
+import { BaseModal, ModalFooter } from "./Modal";
 import "../styles/EditTrainingModal.css";
 import api from "../services/api";
 import { ChevronDown, ChevronUp } from "lucide-react";
@@ -433,15 +434,27 @@ export default function EditTrainingModal({
 
       {/* Confirm stop */}
       {confirmStop && (
-        <div className="confirm-overlay">
-          <div className="confirm-modal">
-            <p>Xác nhận <strong>dừng thực tập</strong> cho <strong>{trainingData.fullName}</strong>?</p>
-            <div className="confirm-actions">
-              <button className="btn-cancel" onClick={() => setConfirmStop(false)}>Hủy</button>
-              <button className="btn-confirm" onClick={handleStopInternship}>Xác nhận</button>
-            </div>
-          </div>
-        </div>
+        <BaseModal
+          isOpen={confirmStop}
+          title="Xác nhận dừng thực tập"
+          onClose={() => setConfirmStop(false)}
+          size="sm"
+        >
+          <p style={{ textAlign: "center", margin: "0 0 20px 0", fontSize: "1.1rem" }}>
+            Xác nhận <strong>dừng thực tập</strong> cho <strong>{trainingData.fullName}</strong>?
+          </p>
+          
+          <ModalFooter
+            secondaryAction={{
+              label: "Hủy",
+              onClick: () => setConfirmStop(false)
+            }}
+            primaryAction={{
+              label: "Xác nhận",
+              onClick: handleStopInternship
+            }}
+          />
+        </BaseModal>
       )}
 
       {/* Toast */}

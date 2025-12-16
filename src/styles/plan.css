@@ -686,8 +686,8 @@
 
 
 
-  /* --- MODAL STYLES --- */
-  .modal-backdrop {
+  /* --- MODAL STYLES (scoped to AddPlanModal only) --- */
+  .modal-backdrop.add-plan-backdrop {
     position: fixed;
     inset: 0;
     background-color: rgba(17, 24, 39, 0.6);
@@ -696,7 +696,7 @@
     animation: fadeIn 0.2s ease-out;
   }
 
-  .modal-content {
+  .modal.add-plan-modal {
     position: fixed;
     top: 50%;
     left: 50%;
@@ -712,7 +712,7 @@
     animation: zoomIn 0.25s ease-out;
   }
 
-  .modal-header {
+  .modal.add-plan-modal .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -720,13 +720,13 @@
     border-bottom: 1px solid #e5e7eb;
   }
 
-  .modal-title {
+  .modal.add-plan-modal .modal-title {
     font-size: 1.15rem;
     font-weight: 700;
     color: #111827;
   }
 
-  .modal-close-btn {
+  .modal.add-plan-modal .modal-close-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -739,13 +739,13 @@
     color: #4b5563;
     transition: all 0.2s ease;
   }
-  .modal-close-btn:hover {
+  .modal.add-plan-modal .modal-close-btn:hover {
     background: #e5e7eb;
     color: #111827;
     transform: rotate(90deg);
   }
 
-  .modal-body {
+  .modal.add-plan-modal .modal-body {
     padding: 20px 24px;
     overflow-y: auto;
     color: #374151;
@@ -822,21 +822,21 @@
   }
 
   /* --- Modal Footer/Actions --- */
-  .modal-footer {
+  .modal.add-plan-modal .modal-footer {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
     padding: 16px 20px;
     background-color: transparent;
   }
-  .modal-footer.justify-content-center {
+  .modal.add-plan-modal .modal-footer.justify-content-center {
     justify-content: center;
     background-color: #f8f8f8;
     padding: 12px 20px;
     border-top: 1px solid #f0f0f0;
   }
 
-  .modal-btn {
+  .modal.add-plan-modal .modal-btn {
     padding: 8px 16px;
     border: none;
     border-radius: 8px;
@@ -845,25 +845,25 @@
     cursor: pointer;
     transition: all 0.2s ease;
   }
-  .modal-btn:hover {
+  .modal.add-plan-modal .modal-btn:hover {
     opacity: 0.85;
     transform: translateY(-1px);
   }
-  .modal-btn.btn-approve {
+  .modal.add-plan-modal .modal-btn.btn-approve {
     background-color: #2563eb;
     color: white;
   }
-  .modal-btn.btn-reject {
+  .modal.add-plan-modal .modal-btn.btn-reject {
     background-color: #dc2626;
     color: white;
   }
-  .modal-btn.btn-secondary {
+  .modal.add-plan-modal .modal-btn.btn-secondary {
     background-color: #e5e7eb;
     color: #374151;
   }
 
   /* --- Block hiển thị lý do CANCELED/REJECTED --- */
-  .modal-footer-canceled {
+  .modal.add-plan-modal .modal-footer-canceled {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -928,7 +928,7 @@
   }
 
 
-  .modal-backdrop {
+  .modal-backdrop.add-plan-backdrop {
     position: fixed;
     inset: 0;
     background-color: rgba(17, 24, 39, 0.6);
@@ -1001,31 +1001,31 @@
 
   /* ====== Modal footer / buttons ====== */
 
-  .modal-footer {
+  .modal.add-plan-modal .modal-footer {
     margin-top: 20px;
     display: flex;
     gap: 12px;
     align-items: center;
   }
 
-  .modal-footer-actions {
+  .modal.add-plan-modal .modal-footer-actions {
     justify-content: flex-end;
   }
 
-  .modal-footer-buttons {
+  .modal.add-plan-modal .modal-footer-buttons {
     display: flex;
     gap: 10px;
   }
 
-  .justify-center {
+  .modal.add-plan-modal .justify-center {
     justify-content: center;
   }
 
-  .justify-end {
+  .modal.add-plan-modal .justify-end {
     justify-content: flex-end;
   }
 
-  .modal-btn {
+  .modal.add-plan-modal .modal-btn {
     padding: 9px 22px;
     border-radius: 999px;
     border: none;
@@ -1036,12 +1036,12 @@
       box-shadow 0.08s ease;
   }
 
-  .modal-btn:disabled {
+  .modal.add-plan-modal .modal-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
   }
 
-  .modal-btn:hover:not(:disabled) {
+  .modal.add-plan-modal .modal-btn:hover:not(:disabled) {
     transform: translateY(-1px);
     box-shadow: 0 6px 15px rgba(15, 23, 42, 0.08);
   }
@@ -1423,6 +1423,29 @@
   border: 1px solid #E5E7EB !important;
   font-size: 14px !important;
   color: #111827 !important;
+  background: #ffffff !important;
+}
+
+.modal.add-plan-modal select {
+  appearance: none;
+  padding-right: 40px !important;
+  background-image: linear-gradient(45deg, transparent 50%, #94a3b8 50%),
+    linear-gradient(135deg, #94a3b8 50%, transparent 50%);
+  background-position: calc(100% - 16px) calc(1em + 2px), calc(100% - 11px) calc(1em + 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.modal.add-plan-modal select:focus {
+  outline: none;
+  border-color: rgba(0, 122, 255, 0.65) !important;
+  box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.12) !important;
+  background-color: #ffffff !important;
+}
+
+.modal.add-plan-modal select option {
+  background: #ffffff;
+  color: #0f172a;
 }
 
 /* Bảng chi tiết công nghệ – cũng thu lại cho khớp tổng thể */
@@ -1440,8 +1463,8 @@
 
 
 
-  /* Backdrop */
-  .modal-backdrop {
+  /* Backdrop (scoped) */
+  .modal-backdrop.add-plan-backdrop {
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.35);
@@ -1564,12 +1587,17 @@
 
 
 /* ============ BACKDROP ============ */
-.modal-backdrop {
+.modal-backdrop.add-plan-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.35);
   z-index: 50;
 }
+
+ .modal-backdrop.add-plan-backdrop {
+  background: rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(14px);
+ }
 
 /* ============ MODAL CONTAINER ============ */
 .modal.add-plan-modal {
@@ -1581,8 +1609,9 @@
   width: min(720px, 92vw);
   max-height: 90vh;
   background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+  border-radius: 18px;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(15, 23, 42, 0.10);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1592,8 +1621,8 @@
 /* ============ HEADER ============ */
 .modal-header-flex {
   position: relative;
-  padding: 16px 24px 12px;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1614,18 +1643,18 @@
   width: 32px;
   height: 32px;
   border: none;
-  border-radius: 8px;
-  background: #f3f4f6;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.05);
   cursor: pointer;
   display: grid;
   place-items: center;
   font-size: 18px;
   line-height: 1;
-  color: #374151;
+  color: #0f172a;
 }
 
 .btn-close-large:hover {
-  background: #e5e7eb;
+  background: rgba(15, 23, 42, 0.09);
 }
 
 /* ============ FORM BODY ============ */
@@ -1843,10 +1872,12 @@
   color: #6b7280;
   white-space: nowrap;
 }
-.modal-body {
+
+.modal.add-plan-modal .modal-body {
   padding: 16px 24px !important;
 }
-.modal-content {
+
+.modal.add-plan-modal {
   position: fixed !important;
   top: 50% !important;
   left: 50% !important;

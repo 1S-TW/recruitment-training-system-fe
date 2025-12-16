@@ -57,6 +57,7 @@ const EditUserModal = ({ show, handleClose, user, availableRoles, onSaveSuccess 
       title="Phân quyền người dùng" 
       onClose={handleClose} 
       width={500}
+      className="admin-modal"
     >
       <form onSubmit={handleSubmit} className="modal-form-custom">
         

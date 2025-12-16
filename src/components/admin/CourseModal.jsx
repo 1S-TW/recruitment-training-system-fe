@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import Modal from '../Modal';
+import { BaseModal, ModalFooter } from '../Modal';
 import { useNotification } from '../../contexts/NotificationContext';
 import { createCourse, updateCourse } from '../../services/courseService';
-import "../../styles/editmodal.css"; // Dùng lại CSS modal có sẵn
 
 export default function CourseModal({ isOpen, onClose, onSuccess, course }) {
     const [formData, setFormData] = useState({ courseName: '', durationDays: '', description: '' });
@@ -44,49 +43,56 @@ export default function CourseModal({ isOpen, onClose, onSuccess, course }) {
     if (!isOpen) return null;
 
     return (
-        <Modal
-            title={<span style={{ color: "#fff" }}>{course ? "Chỉnh sửa môn học" : "Thêm môn học"}</span>}
+        <BaseModal
+            isOpen={isOpen}
+            title={course ? "Chỉnh sửa môn học" : "Thêm môn học"}
             onClose={onClose}
-            width={500}
+            size="sm"
         >
-
-            <form onSubmit={handleSubmit} className="modal-form-custom">
-                <div className="form-group">
-                    <label className="form-label">Tên môn học *</label>
+            <form onSubmit={handleSubmit}>
+                <div className="modal-form-group">
+                    <label className="modal-form-label">Tên môn học *</label>
                     <input
-                        className="input-style"
+                        className="modal-form-input"
                         value={formData.courseName}
                         onChange={e => setFormData({ ...formData, courseName: e.target.value })}
                         required
                     />
                 </div>
-                <div className="form-group">
-                    <label className="form-label">Số ngày học (Dự kiến) *</label>
+                <div className="modal-form-group">
+                    <label className="modal-form-label">Số ngày học (Dự kiến) *</label>
                     <input
                         type="number"
                         min="1"
-                        className="input-style"
+                        className="modal-form-input"
                         value={formData.durationDays}
                         onChange={e => setFormData({ ...formData, durationDays: e.target.value })}
                         required
                     />
                 </div>
-                <div className="form-group">
-                    <label className="form-label">Mô tả</label>
+                <div className="modal-form-group">
+                    <label className="modal-form-label">Mô tả</label>
                     <textarea
-                        className="input-style"
+                        className="modal-form-textarea"
                         rows="3"
                         value={formData.description}
                         onChange={e => setFormData({ ...formData, description: e.target.value })}
                     />
                 </div>
-                <div className="modal-footer">
-                    <button type="button" className="modal-btn btn-secondary" onClick={onClose}>Hủy</button>
-                    <button type="submit" className="modal-btn btn-save" disabled={loading}>
-                        {loading ? 'Đang lưu...' : 'Lưu'}
-                    </button>
-                </div>
+                
+                <ModalFooter
+                    secondaryAction={{
+                        label: "Hủy",
+                        onClick: onClose
+                    }}
+                    primaryAction={{
+                        label: loading ? 'Đang lưu...' : 'Lưu',
+                        onClick: handleSubmit,
+                        loading: loading,
+                        type: "submit"
+                    }}
+                />
             </form>
-        </Modal>
+        </BaseModal>
     );
 }
