@@ -164,16 +164,20 @@ export default function CandidateManagementPage() {
     });
   }, [setSearchParams]);
 
-  // === DEBOUNCE SEARCH ===
+  // === DEBOUNCE SEARCH (ĐÃ SỬA) ===
   useEffect(() => {
     const timer = setTimeout(() => {
-      setSearchTerm(searchInput);
-      updateSearchParams({ name: searchInput.trim() || "", page: 1 });
-      setCurrentPage(1);
+      // FIX: Chỉ reset về page 1 và update URL nếu nội dung tìm kiếm THỰC SỰ thay đổi
+      // So sánh searchInput (người dùng đang gõ) với searchTerm (giá trị đã lưu)
+      if (searchInput !== searchTerm) {
+        setSearchTerm(searchInput);
+        updateSearchParams({ name: searchInput.trim() || "", page: 1 });
+        setCurrentPage(1);
+      }
     }, 500);
     return () => clearTimeout(timer);
-  }, [searchInput, updateSearchParams]);
-
+  }, [searchInput, updateSearchParams, searchTerm]); 
+  // Thêm searchTerm vào dependency
   // === ĐỒNG BỘ KHI URL THAY ĐỔI (F5, back/forward) ===
   useEffect(() => {
     setSearchInput(urlName);

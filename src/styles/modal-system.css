@@ -201,10 +201,12 @@
   align-items: center;
   gap: var(--modal-gap-sm);
   flex-shrink: 0;
+  border-bottom-left-radius: var(--modal-border-radius-lg); 
+  border-bottom-right-radius: var(--modal-border-radius-lg);
 }
 
 .modal-footer.modal-footer-light {
-  background: var(--modal-secondary);
+  background: var(--modal-white);
   border-top: 1px solid var(--modal-border);
 }
 
