@@ -1,6 +1,5 @@
 // src/components/EditTrainingModal.jsx
 import React, { useEffect, useState } from "react";
-import { BaseModal, ModalFooter } from "./Modal";
 import "../styles/EditTrainingModal.css";
 import api from "../services/api";
 import { ChevronDown, ChevronUp } from "lucide-react";
@@ -57,9 +56,8 @@ export default function EditTrainingModal({
   const isCourseLocked = (courseName) => {
     const s = scoresMap[courseName];
     if (!s) return false;
-    const total = Number(s.totalScore || 0);
     const attempts = s.totalAttempts || 0;
-    return (total >= 7 && attempts > 0) || attempts >= 3;
+    return attempts >= 3; // Khóa khi đủ 3 lần
   };
 
   const isCourseUnlocked = (index) => {
@@ -262,7 +260,8 @@ export default function EditTrainingModal({
                   const total = calculateSubjectTotal(s);
                   const isUnlocked = isCourseUnlocked(index);
                   const isLocked = isCourseLocked(course.courseName);
-                  const canInput = canEdit && isUnlocked && !isLocked;
+                  const canInput = canEdit && isUnlocked && !isLocked; // Disable khi đủ 3 lần
+
                   const showReasonInput = shouldShowReasonInput(course.courseName);
 
                   const latestReason = s.history?.length > 0
@@ -280,10 +279,7 @@ export default function EditTrainingModal({
                           {!isViewOnly && !isUnlocked && index > 0 && (
                             <span className="lock-hint">Hoàn thành môn trước</span>
                           )}
-                          {isLocked && s.totalScore >= 7 && (
-                            <span className="lock-hint success">Đã đạt</span>
-                          )}
-                          {isLocked && s.totalAttempts >= 3 && s.totalScore < 7 && (
+                          {isLocked && s.totalAttempts >= 3 && (
                             <span className="lock-hint fail">Đủ 3 lần</span>
                           )}
                         </td>
@@ -293,10 +289,10 @@ export default function EditTrainingModal({
                             <input
                               type="text"
                               inputMode="decimal"
-                              disabled={!canInput}
+                              disabled={!canInput} // Disable input khi đủ 3 lần
                               value={s[field] ?? ""}
                               onChange={e => handleScoreChange(course.courseName, field, e.target.value)}
-                              className={`score-input ${isLocked ? "score-locked" : ""}`}
+                              className="score-input"
                               placeholder="0-10"
                             />
                           </td>
@@ -434,27 +430,15 @@ export default function EditTrainingModal({
 
       {/* Confirm stop */}
       {confirmStop && (
-        <BaseModal
-          isOpen={confirmStop}
-          title="Xác nhận dừng thực tập"
-          onClose={() => setConfirmStop(false)}
-          size="sm"
-        >
-          <p style={{ textAlign: "center", margin: "0 0 20px 0", fontSize: "1.1rem" }}>
-            Xác nhận <strong>dừng thực tập</strong> cho <strong>{trainingData.fullName}</strong>?
-          </p>
-          
-          <ModalFooter
-            secondaryAction={{
-              label: "Hủy",
-              onClick: () => setConfirmStop(false)
-            }}
-            primaryAction={{
-              label: "Xác nhận",
-              onClick: handleStopInternship
-            }}
-          />
-        </BaseModal>
+        <div className="confirm-overlay">
+          <div className="confirm-modal">
+            <p>Xác nhận <strong>dừng thực tập</strong> cho <strong>{trainingData.fullName}</strong>?</p>
+            <div className="confirm-actions">
+              <button className="btn-cancel" onClick={() => setConfirmStop(false)}>Hủy</button>
+              <button className="btn-confirm" onClick={handleStopInternship}>Xác nhận</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Toast */}

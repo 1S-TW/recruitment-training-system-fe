@@ -168,7 +168,7 @@
 .training-table-container {
     width: 100%;
     display: flex;
-    overflow-x: auto;
+    overflow-x: visible;
     overflow-y: hidden;
     position: relative;
 }
@@ -271,7 +271,6 @@
     overflow-x: auto;
     flex: 0 0 auto;
     max-width: calc(var(--subject-width) * 2 + 20px);
-    /* + padding/border room */
     -webkit-overflow-scrolling: touch;
 }
 

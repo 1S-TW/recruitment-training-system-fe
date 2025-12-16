@@ -1,7 +1,7 @@
 // src/pages/CandidateManagementPage.jsx
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
-import api from "../services/api"; // Dùng axios instance chung
+import api from "../services/api";
 
 import AddCandidateModal from "../components/AddCandidateModal";
 import AddResultModal from "../components/AddResultModal";
@@ -10,7 +10,7 @@ import DatePicker from "../components/DatePicker";
 import Layout from "../components/Layout";
 import Pagination from "../components/Pagination";
 import ActionButtons from "../components/ActionButtons.jsx";
-import { useAuth } from "../contexts/AuthContext"; // 1. Import AuthContext
+import { useAuth } from "../contexts/AuthContext";
 
 import "../styles/toast.css";
 import "../styles/CandidateManagementPage.css";
@@ -18,15 +18,13 @@ import { HiUserGroup } from "react-icons/hi";
 import { FiSearch } from "react-icons/fi";
 
 /**
- * Component gộp bộ lọc ngày phỏng vấn (Từ - Đến) vào 1 filter
+ * Bộ lọc ngày phỏng vấn (Từ - Đến)
  */
 function InterviewDateFilter({ from, to, onChange }) {
   const [open, setOpen] = useState(false);
-  // Dùng state tạm để tránh truyền null vào DatePicker → tránh lỗi trắng trang
   const [tempFrom, setTempFrom] = useState(from);
   const [tempTo, setTempTo] = useState(to);
 
-  // Đồng bộ temp khi mở popover
   useEffect(() => {
     if (open) {
       setTempFrom(from);
@@ -34,21 +32,19 @@ function InterviewDateFilter({ from, to, onChange }) {
     }
   }, [open, from, to]);
 
-  const formatPayloadDate = (payload) => {
-    if (!payload?.value) return "";
+  const formatDate = (payload) => {
+    if (!payload?.value) return "...";
     const d = new Date(payload.value);
-    if (Number.isNaN(d.getTime())) return "";
-    return d.toLocaleDateString("vi-VN");
+    return isNaN(d.getTime()) ? "..." : d.toLocaleDateString("vi-VN");
   };
 
   const displayLabel =
     from?.value || to?.value
-      ? `Ngày PV: ${formatPayloadDate(from)} → ${formatPayloadDate(to)}`
+      ? `Ngày PV: ${formatDate(from)} → ${formatDate(to)}`
       : "Ngày PV (từ - đến)";
 
   return (
     <div className="filter-item range-filter">
-      {/* Nút mở popover */}
       <button
         type="button"
         className="filter-select range-filter-toggle"
@@ -61,20 +57,12 @@ function InterviewDateFilter({ from, to, onChange }) {
         <div className="range-popover">
           <div className="range-row">
             <span className="range-row-label">Từ:</span>
-            {/* FIX DUY NHẤT: Luôn truyền object hợp lệ vào DatePicker */}
-            <DatePicker
-              selectedDate={tempFrom ?? { value: null }}
-              onDateChange={setTempFrom}
-            />
+            <DatePicker selectedDate={tempFrom || null} onDateChange={setTempFrom} />
           </div>
 
           <div className="range-row">
             <span className="range-row-label">Đến:</span>
-            {/* FIX DUY NHẤT: Luôn truyền object hợp lệ vào DatePicker */}
-            <DatePicker
-              selectedDate={tempTo ?? { value: null }}
-              onDateChange={setTempTo}
-            />
+            <DatePicker selectedDate={tempTo || null} onDateChange={setTempTo} />
           </div>
 
           <div className="range-footer">
@@ -82,7 +70,7 @@ function InterviewDateFilter({ from, to, onChange }) {
               type="button"
               className="range-btn range-btn-clear"
               onClick={() => {
-                onChange({ from: null, to: null });  // Xóa → gọi onChange
+                onChange({ from: null, to: null });
                 setOpen(false);
               }}
             >
@@ -92,7 +80,7 @@ function InterviewDateFilter({ from, to, onChange }) {
               type="button"
               className="range-btn range-btn-ok"
               onClick={() => {
-                onChange({ from: tempFrom, to: tempTo });  // OK → dùng giá trị temp
+                onChange({ from: tempFrom, to: tempTo });
                 setOpen(false);
               }}
             >
@@ -106,36 +94,27 @@ function InterviewDateFilter({ from, to, onChange }) {
 }
 
 export default function CandidateManagementPage() {
-  const { user } = useAuth(); // Lấy user info
-  const role = user?.role; // Lấy role
+  const { user } = useAuth();
+  const role = user?.role;
 
-  // PHÂN QUYỀN:
-  // 1. Thêm mới: Chỉ HR & Admin. (QLDT & LEAD bị ẩn nút)
   const canAddCandidate = role === "SUPER_ADMIN" || role === "HR";
-
-  // 2. Quyền thao tác Sửa (Edit):
-  // LEAD: Chỉ xem, không được sửa -> canInteract = false
-  // HR, QLDT, ADMIN: Được sửa -> canInteract = true
   const canInteract = role !== "LEAD";
 
-  // === URL PARAMS ===
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Đọc từ URL (đảm bảo đúng format YYYY-MM-DD)
   const urlName   = searchParams.get("name")   || "";
   const urlStatus = searchParams.get("status") || "";
   const urlPlan   = searchParams.get("plan")   || "";
-  const urlFrom   = searchParams.get("from")   || "";  // 2025-12-01
-  const urlTo     = searchParams.get("to")     || "";  // 2025-12-31
+  const urlFrom   = searchParams.get("from")   || "";
+  const urlTo     = searchParams.get("to")     || "";
   const urlPage   = Number(searchParams.get("page")) || 1;
 
-  // === STATE ĐỒNG BỘ VỚI URL ===
   const [searchInput, setSearchInput] = useState(urlName);
   const [searchTerm, setSearchTerm]   = useState(urlName);
   const [statusFilter, setStatusFilter] = useState(urlStatus);
   const [planFilter, setPlanFilter]     = useState(urlPlan);
   const [interviewFrom, setInterviewFrom] = useState(urlFrom ? { value: urlFrom } : null);
-  const [interviewTo, setInterviewTo]     = useState(urlTo   ? { value: urlTo   } : null);
+  const [interviewTo, setInterviewTo]     = useState(urlTo ? { value: urlTo } : null);
   const [currentPage, setCurrentPage]     = useState(urlPage);
 
   const [candidates, setCandidates] = useState([]);
@@ -144,12 +123,13 @@ export default function CandidateManagementPage() {
   const [planOptions, setPlanOptions] = useState([]);
   const [prefilledPlan, setPrefilledPlan] = useState(null);
 
-  // --- State cho 2 Modal ---
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
 
-  // === CẬP NHẬT URL (xóa param nếu rỗng) ===
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [isAnimating, setIsAnimating] = useState(false);
+
   const updateSearchParams = useCallback((updates) => {
     setSearchParams(prev => {
       const newParams = new URLSearchParams(prev);
@@ -164,11 +144,9 @@ export default function CandidateManagementPage() {
     });
   }, [setSearchParams]);
 
-  // === DEBOUNCE SEARCH (ĐÃ SỬA) ===
+  // DEBOUNCE SEARCH
   useEffect(() => {
     const timer = setTimeout(() => {
-      // FIX: Chỉ reset về page 1 và update URL nếu nội dung tìm kiếm THỰC SỰ thay đổi
-      // So sánh searchInput (người dùng đang gõ) với searchTerm (giá trị đã lưu)
       if (searchInput !== searchTerm) {
         setSearchTerm(searchInput);
         updateSearchParams({ name: searchInput.trim() || "", page: 1 });
@@ -176,9 +154,9 @@ export default function CandidateManagementPage() {
       }
     }, 500);
     return () => clearTimeout(timer);
-  }, [searchInput, updateSearchParams, searchTerm]); 
-  // Thêm searchTerm vào dependency
-  // === ĐỒNG BỘ KHI URL THAY ĐỔI (F5, back/forward) ===
+  },[searchInput, searchTerm, updateSearchParams]);
+
+  // ĐỒNG BỘ KHI URL THAY ĐỔI (F5, back/forward)
   useEffect(() => {
     setSearchInput(urlName);
     setSearchTerm(urlName);
@@ -188,6 +166,20 @@ export default function CandidateManagementPage() {
     setInterviewTo(urlTo ? { value: urlTo } : null);
     setCurrentPage(urlPage);
   }, [urlName, urlStatus, urlPlan, urlFrom, urlTo, urlPage]);
+
+  // LƯU PARAM MẶC ĐỊNH NGAY LẦN ĐẦU NẾU URL SẠCH
+  useEffect(() => {
+    const hasAnyParam = searchParams.has("name") ||
+                        searchParams.has("status") ||
+                        searchParams.has("plan") ||
+                        searchParams.has("from") ||
+                        searchParams.has("to") ||
+                        searchParams.has("page");
+
+    if (!hasAnyParam) {
+      updateSearchParams({ page: 1 });
+    }
+  }, [searchParams, updateSearchParams]);
 
   const fetchCandidates = async () => {
     setLoading(true);
@@ -219,10 +211,7 @@ export default function CandidateManagementPage() {
     fetchConfirmedPlans();
   }, []);
 
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [isAnimating, setIsAnimating] = useState(false);
-
-  // === PREFILL PLAN TỪ planId/planName (giữ nguyên logic cũ) ===
+  // PREFILL PLAN TỪ URL
   useEffect(() => {
     const planId = searchParams.get("planId");
     const planName = searchParams.get("planName");
@@ -259,29 +248,13 @@ export default function CandidateManagementPage() {
 
   const getDateRange = (payload) => {
     if (!payload?.value) return null;
-
     const base = new Date(payload.value);
-    if (Number.isNaN(base.getTime())) return null;
+    if (isNaN(base.getTime())) return null;
 
-    const filterMode = payload.filterMode || "day";
-    const year = payload.displayYear ?? base.getFullYear();
-    const month = payload.displayMonth ?? base.getMonth();
-
-    if (filterMode === "month") {
-      return {
-        start: new Date(year, month, 1, 0, 0, 0, 0),
-        end: new Date(year, month + 1, 0, 23, 59, 59, 999),
-      };
-    }
-
-    if (filterMode === "year") {
-      return {
-        start: new Date(year, 0, 1, 0, 0, 0, 0),
-        end: new Date(year, 11, 31, 23, 59, 59, 999),
-      };
-    }
-
+    const year = base.getFullYear();
+    const month = base.getMonth();
     const day = base.getDate();
+
     return {
       start: new Date(year, month, day, 0, 0, 0, 0),
       end: new Date(year, month, day, 23, 59, 59, 999),
@@ -293,7 +266,6 @@ export default function CandidateManagementPage() {
     const toRange   = getDateRange(interviewTo);
 
     return (candidates || []).filter((c) => {
-      // Search text
       const keyword = searchTerm.trim().toLowerCase();
       if (keyword) {
         const name = (c.fullName || c.name || "").toLowerCase();
@@ -304,28 +276,21 @@ export default function CandidateManagementPage() {
         }
       }
 
-      // Trạng thái
       if (statusFilter) {
         const status = (c.status || "").toLowerCase();
         if (status !== statusFilter.toLowerCase()) return false;
       }
 
-      // Kế hoạch
       if (planFilter) {
-        if (c.recruitmentPlanId?.toString() !== planFilter) {
-          return false;
-        }
+        if (c.recruitmentPlanId?.toString() !== planFilter) return false;
       }
 
-      // Ngày phỏng vấn / hẹn thực tập
       const interviewValue = c.interviewDate || c.interview_date;
-
       if ((fromRange || toRange) && !interviewValue) return false;
 
       if (interviewValue && (fromRange || toRange)) {
         const interviewDate = new Date(interviewValue);
-        if (Number.isNaN(interviewDate.getTime())) return false;
-
+        if (isNaN(interviewDate.getTime())) return false;
         if (fromRange && interviewDate < fromRange.start) return false;
         if (toRange && interviewDate > toRange.end) return false;
       }
@@ -365,7 +330,6 @@ export default function CandidateManagementPage() {
     }, 180);
   };
 
-  // === HANDLER FILTER (cập nhật URL) ===
   const handleStatusChange = (e) => {
     const val = e.target.value;
     setStatusFilter(val);
@@ -380,7 +344,6 @@ export default function CandidateManagementPage() {
     setCurrentPage(1);
   };
 
-  // CHỈ LƯU URL KHI BẤM OK HOẶ XÓA TRONG POPOVER
   const handleDateRangeChange = ({ from, to }) => {
     setInterviewFrom(from);
     setInterviewTo(to);
@@ -422,29 +385,18 @@ export default function CandidateManagementPage() {
   };
 
   const getStatusClass = (status) => {
-    switch (status) {
-      case "Chưa có kết quả":
-        return "status-none";
-      case "Đã có kết quả":
-        return "status-done";
-      case "Không nhận việc":
-        return "status-refuse";
-      case "Đã gửi mail cảm ơn":
-        return "status-mail";
-      case "Đã nhận việc":
-        return "status-accept";
-      case "Đã hẹn ngày thực tập":
-        return "status-inform";
-      default:
-        return "status-none";
-    }
+    const map = {
+      "Chưa có kết quả": "status-none",
+      "Đã có kết quả": "status-done",
+      "Không nhận việc": "status-refuse",
+      "Đã gửi mail cảm ơn": "status-mail",
+      "Đã nhận việc": "status-accept",
+      "Đã hẹn ngày thực tập": "status-inform",
+    };
+    return map[status] || "status-none";
   };
 
-  // Helper để hiển thị tooltip khi bị disable
-  const flashEditTooltip = (
-    btnWrapperEl,
-    message = "Bạn không có quyền thực hiện thao tác này"
-  ) => {
+  const flashEditTooltip = (btnWrapperEl, message = "Bạn không có quyền thực hiện thao tác này") => {
     const tip = btnWrapperEl?.querySelector(".action-tooltip");
     if (!tip) return;
     const original = tip.textContent;
