@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import Layout from "../components/Layout";
 import "../styles/HomePage.css";
-import axios from "axios";
+import api from "../services/api";
 import "../styles/layout.css";
 
 // =======================
@@ -154,11 +154,8 @@ function HomePage() {
   // -------------------------
   const fetchDashboard = async () => {
     try {
-      const url = `http://localhost:8080/api/dashboard?start=${dateRange.start}&end=${dateRange.end}`;
-      const token = localStorage.getItem("token");
-      const res = await axios.get(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const url = `/dashboard?start=${dateRange.start}&end=${dateRange.end}`;
+      const res = await api.get(url);
       setStats(res.data);
     } catch (err) {
       console.error("Dashboard API Error:", err);
@@ -177,11 +174,8 @@ function HomePage() {
   // -------------------------
   const fetchChartData = async () => {
     try {
-      const url = `http://localhost:8080/api/dashboard?start=1900-01-01&end=2100-12-31`;
-      const token = localStorage.getItem("token");
-      const res = await axios.get(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const url = `/dashboard?start=1900-01-01&end=2100-12-31`;
+      const res = await api.get(url);
       setStatsChart(res.data);
     } catch (err) {
       console.error("Chart API Error:", err);
@@ -202,8 +196,8 @@ function HomePage() {
       const token = localStorage.getItem("token");
 
       const [resA, resB] = await Promise.all([
-        axios.get(`http://localhost:8080/api/dashboard?start=${rA.start}&end=${rA.end}`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`http://localhost:8080/api/dashboard?start=${rB.start}&end=${rB.end}`, { headers: { Authorization: `Bearer ${token}` } })
+        api.get(`/dashboard?start=${rA.start}&end=${rA.end}`),
+        api.get(`/dashboard?start=${rB.start}&end=${rB.end}`),
       ]);
 
       setStatsA(resA.data);
@@ -512,7 +506,6 @@ function HomePage() {
   };
 
   const fetchData = async () => {
-    const token = localStorage.getItem("token");
 
     let items = [];
 
@@ -520,8 +513,8 @@ function HomePage() {
       // 12 tháng trong 1 năm
       for (let m = 1; m <= 12; m++) {
         const range = buildRange(year, m, m);
-        const url = `http://localhost:8080/api/dashboard?start=${range.start}&end=${range.end}`;
-        const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
+        const url = `/dashboard?start=${range.start}&end=${range.end}`;
+        const res = await api.get(url);
         items.push({
           label: `T${m}`,
           enroll: res.data.totalEnroll ?? 0,
@@ -543,9 +536,8 @@ function HomePage() {
       ];
 
       for (let i = 0; i < 4; i++) {
-        const res = await axios.get(
-          `http://localhost:8080/api/dashboard?start=${ranges[i].start}&end=${ranges[i].end}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+        const res = await api.get(
+          `/dashboard?start=${ranges[i].start}&end=${ranges[i].end}`
         );
         items.push({
           label: `Q${i + 1}`,
@@ -565,8 +557,8 @@ function HomePage() {
 
       for (let y = startYear; y <= endYear; y++) {
         const range = buildRange(y, 1, 12);
-        const url = `http://localhost:8080/api/dashboard?start=${range.start}&end=${range.end}`;
-        const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
+        const url = `/dashboard?start=${range.start}&end=${range.end}`;
+        const res = await api.get(url);
         items.push({
           label: `${y}`,
           enroll: res.data.totalEnroll ?? 0,

@@ -10,7 +10,7 @@ import {
   useNavigate,
   useSearchParams,
 } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 
 import Layout from "../components/Layout";
 import Pagination from "../components/Pagination";
@@ -106,10 +106,7 @@ const HrRequestPage = () => {
   const [pendingRequestTitle, setPendingRequestTitle] = useState("");
 
   const token = localStorage.getItem("token");
-  const axiosAuth = axios.create({
-    baseURL: "http://localhost:8080",
-    headers: { Authorization: `Bearer ${token}` },
-  });
+
 
   // ====== ĐỒNG BỘ requestTitle TỪ URL ======
   useEffect(() => {
@@ -245,7 +242,7 @@ const HrRequestPage = () => {
   const loadRequests = async () => {
     try {
       setLoading(true);
-      const res = await axiosAuth.get("/api/hr-request");
+       const res = await api.get("/hr-request");
       const list = res.data || [];
       setRequests(list);
       setFilteredRequests(list);

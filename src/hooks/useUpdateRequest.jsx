@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import api from "../services/api";
 
 export default function useUpdateRequest() {
   const [loading, setLoading] = useState(false);
@@ -9,12 +9,7 @@ export default function useUpdateRequest() {
     setLoading(true);
     setError("");
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.post(
-        `http://localhost:8080/api/hr-request/update/${id}`,
-        data,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await api.post(`/hr-request/update/${id}`, data);
       return { success: true, message: res.data?.message || "Cập nhật thành công" };
     } catch (err) {
       const msg =

@@ -7,7 +7,7 @@ import React, {
   useState,
 } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 import Layout from "../components/Layout";
 import Pagination from "../components/Pagination";
 import ActionButtons from "../components/ActionButtons.jsx";
@@ -234,11 +234,7 @@ const RecruitmentPlanPage = () => {
   const [pendingPlanOpen, setPendingPlanOpen] = useState(null);
   const hasAutoOpenRef = useRef(false);
 
-  const token = localStorage.getItem("token");
-  const axiosAuth = axios.create({
-    baseURL: "http://localhost:8080",
-    headers: { Authorization: `Bearer ${token}` },
-  });
+
 
   // ================= CẬP NHẬT URL KHI SEARCH / STATUS THAY ĐỔI =================
   useEffect(() => {
@@ -360,7 +356,7 @@ const RecruitmentPlanPage = () => {
   const loadPlans = async () => {
     try {
       setLoading(true);
-      const res = await axiosAuth.get("/api/recruitment-plans");
+      const res = await api.get("/recruitment-plans");
       const enrichedPlans = await Promise.all(
         (res.data || []).map(async (plan) => {
           const planId = plan.recruitmentPlanId;
@@ -383,9 +379,7 @@ const RecruitmentPlanPage = () => {
                   : Number(deliveredRes.data ?? handoverCount) || handoverCount;
             }
             if (requestId) {
-              const hrReqRes = await axiosAuth.get(
-                `/api/hr-request/${requestId}`
-              );
+              const hrReqRes = await api.get(`/hr-request/${requestId}`);
               requestRejectReason =
                 hrReqRes.data?.rejectReason || requestRejectReason;
             }
@@ -539,13 +533,13 @@ const RecruitmentPlanPage = () => {
         const requests = [];
         if (planId) {
           requests.push(
-            axiosAuth.get("/api/trainings/delivered-count-by-plan", {
+            api.get("/trainings/delivered-count-by-plan", {
               params: { planId },
             })
           );
-          requests.push(axiosAuth.get("/api/candidates", { params: { planId } }));
+          requests.push(api.get("/candidates", { params: { planId } }));
           requests.push(
-            axiosAuth.get("/api/trainings/count-by-plan", { params: { planId } })
+            api.get("/trainings/count-by-plan", { params: { planId } })
           );
         } else {
           requests.push(
@@ -555,7 +549,7 @@ const RecruitmentPlanPage = () => {
           );
         }
         if (requestId) {
-          requests.push(axiosAuth.get(`/api/hr-request/${requestId}`));
+          requests.push(api.get(`/hr-request/${requestId}`));
         } else {
           requests.push(Promise.resolve({ data: null }));
         }
@@ -703,7 +697,7 @@ const RecruitmentPlanPage = () => {
     setRequestTitle("");
     setModalMode("select");
     try {
-      const res = await axiosAuth.get("/api/hr-request");
+      const res = await api.get("/hr-request");
       const opts = (res.data || [])
         .filter((r) => String(r.status || "").toUpperCase() === "NEW")
         .map((r) => ({ id: r.requestId, title: r.requestTitle }))
@@ -739,7 +733,7 @@ const RecruitmentPlanPage = () => {
       return;
     }
     try {
-      const res = await axiosAuth.get(`/api/hr-request/${id}/plan-defaults`);
+      const res = await api.get(`/hr-request/${id}/plan-defaults`);
       const d = res.data;
       const defaultPlanName = extractMainRequestName(
         d.requestTitle || d.suggestedPlanName || ""
@@ -778,11 +772,11 @@ const RecruitmentPlanPage = () => {
       }
       const fullPlanName = buildFullPlanName(form.planName);
       const payload = { ...form, planName: fullPlanName };
-      await axiosAuth.post("/api/recruitment-plans", payload);
+       await api.post("/recruitment-plans", payload);
       const requestStatus = String(form.status || "").toUpperCase();
       if (requestStatus === "NEW") {
         try {
-          await axiosAuth.put(`/api/hr-request/${form.requestId}/approve`, {
+           await api.put(`/hr-request/${form.requestId}/approve`, {
             params: { note: "" },
           });
         } catch (err) {
@@ -808,7 +802,7 @@ const RecruitmentPlanPage = () => {
     if (!selectedPlan) return;
     const planId = selectedPlan.recruitmentPlanId;
     try {
-      const res = await axiosAuth.put(`/api/recruitment-plans/${planId}/confirm`);
+      const res = await api.put(`/recruitment-plans/${planId}/confirm`);
       const updated = res.data;
       setPlans((prev) =>
         prev.map((p) => (p.recruitmentPlanId === planId ? updated : p))
@@ -843,7 +837,7 @@ const RecruitmentPlanPage = () => {
     }
     try {
       const formattedReason = `Kế hoạch tuyển dụng: ${rejectReason.trim()}`;
-      const res = await axiosAuth.post(`/api/recruitment-plans/${planId}/reject`, {
+      const res = await api.post(`/recruitment-plans/${planId}/reject`, {
         rejectionReason: formattedReason,
       });
       const updated = res.data;

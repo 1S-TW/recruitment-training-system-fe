@@ -1,6 +1,6 @@
 // src/hooks/useHrRequests.jsx
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../services/api";
 import { useNavigate } from "react-router-dom";
 
 export default function useHrRequests() {
@@ -9,22 +9,10 @@ export default function useHrRequests() {
   const navigate = useNavigate();
 
   const fetchHRRequests = async () => {
-    const token = localStorage.getItem("token");
 
-    // Nếu không có token, redirect về /login
-    if (!token) {
-      console.warn("⛔ Không có token, redirect về /login");
-      navigate("/login", { replace: true });
-      setLoading(false);
-      return;
-    }
 
     try {
-      const res = await axios.get("http://localhost:8080/api/hr-request", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await api.get("/hr-request");
 
       setRequests(res.data);
     } catch (err) {

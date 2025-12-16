@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import "../styles/HRRequestModal.css";
 import Modal from "./Modal";
 import { useAuth } from "../contexts/AuthContext"; // ✅ 1. Import AuthContext
+import api from "../services/api";
 
 export default function HRRequestModal({
   isOpen,
@@ -71,14 +72,11 @@ export default function HRRequestModal({
   // ====== LOAD DANH MỤC CÔNG NGHỆ ======
   useEffect(() => {
     if (!isOpen) return;
-    const token = localStorage.getItem("token");
-    fetch("http://localhost:8080/api/hr-request/technologies", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
-      .then((list) => {
+   api
+      .get("/hr-request/technologies")
+      .then((r) => {
         const dict = {};
-        (list || []).forEach((t) => (dict[t.id] = t.name));
+        (r.data || []).forEach((t) => (dict[t.id] = t.name));
         setTechDict(dict);
       })
       .catch(() => setTechDict({}));
@@ -91,15 +89,10 @@ export default function HRRequestModal({
       return;
     }
 
-    const token = localStorage.getItem("token");
-    fetch("http://localhost:8080/api/recruitment-plans", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    api
+      .get("/recruitment-plans")
       .then((res) => {
-        if (!res.ok) throw new Error();
-        return res.json();
-      })
-      .then((plans) => {
+        const plans = res.data;
         const matched =
           (plans || []).find(
             (p) => p.request && p.request.requestId === request.requestId
@@ -149,18 +142,10 @@ export default function HRRequestModal({
   useEffect(() => {
     if (!isOpen || !planMeta?.recruitmentPlanId) return;
 
-    const token = localStorage.getItem("token");
-    fetch(
-      `http://localhost:8080/api/candidates?planId=${planMeta.recruitmentPlanId}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    )
+    api
+      .get("/candidates", { params: { planId: planMeta.recruitmentPlanId } })
       .then((res) => {
-        if (!res.ok) throw new Error();
-        return res.json();
-      })
-      .then((list) => {
+        const list = res.data;
         const count = Array.isArray(list) ? list.length : 0;
         const hiredCount = Array.isArray(list)
           ? list.filter(
@@ -196,18 +181,12 @@ export default function HRRequestModal({
   useEffect(() => {
     if (!isOpen || !planMeta?.recruitmentPlanId) return;
 
-    const token = localStorage.getItem("token");
-    fetch(
-      `http://localhost:8080/api/trainings/count-by-plan?planId=${planMeta.recruitmentPlanId}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    )
-      .then((res) => {
-        if (!res.ok) throw new Error();
-        return res.json();
+        api
+      .get("/trainings/count-by-plan", {
+        params: { planId: planMeta.recruitmentPlanId },
       })
-      .then((count) => {
+      .then((res) => {
+        const count = res.data;
         const num = typeof count === "number" ? count : Number(count ?? 0) || 0;
         setPlanMeta((prev) =>
           prev
@@ -234,19 +213,12 @@ export default function HRRequestModal({
   useEffect(() => {
     if (!isOpen || !planMeta?.recruitmentPlanId) return;
 
-    const token = localStorage.getItem("token");
-
-    fetch(
-      `http://localhost:8080/api/trainings/delivered-count-by-plan?planId=${planMeta.recruitmentPlanId}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    )
-      .then((res) => {
-        if (!res.ok) throw new Error();
-        return res.json();
+     api
+      .get("/trainings/delivered-count-by-plan", {
+        params: { planId: planMeta.recruitmentPlanId },
       })
-      .then((count) => {
+      .then((res) => {
+        const count = res.data;
         const num = typeof count === "number" ? count : Number(count ?? 0) || 0;
 
         setPlanMeta((prev) =>
@@ -849,13 +821,24 @@ export default function HRRequestModal({
 
   // ================== API ERROR HELPER ==================
   const readErrorMessage = async (res) => {
-    const text = await res.text();
-    try {
-      const data = JSON.parse(text);
-      return data?.message || text || "Có lỗi xảy ra.";
-    } catch {
-      return text || "Có lỗi xảy ra.";
+    if (!res) return "Có lỗi xảy ra.";
+
+    // Axios response
+    if (res.data) {
+      const msg = res.data?.message || res.data?.error;
+      if (msg) return msg;
     }
+
+    if (typeof res.text === "function") {
+      const text = await res.text();
+      try {
+        const data = JSON.parse(text);
+        return data?.message || text || "Có lỗi xảy ra.";
+      } catch {
+        return text || "Có lỗi xảy ra.";
+      }
+    }
+    return res.statusText || "Có lỗi xảy ra.";
   };
 
   // ================== PHÊ DUYỆT ==================
@@ -887,30 +870,20 @@ export default function HRRequestModal({
 
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
+      const res = await api.put(`/hr-request/${request.requestId}/reject`, {
+        rejectionReason: rejectReason.trim(),
+      });
 
-      const res = await fetch(
-        `http://localhost:8080/api/hr-request/${request.requestId}/reject`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            rejectionReason: rejectReason.trim(),
-          }),
-        }
-      );
+      const { status } = res;
 
-      if (!res.ok) {
+      if (status < 200 || status >= 300) {
         const msg = await readErrorMessage(res);
-        if (res.status === 401)
+        if (status === 401)
           alert("⚠️ Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
-        else if (res.status === 403)
+        else if (status === 403)
           alert("⚠️ Bạn không có quyền từ chối yêu cầu này.");
-        else if (res.status === 409) alert(`⚠️ Không thể từ chối: ${msg}`);
-        else if (res.status === 400) alert(`⚠️ Dữ liệu không hợp lệ: ${msg}`);
+        else if (status === 409) alert(`⚠️ Không thể từ chối: ${msg}`);
+        else if (status === 400) alert(`⚠️ Dữ liệu không hợp lệ: ${msg}`);
         else alert(`⚠️ Lỗi khi từ chối yêu cầu: ${msg}`);
         onActionError?.(msg);
         return;

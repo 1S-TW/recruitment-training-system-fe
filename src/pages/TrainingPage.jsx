@@ -1,6 +1,6 @@
 // src/pages/TrainingPage.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import api from "../services/api";
 import Layout from "../components/Layout";
 import FloatingAssistant from "../components/AIAssistantBubble"; // 👈 thêm dòng này
 import "../styles/training.css"; // css riêng của trang, nếu có
@@ -14,7 +14,7 @@ export default function TrainingPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get("http://localhost:8080/api/training");
+        const res = await api.get("/training");
         setInterns(res.data);
       } catch (err) {
         console.error("Lỗi load training:", err);

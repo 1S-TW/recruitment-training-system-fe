@@ -13,6 +13,8 @@ const baseURL = isDev
   ? "http://localhost:8080/api"
   : `${apiBaseFromEnv || ""}/api`;
 
+  export const API_BASE_URL = baseURL;
+
 const api = axios.create({
   baseURL,
   withCredentials: true,
