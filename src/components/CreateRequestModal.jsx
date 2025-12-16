@@ -3,7 +3,7 @@
   import TechRow from "./TechRow";
   import useCreateRequest from "../hooks/useCreateRequest.jsx";
   import useUpdateRequest from "../hooks/useUpdateRequest.jsx";
-  import axios from "axios";
+   import api from "../services/api";
 
   export default function CreateRequestModal({
     isOpen,
@@ -90,11 +90,8 @@
     // ====== LẤY DANH SÁCH CÔNG NGHỆ ======
     useEffect(() => {
       if (!isOpen) return;
-      const token = localStorage.getItem("token");
-      axios
-        .get("http://localhost:8080/api/hr-request/technologies", {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+      api
+        .get("/hr-request/technologies")
         .then((res) => setTechnologies(res.data || []))
         .catch(() => setTechnologies([]));
     }, [isOpen]);
